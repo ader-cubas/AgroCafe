@@ -1,0 +1,1051 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SisGranja - Unidad Pecuaria Cuyícola</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <!-- Chart.js para gráficos -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body class="bg-stone-100 text-stone-900 min-h-screen flex flex-col md:flex-row antialiased">
+
+    <!-- SIDEBAR -->
+    <aside class="w-full md:w-64 bg-emerald-950 text-stone-300 flex flex-col justify-between border-r border-emerald-900 shrink-0">
+        <div>
+            <div class="p-6 flex items-center space-x-3 border-b border-emerald-900/50">
+                <div class="bg-emerald-600 p-2 rounded-xl text-white font-bold text-xl">🐹</div>
+                <div>
+                    <h1 class="font-bold text-lg text-white tracking-wide">SisGranja</h1>
+                    <p class="text-xs text-emerald-400">Control Cuyícola v2.5</p>
+                </div>
+            </div>
+            <nav class="p-4 space-y-1.5">
+                <button onclick="switchView('dashboard')" id="nav-dashboard" class="w-full flex items-center space-x-3 px-4 py-2.5 rounded-xl font-medium text-sm transition bg-emerald-900 text-white shadow-sm">
+                    <i class="ph ph-squares-four text-lg"></i><span>Dashboard General</span>
+                </button>
+                <button onclick="switchView('cuyes')" id="nav-cuyes" class="w-full flex items-center space-x-3 px-4 py-2.5 rounded-xl font-medium text-sm transition hover:bg-emerald-900/60 text-stone-300">
+                    <i class="ph ph-paw-print text-lg"></i><span>Gestión de Pozas</span>
+                    <span id="badge-pozas" class="ml-auto bg-emerald-800 text-emerald-200 text-xs px-2 py-0.5 rounded-full">0</span>
+                </button>
+                <button onclick="switchView('partos')" id="nav-partos" class="w-full flex items-center space-x-3 px-4 py-2.5 rounded-xl font-medium text-sm transition hover:bg-emerald-900/60 text-stone-300">
+                    <i class="ph ph-baby text-lg"></i><span>Registro de Partos</span>
+                    <span id="badge-partos" class="ml-auto bg-emerald-800 text-emerald-200 text-xs px-2 py-0.5 rounded-full">0</span>
+                </button>
+                <button onclick="switchView('destetados')" id="nav-destetados" class="w-full flex items-center space-x-3 px-4 py-2.5 rounded-xl font-medium text-sm transition hover:bg-emerald-900/60 text-stone-300">
+                    <i class="ph ph-users-three text-lg"></i><span>Destetados</span>
+                    <span id="badge-destetados" class="ml-auto bg-emerald-800 text-emerald-200 text-xs px-2 py-0.5 rounded-full">0</span>
+                </button>
+                <button onclick="switchView('bajas')" id="nav-bajas" class="w-full flex items-center space-x-3 px-4 py-2.5 rounded-xl font-medium text-sm transition hover:bg-emerald-900/60 text-stone-300">
+                    <i class="ph ph-shield-warning text-lg"></i><span>Mortalidad y Bajas</span>
+                    <span id="badge-bajas" class="ml-auto bg-emerald-800 text-emerald-200 text-xs px-2 py-0.5 rounded-full">0</span>
+                </button>
+                <button onclick="switchView('ventas')" id="nav-ventas" class="w-full flex items-center space-x-3 px-4 py-2.5 rounded-xl font-medium text-sm transition hover:bg-emerald-900/60 text-stone-300">
+                    <i class="ph ph-shopping-cart text-lg"></i><span>Ventas e Ingresos</span>
+                    <span id="badge-ventas" class="ml-auto bg-emerald-800 text-emerald-200 text-xs px-2 py-0.5 rounded-full">0</span>
+                </button>
+                <button onclick="switchView('gastos')" id="nav-gastos" class="w-full flex items-center space-x-3 px-4 py-2.5 rounded-xl font-medium text-sm transition hover:bg-emerald-900/60 text-stone-300">
+                    <i class="ph ph-receipt text-lg"></i><span>Gastos Operativos</span>
+                    <span id="badge-gastos" class="ml-auto bg-emerald-800 text-emerald-200 text-xs px-2 py-0.5 rounded-full">0</span>
+                </button>
+            </nav>
+        </div>
+        <div class="p-4 border-t border-emerald-900/50 text-xs text-stone-400">
+            <p>Estado: <span class="text-emerald-400 font-semibold">Local Activo</span></p>
+        </div>
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <main class="flex-1 flex flex-col h-screen overflow-hidden">
+        <!-- TOPBAR -->
+        <header class="bg-white border-b border-stone-200 h-16 flex items-center justify-between px-6 shrink-0">
+            <div class="flex items-center space-x-3">
+                <i class="ph ph-paw-print text-2xl text-emerald-600"></i>
+                <h2 id="view-title" class="font-bold text-stone-800 text-lg">Unidad Pecuaria Cuyícola</h2>
+            </div>
+            <div class="flex items-center space-x-3 flex-wrap">
+                <span class="bg-emerald-100 text-emerald-800 text-xs font-semibold px-3 py-1 rounded-full border border-emerald-200 hidden sm:flex items-center gap-1.5">
+                    <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> Ratio Estándar: 1 Macho / 6 Hembras
+                </span>
+                <button onclick="window.print()" class="bg-stone-100 hover:bg-stone-200 text-stone-700 text-xs font-semibold px-3 py-2 rounded-lg border border-stone-300 flex items-center gap-1.5 transition">
+                    <i class="ph ph-printer text-stone-600 text-base"></i> Imprimir
+                </button>
+                <button onclick="exportarExcel()" class="bg-stone-100 hover:bg-stone-200 text-stone-700 text-xs font-semibold px-3 py-2 rounded-lg border border-stone-300 flex items-center gap-1.5 transition">
+                    <i class="ph ph-file-xls text-emerald-600 text-base"></i> Excel / CSV
+                </button>
+                <button onclick="exportarBackup()" class="bg-stone-100 hover:bg-stone-200 text-stone-700 text-xs font-semibold px-3 py-2 rounded-lg border border-stone-300 flex items-center gap-1.5 transition">
+                    <i class="ph ph-download-simple text-blue-600 text-base"></i> Backup
+                </button>
+                <label class="bg-stone-100 hover:bg-stone-200 text-stone-700 text-xs font-semibold px-3 py-2 rounded-lg border border-stone-300 flex items-center gap-1.5 transition cursor-pointer">
+                    <i class="ph ph-upload-simple text-amber-600 text-base"></i> Restaurar
+                    <input type="file" id="file-restore" onchange="restaurarBackup(event)" class="hidden" accept=".json">
+                </label>
+            </div>
+        </header>
+
+        <!-- CONTENT VIEWS WRAPPER -->
+        <div class="flex-1 overflow-y-auto p-8" id="main-content-container">
+
+            <!-- 1. DASHBOARD -->
+            <div id="view-dashboard" class="space-y-6 view-section">
+                <!-- Tarjetas KPI -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div class="bg-white p-5 rounded-2xl border border-stone-200 shadow-xs">
+                        <p class="text-xs font-bold text-stone-500 uppercase">Pozas Activas</p>
+                        <h3 id="kpi-pozas" class="text-3xl font-extrabold text-stone-900 mt-1">0</h3>
+                        <p id="kpi-pozas-sub" class="text-xs text-stone-500 mt-1">Galpón A, Galpón B</p>
+                    </div>
+                    <div class="bg-white p-5 rounded-2xl border border-stone-200 shadow-xs">
+                        <p class="text-xs font-bold text-stone-500 uppercase">Población Total</p>
+                        <h3 id="kpi-poblacion" class="text-3xl font-extrabold text-emerald-700 mt-1">0</h3>
+                        <p id="kpi-poblacion-sub" class="text-xs text-stone-500 mt-1">0 hembr., 0 mach., 0 crías</p>
+                    </div>
+                    <div class="bg-white p-5 rounded-2xl border border-stone-200 shadow-xs">
+                        <p class="text-xs font-bold text-stone-500 uppercase">Cuyes Destetados</p>
+                        <h3 id="kpi-destetados" class="text-3xl font-extrabold text-stone-900 mt-1">0</h3>
+                        <p id="kpi-destetados-sub" class="text-xs text-stone-500 mt-1">0 hembras, 0 machos</p>
+                    </div>
+                    <div class="bg-white p-5 rounded-2xl border border-stone-200 shadow-xs">
+                        <p class="text-xs font-bold text-stone-500 uppercase">Ventas / Ingresos</p>
+                        <h3 id="kpi-ingresos" class="text-3xl font-extrabold text-blue-700 mt-1">S/ 0.00</h3>
+                        <p id="kpi-ventas-sub" class="text-xs text-stone-500 mt-1">0 cuyes comercializados</p>
+                    </div>
+                    <div class="bg-white p-5 rounded-2xl border border-stone-200 shadow-xs">
+                        <p class="text-xs font-bold text-stone-500 uppercase">Gastos Operativos</p>
+                        <h3 id="kpi-gastos" class="text-3xl font-extrabold text-rose-600 mt-1">S/ 0.00</h3>
+                        <p id="kpi-gastos-sub" class="text-xs text-stone-500 mt-1">0 registros de egresos</p>
+                    </div>
+                    <div class="bg-white p-5 rounded-2xl border border-stone-200 shadow-xs">
+                        <p class="text-xs font-bold text-stone-500 uppercase">Mortalidad / Bajas</p>
+                        <h3 id="kpi-bajas" class="text-3xl font-extrabold text-amber-600 mt-1">0</h3>
+                        <p id="kpi-bajas-sub" class="text-xs text-stone-500 mt-1">Tasa: 0.0%</p>
+                    </div>
+                    <div class="bg-white p-5 rounded-2xl border border-stone-200 shadow-xs">
+                        <p class="text-xs font-bold text-stone-500 uppercase">Cantidad Vendida</p>
+                        <h3 id="kpi-engorde" class="text-3xl font-extrabold text-amber-600 mt-1">0</h3>
+                        <p id="kpi-engorde-sub" class="text-xs text-stone-500 mt-1">Vendidos: Comercial 0 · Gazapos 0 · Reproductores 0 · Abono 0</p>
+                    </div>
+                    <div class="bg-white p-5 rounded-2xl border border-stone-200 shadow-xs">
+                        <p class="text-xs font-bold text-stone-500 uppercase">Utilidad Neta del Ejercicio</p>
+                        <h3 id="kpi-utilidad" class="text-3xl font-extrabold text-emerald-600 mt-1">S/ 0.00</h3>
+                        <p id="kpi-utilidad-sub" class="text-xs text-stone-500 mt-1">Superávit / Ganancia neta acumulada</p>
+                    </div>
+                </div>
+
+                <!-- Acciones Rápidas -->
+                <div class="bg-white p-6 rounded-2xl border border-stone-200 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-4">
+                    <div>
+                        <h3 class="text-lg font-bold text-stone-800">Control Operativo y Accesos Rápidos</h3>
+                        <p class="text-stone-600 text-sm">Control de empadre (1M:6H), nacimientos, destetes separados por sexo, mortalidad sanitaria y balance económico.</p>
+                    </div>
+                    <div class="flex flex-wrap gap-2 shrink-0">
+                        <button onclick="sembrarDatosIniciales()" class="bg-amber-600 hover:bg-amber-700 text-white font-semibold text-xs px-4 py-2.5 rounded-xl shadow-xs transition flex items-center gap-2">
+                            <i class="ph ph-lightning text-base"></i> Simular 100 Pozas (6H / 1M)
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Gráficos Interactivos -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div class="bg-white p-6 rounded-2xl border border-stone-200 shadow-xs flex flex-col justify-between">
+                        <div class="flex items-center justify-between mb-4">
+                            <h4 class="font-bold text-stone-800 text-base">Distribución Poblacional por Etapas</h4>
+                            <i class="ph ph-chart-pie text-emerald-600 text-xl"></i>
+                        </div>
+                        <div class="h-64 flex items-center justify-center relative">
+                            <canvas id="chartPoblacion"></canvas>
+                        </div>
+                    </div>
+                    <div class="bg-white p-6 rounded-2xl border border-stone-200 shadow-xs flex flex-col justify-between">
+                        <div class="flex items-center justify-between mb-4">
+                            <h4 class="font-bold text-stone-800 text-base">Balance Económico (Soles)</h4>
+                            <i class="ph ph-chart-bar text-blue-600 text-xl"></i>
+                        </div>
+                        <div class="h-64 flex items-center justify-center relative">
+                            <canvas id="chartFinanzas"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tablas de Actividad Reciente -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div class="bg-white p-6 rounded-2xl border border-stone-200 shadow-xs">
+                        <h4 class="font-bold text-stone-800 text-base mb-4">Últimos Partos Registrados</h4>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left border-collapse text-sm">
+                                <thead class="bg-stone-50 border-b border-stone-200 text-stone-500 uppercase text-xs">
+                                    <tr>
+                                        <th class="p-3">Fecha</th>
+                                        <th class="p-3">Poza</th>
+                                        <th class="p-3">Crías Vivas</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="dash-tabla-partos">
+                                    <tr><td colspan="3" class="p-4 text-center text-stone-400">No hay partos registrados.</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="bg-white p-6 rounded-2xl border border-stone-200 shadow-xs">
+                        <h4 class="font-bold text-stone-800 text-base mb-4">Últimos Destetes Registrados</h4>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left border-collapse text-sm">
+                                <thead class="bg-stone-50 border-b border-stone-200 text-stone-500 uppercase text-xs">
+                                    <tr>
+                                        <th class="p-3">Fecha</th>
+                                        <th class="p-3">Poza Origen</th>
+                                        <th class="p-3">Machos / Hembras</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="dash-tabla-destetados">
+                                    <tr><td colspan="3" class="p-4 text-center text-stone-400">No hay destetes registrados.</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 2. GESTIÓN DE POZAS Y ETAPAS -->
+            <div id="view-cuyes" class="space-y-6 view-section hidden">
+                <div class="bg-white p-6 rounded-2xl border border-stone-200 shadow-xs">
+                    <h3 class="text-lg font-bold text-stone-800 mb-4">Registrar Nuevo Animal / Poza</h3>
+                    <form onsubmit="guardarCuy(event)" class="grid grid-cols-1 sm:grid-cols-4 gap-4">
+                        <div>
+                            <label class="block text-xs font-bold text-stone-600 mb-1">Código / Poza</label>
+                            <input type="text" id="cuy-codigo" required class="w-full px-3 py-2 border rounded-xl text-sm outline-none focus:border-emerald-600" placeholder="Ej. PZ-101">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-stone-600 mb-1">Etapa Zootécnica</label>
+                            <select id="cuy-etapa" class="w-full px-3 py-2 border rounded-xl text-sm outline-none focus:border-emerald-600">
+                                <option value="Reproductor">Reproductor (1M:6H)</option>
+                                <option value="Recría">Recría</option>
+                                <option value="Engorde">Engorde (Para Venta)</option>
+                                <option value="Cría">Cría Lactante</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-stone-600 mb-1">Género Principal</label>
+                            <select id="cuy-genero" class="w-full px-3 py-2 border rounded-xl text-sm outline-none focus:border-emerald-600">
+                                <option value="Hembra">Hembra</option>
+                                <option value="Macho">Macho</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-stone-600 mb-1">Galpón / Ubicación</label>
+                            <input type="text" id="cuy-poza" required class="w-full px-3 py-2 border rounded-xl text-sm outline-none focus:border-emerald-600" placeholder="Ej. Galpón A">
+                        </div>
+                        <div class="sm:col-span-4 flex justify-end">
+                            <button type="submit" class="bg-emerald-600 text-white font-semibold py-2 px-6 rounded-xl text-sm hover:bg-emerald-700 transition shadow-xs">Guardar Registro</button>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="bg-white p-6 rounded-2xl border border-stone-200 shadow-xs space-y-4">
+                    <div class="flex items-center justify-between">
+                        <h4 class="font-bold text-stone-800 text-base">Inventario Activo</h4>
+                        <input type="text" id="search-cuyes" onkeyup="filtrarTabla('cuyes')" placeholder="Buscar en pozas..." class="px-3 py-1.5 border rounded-xl text-xs outline-none focus:border-emerald-600 w-64">
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse text-sm">
+                            <thead class="bg-stone-50 border-b border-stone-200 text-stone-500 uppercase text-xs">
+                                <tr>
+                                    <th class="p-4">Código</th>
+                                    <th class="p-4">Etapa</th>
+                                    <th class="p-4">Género</th>
+                                    <th class="p-4">Galpón / Ubicación</th>
+                                    <th class="p-4">Acción</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tabla-cuyes"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 3. REGISTRO DE PARTOS -->
+            <div id="view-partos" class="space-y-6 view-section hidden">
+                <div class="bg-white p-6 rounded-2xl border border-stone-200 shadow-xs">
+                    <h3 class="text-lg font-bold text-stone-800 mb-4">Registrar Nuevo Parto en Poza</h3>
+                    <form onsubmit="guardarParto(event)" class="grid grid-cols-1 sm:grid-cols-4 gap-4">
+                        <div>
+                            <label class="block text-xs font-bold text-stone-600 mb-1">Poza / Madre</label>
+                            <input type="text" id="parto-poza" list="lista-pozas" required class="w-full px-3 py-2 border rounded-xl text-sm outline-none focus:border-emerald-600" placeholder="Ej. PZ-001">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-stone-600 mb-1">Crías Vivas</label>
+                            <input type="number" id="parto-vivas" required min="0" class="w-full px-3 py-2 border rounded-xl text-sm outline-none focus:border-emerald-600" placeholder="Ej. 4">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-stone-600 mb-1">Crías Muertas (Natos)</label>
+                            <input type="number" id="parto-muertas" required min="0" value="0" class="w-full px-3 py-2 border rounded-xl text-sm outline-none focus:border-emerald-600">
+                        </div>
+                        <div class="flex items-end">
+                            <button type="submit" class="w-full bg-emerald-600 text-white font-semibold py-2 px-4 rounded-xl text-sm hover:bg-emerald-700 transition shadow-xs">Registrar Parto</button>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="bg-white p-6 rounded-2xl border border-stone-200 shadow-xs space-y-4">
+                    <div class="flex items-center justify-between">
+                        <h4 class="font-bold text-stone-800 text-base">Historial de Partos</h4>
+                        <input type="text" id="search-partos" onkeyup="filtrarTabla('partos')" placeholder="Buscar parto..." class="px-3 py-1.5 border rounded-xl text-xs outline-none focus:border-emerald-600 w-64">
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse text-sm">
+                            <thead class="bg-stone-50 border-b border-stone-200 text-stone-500 uppercase text-xs">
+                                <tr>
+                                    <th class="p-4">Fecha</th>
+                                    <th class="p-4">Poza / Madre</th>
+                                    <th class="p-4">Vivas</th>
+                                    <th class="p-4">Muertas</th>
+                                    <th class="p-4">Acción</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tabla-partos"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 4. DESTETADOS (Separados por sexo) -->
+            <div id="view-destetados" class="space-y-6 view-section hidden">
+                <div class="bg-white p-6 rounded-2xl border border-stone-200 shadow-xs">
+                    <h3 class="text-lg font-bold text-stone-800 mb-4">Registrar Destete por Sexo</h3>
+                    <form onsubmit="guardarDestete(event)" class="grid grid-cols-1 sm:grid-cols-4 gap-4">
+                        <div>
+                            <label class="block text-xs font-bold text-stone-600 mb-1">Poza Origen</label>
+                            <input type="text" id="destete-poza" list="lista-pozas" required class="w-full px-3 py-2 border rounded-xl text-sm outline-none focus:border-emerald-600" placeholder="Ej. PZ-005">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-stone-600 mb-1">Machos Destetados</label>
+                            <input type="number" id="destete-machos" required min="0" value="0" class="w-full px-3 py-2 border rounded-xl text-sm outline-none focus:border-emerald-600">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-stone-600 mb-1">Hembras Destetadas</label>
+                            <input type="number" id="destete-hembras" required min="0" value="0" class="w-full px-3 py-2 border rounded-xl text-sm outline-none focus:border-emerald-600">
+                        </div>
+                        <div class="flex items-end">
+                            <button type="submit" class="w-full bg-indigo-600 text-white font-semibold py-2 px-4 rounded-xl text-sm hover:bg-indigo-700 transition shadow-xs">Guardar Destete</button>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="bg-white p-6 rounded-2xl border border-stone-200 shadow-xs space-y-4">
+                    <div class="flex items-center justify-between">
+                        <h4 class="font-bold text-stone-800 text-base">Historial de Destetes</h4>
+                        <input type="text" id="search-destetados" onkeyup="filtrarTabla('destetados')" placeholder="Buscar destete..." class="px-3 py-1.5 border rounded-xl text-xs outline-none focus:border-emerald-600 w-64">
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse text-sm">
+                            <thead class="bg-stone-50 border-b border-stone-200 text-stone-500 uppercase text-xs">
+                                <tr>
+                                    <th class="p-4">Fecha</th>
+                                    <th class="p-4">Poza Origen</th>
+                                    <th class="p-4">Machos Destetados</th>
+                                    <th class="p-4">Hembras Destetadas</th>
+                                    <th class="p-4">Acción</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tabla-destetados"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 5. MORTALIDAD Y BAJAS -->
+            <div id="view-bajas" class="space-y-6 view-section hidden">
+                <div class="bg-white p-6 rounded-2xl border border-stone-200 shadow-xs">
+                    <h3 class="text-lg font-bold text-stone-800 mb-4">Registrar Baja / Mortalidad Sanitaria</h3>
+                    <form onsubmit="guardarBaja(event)" class="grid grid-cols-1 sm:grid-cols-4 gap-4">
+                        <div>
+                            <label class="block text-xs font-bold text-stone-600 mb-1">Identificador (Código / Poza)</label>
+                            <input type="text" id="baja-identificador" list="lista-pozas" required class="w-full px-3 py-2 border rounded-xl text-sm outline-none focus:border-emerald-600" placeholder="Ej. PZ-012">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-stone-600 mb-1">Cantidad de Bajas</label>
+                            <input type="number" id="baja-cantidad" required min="1" value="1" class="w-full px-3 py-2 border rounded-xl text-sm outline-none focus:border-emerald-600">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-stone-600 mb-1">Motivo / Causa</label>
+                            <input type="text" id="baja-motivo" required class="w-full px-3 py-2 border rounded-xl text-sm outline-none focus:border-emerald-600" placeholder="Ej. Neumonía / Enteritis">
+                        </div>
+                        <div class="flex items-end">
+                            <button type="submit" class="w-full bg-rose-600 text-white font-semibold py-2 px-4 rounded-xl text-sm hover:bg-rose-700 transition shadow-xs">Registrar Baja</button>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="bg-white p-6 rounded-2xl border border-stone-200 shadow-xs space-y-4">
+                    <div class="flex items-center justify-between">
+                        <h4 class="font-bold text-stone-800 text-base">Historial de Mortalidad</h4>
+                        <input type="text" id="search-bajas" onkeyup="filtrarTabla('bajas')" placeholder="Buscar baja..." class="px-3 py-1.5 border rounded-xl text-xs outline-none focus:border-emerald-600 w-64">
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse text-sm">
+                            <thead class="bg-stone-50 border-b border-stone-200 text-stone-500 uppercase text-xs">
+                                <tr>
+                                    <th class="p-4">Fecha</th>
+                                    <th class="p-4">Identificador</th>
+                                    <th class="p-4">Cantidad</th>
+                                    <th class="p-4">Motivo</th>
+                                    <th class="p-4">Acción</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tabla-bajas"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 6. VENTAS E INGRESOS (Con Selector de Tipo / Categoría) -->
+            <div id="view-ventas" class="space-y-6 view-section hidden">
+                <div class="bg-white p-6 rounded-2xl border border-stone-200 shadow-xs">
+                    <h3 class="text-lg font-bold text-stone-800 mb-4">Registrar Venta de Cuyes / Ingresos</h3>
+                    <form onsubmit="guardarVenta(event)" class="grid grid-cols-1 sm:grid-cols-5 gap-4">
+                        <div>
+                            <label class="block text-xs font-bold text-stone-600 mb-1">Tipo / Categoría de Venta</label>
+                            <select id="venta-categoria" class="w-full px-3 py-2 border rounded-xl text-sm outline-none focus:border-emerald-600 font-medium bg-stone-50">
+                                <option value="Cuy Comercial / Engorde">Cuy Comercial / Engorde</option>
+                                <option value="Gazapos (Crías)">Gazapos (Crías)</option>
+                                <option value="Reproductor / Descarte">Reproductor / Descarte</option>
+                                <option value="Subproductos / Abono (Guano)">Subproductos / Abono (Guano)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-stone-600 mb-1">Cantidad Vendida</label>
+                            <input type="number" id="venta-cantidad" required min="1" class="w-full px-3 py-2 border rounded-xl text-sm outline-none focus:border-emerald-600" placeholder="Ej. 20">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-stone-600 mb-1">Precio por unidad (S/)</label>
+                            <input type="number" step="0.01" id="venta-monto" required min="0" class="w-full px-3 py-2 border rounded-xl text-sm outline-none focus:border-emerald-600" placeholder="Ej. 30.00">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-stone-600 mb-1">Cliente / Destino</label>
+                            <input type="text" id="venta-cliente" required class="w-full px-3 py-2 border rounded-xl text-sm outline-none focus:border-emerald-600" placeholder="Ej. Mercado Local / Restaurante">
+                        </div>
+                        <div class="flex items-end">
+                            <button type="submit" class="w-full bg-blue-600 text-white font-semibold py-2 px-4 rounded-xl text-sm hover:bg-blue-700 transition shadow-xs">Registrar Ingreso</button>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="bg-white p-6 rounded-2xl border border-stone-200 shadow-xs space-y-4">
+                    <div class="flex items-center justify-between">
+                        <h4 class="font-bold text-stone-800 text-base">Historial de Ventas e Ingresos</h4>
+                        <input type="text" id="search-ventas" onkeyup="filtrarTabla('ventas')" placeholder="Buscar venta..." class="px-3 py-1.5 border rounded-xl text-xs outline-none focus:border-emerald-600 w-64">
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse text-sm">
+                            <thead class="bg-stone-50 border-b border-stone-200 text-stone-500 uppercase text-xs">
+                                <tr>
+                                    <th class="p-4">Fecha</th>
+                                    <th class="p-4">Tipo / Categoría</th>
+                                    <th class="p-4">Cantidad</th>
+                                    <th class="p-4">Total Venta (S/)</th>
+                                    <th class="p-4">Cliente / Destino</th>
+                                    <th class="p-4">Acción</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tabla-ventas"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 7. GASTOS OPERATIVOS -->
+            <div id="view-gastos" class="space-y-6 view-section hidden">
+                <div class="bg-white p-6 rounded-2xl border border-stone-200 shadow-xs">
+                    <h3 class="text-lg font-bold text-stone-800 mb-4">Registrar Gasto Operativo / Egreso</h3>
+                    <form onsubmit="guardarGasto(event)" class="grid grid-cols-1 sm:grid-cols-4 gap-4">
+                        <div>
+                            <label class="block text-xs font-bold text-stone-600 mb-1">Concepto</label>
+                            <input type="text" id="gasto-concepto" required class="w-full px-3 py-2 border rounded-xl text-sm outline-none focus:border-emerald-600" placeholder="Ej. Compra de alfalfa / Balanceado">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-stone-600 mb-1">Monto (S/)</label>
+                            <input type="number" step="0.01" id="gasto-monto" required min="0" class="w-full px-3 py-2 border rounded-xl text-sm outline-none focus:border-emerald-600" placeholder="Ej. 150.00">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-stone-600 mb-1">Categoría</label>
+                            <select id="gasto-categoria" class="w-full px-3 py-2 border rounded-xl text-sm outline-none focus:border-emerald-600">
+                                <option value="Alimentación">Alimentación</option>
+                                <option value="Sanidad / Medicamentos">Sanidad / Medicamentos</option>
+                                <option value="Mantenimiento de Pozas">Mantenimiento de Pozas</option>
+                                <option value="Otros Egresos">Otros Egresos</option>
+                            </select>
+                        </div>
+                        <div class="flex items-end">
+                            <button type="submit" class="w-full bg-stone-700 text-white font-semibold py-2 px-4 rounded-xl text-sm hover:bg-stone-800 transition shadow-xs">Registrar Egreso</button>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="bg-white p-6 rounded-2xl border border-stone-200 shadow-xs space-y-4">
+                    <div class="flex items-center justify-between">
+                        <h4 class="font-bold text-stone-800 text-base">Historial de Gastos Operativos</h4>
+                        <input type="text" id="search-gastos" onkeyup="filtrarTabla('gastos')" placeholder="Buscar gasto..." class="px-3 py-1.5 border rounded-xl text-xs outline-none focus:border-emerald-600 w-64">
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse text-sm">
+                            <thead class="bg-stone-50 border-b border-stone-200 text-stone-500 uppercase text-xs">
+                                <tr>
+                                    <th class="p-4">Fecha</th>
+                                    <th class="p-4">Concepto</th>
+                                    <th class="p-4">Categoría</th>
+                                    <th class="p-4">Monto (S/)</th>
+                                    <th class="p-4">Acción</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tabla-gastos"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- DATALIST DINÁMICO PARA POZAS -->
+    <datalist id="lista-pozas"></datalist>
+
+    <!-- MODAL / TOAST DE NOTIFICACIÓN -->
+    <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col space-y-2 pointer-events-none"></div>
+
+    <!-- SCRIPT DE GESTIÓN Y GRÁFICOS -->
+    <script>
+        let db = {
+            cuyes: [],
+            pozas: [],
+            partos: [],
+            destetados: [],
+            bajas: [],
+            ventas: [],
+            gastos: []
+        };
+
+        let chartPoblacionInstance = null;
+        let chartFinanzasInstance = null;
+
+        function calcularTotalVentas() {
+            return db.ventas.reduce((total, v) => total + Number(v.monto) * Number(v.cantidad || 0), 0);
+        }
+
+        function cargarDatos() {
+            const saved = localStorage.getItem('sisgranja_cuy_db');
+            if (saved) {
+                try {
+                    db = JSON.parse(saved);
+                } catch (e) {
+                    console.error("Error al cargar localStorage:", e);
+                }
+            }
+            if (!Array.isArray(db.cuyes)) db.cuyes = [];
+            if (!Array.isArray(db.partos)) db.partos = [];
+            if (!Array.isArray(db.destetados)) db.destetados = [];
+            if (!Array.isArray(db.bajas)) db.bajas = [];
+            if (!Array.isArray(db.ventas)) db.ventas = [];
+            if (!Array.isArray(db.gastos)) db.gastos = [];
+            if (!Array.isArray(db.pozas)) db.pozas = db.cuyes;
+
+            const esSimulacion100Pozas = db.cuyes.length === 100 && db.cuyes.every((poza, index) =>
+                poza.codigo === 'PZ-' + String(index + 1).padStart(3, '0')
+            );
+
+            if (esSimulacion100Pozas) {
+                db.cuyes.forEach(poza => { poza.etapa = 'Reproductor'; });
+                db.pozas = db.cuyes;
+                db.partos = [];
+                db.destetados = [];
+                db.bajas = [];
+                db.ventas = [];
+                db.gastos = [];
+                localStorage.setItem('sisgranja_cuy_db', JSON.stringify(db));
+            }
+        }
+
+        function guardarBD(mensaje = "Datos guardados correctamente", tipo = 'success') {
+            if (db.cuyes && !db.pozas) db.pozas = db.cuyes;
+            if (db.pozas && !db.cuyes) db.cuyes = db.pozas;
+
+            db.ventas = Array.isArray(db.ventas) ? db.ventas.map(v => ({
+                ...v,
+                cantidad: Number(v.cantidad || 0),
+                monto: Number(parseFloat(v.monto || 0).toFixed(2)),
+                cliente: String(v.cliente || '').trim()
+            })) : [];
+
+            localStorage.setItem('sisgranja_cuy_db', JSON.stringify(db));
+            renderizarTodo();
+            if (mensaje) mostrarToast(mensaje, tipo);
+        }
+
+        function mostrarToast(mensaje, tipo = 'success') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `px-4 py-3 rounded-xl shadow-lg text-white text-xs font-semibold pointer-events-auto transition transform translate-y-2 opacity-0 flex items-center gap-2 ${tipo === 'success' ? 'bg-emerald-800' : 'bg-rose-700'}`;
+            toast.innerHTML = `<i class="ph ${tipo === 'success' ? 'ph-check-circle' : 'ph-warning'} text-base"></i> ${mensaje}`;
+            container.appendChild(toast);
+            setTimeout(() => { toast.classList.remove('translate-y-2', 'opacity-0'); }, 50);
+            setTimeout(() => {
+                toast.classList.add('translate-y-2', 'opacity-0');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        function switchView(viewName) {
+            document.querySelectorAll('.view-section').forEach(el => el.classList.add('hidden'));
+            document.getElementById('view-' + viewName).classList.remove('hidden');
+
+            document.querySelectorAll('aside nav button').forEach(btn => {
+                btn.classList.remove('bg-emerald-900', 'text-white', 'shadow-sm');
+                btn.classList.add('hover:bg-emerald-900/60', 'text-stone-300');
+            });
+            const activeBtn = document.getElementById('nav-' + viewName);
+            if (activeBtn) {
+                activeBtn.classList.remove('hover:bg-emerald-900/60', 'text-stone-300');
+                activeBtn.classList.add('bg-emerald-900', 'text-white', 'shadow-sm');
+            }
+
+            const titles = {
+                dashboard: 'Unidad Pecuaria Cuyícola - Dashboard General',
+                cuyes: 'Gestión de Pozas y Etapas Zootécnicas',
+                partos: 'Registro de Partos en Granja',
+                destetados: 'Control de Destetados (Separados por Sexo)',
+                bajas: 'Mortalidad y Bajas Sanitarias',
+                ventas: 'Ventas de Cuyes e Ingresos',
+                gastos: 'Gastos Operativos'
+            };
+            document.getElementById('view-title').innerText = titles[viewName] || 'SisGranja';
+            
+            if (viewName === 'dashboard') {
+                setTimeout(actualizarGraficos, 50);
+            }
+        }
+
+        function sembrarDatosIniciales() {
+            if (db.cuyes.length > 0 && !confirm("¿Desea recargar la simulación estándar de 100 pozas? Se sobrescribirán los datos actuales.")) return;
+            db.cuyes = [];
+            for (let i = 1; i <= 100; i++) {
+                db.cuyes.push({
+                    codigo: 'PZ-' + String(i).padStart(3, '0'),
+                    etapa: 'Reproductor',
+                    genero: i % 2 === 0 ? 'Hembra' : 'Macho',
+                    poza: i <= 50 ? 'Galpón A' : 'Galpón B'
+                });
+            }
+            db.pozas = db.cuyes;
+            db.partos = [];
+            db.destetados = [];
+            db.bajas = [];
+            db.ventas = [];
+            db.gastos = [];
+            guardarBD();
+            mostrarToast("100 pozas reproductoras cargadas: 700 cuyes, sin destetados ni cuyes para venta.");
+        }
+
+        // Formularios
+        function guardarCuy(e) {
+            e.preventDefault();
+            db.cuyes.push({
+                codigo: document.getElementById('cuy-codigo').value,
+                etapa: document.getElementById('cuy-etapa').value,
+                genero: document.getElementById('cuy-genero').value,
+                poza: document.getElementById('cuy-poza').value
+            });
+            document.getElementById('cuy-codigo').value = '';
+            guardarBD();
+        }
+
+        function guardarParto(e) {
+            e.preventDefault();
+            db.partos.unshift({
+                fecha: new Date().toISOString().split('T')[0],
+                poza: document.getElementById('parto-poza').value,
+                vivas: parseInt(document.getElementById('parto-vivas').value),
+                muertas: parseInt(document.getElementById('parto-muertas').value)
+            });
+            document.getElementById('parto-poza').value = '';
+            document.getElementById('parto-vivas').value = '';
+            document.getElementById('parto-muertas').value = '0';
+            guardarBD();
+        }
+
+        function guardarDestete(e) {
+            e.preventDefault();
+            db.destetados.unshift({
+                fecha: new Date().toISOString().split('T')[0],
+                poza: document.getElementById('destete-poza').value,
+                machos: parseInt(document.getElementById('destete-machos').value),
+                hembras: parseInt(document.getElementById('destete-hembras').value)
+            });
+            document.getElementById('destete-poza').value = '';
+            document.getElementById('destete-machos').value = '0';
+            document.getElementById('destete-hembras').value = '0';
+            guardarBD();
+        }
+
+        function guardarBaja(e) {
+            e.preventDefault();
+            db.bajas.unshift({
+                fecha: new Date().toISOString().split('T')[0],
+                identificador: document.getElementById('baja-identificador').value,
+                cantidad: parseInt(document.getElementById('baja-cantidad').value),
+                motivo: document.getElementById('baja-motivo').value
+            });
+            document.getElementById('baja-identificador').value = '';
+            document.getElementById('baja-cantidad').value = '1';
+            document.getElementById('baja-motivo').value = '';
+            guardarBD();
+        }
+
+        function guardarVenta(e) {
+            e.preventDefault();
+
+            const categoria = document.getElementById('venta-categoria').value;
+            const cantidad = Number.parseInt(document.getElementById('venta-cantidad').value, 10) || 0;
+            const montoInput = document.getElementById('venta-monto').value;
+            const monto = Number(montoInput);
+            const cliente = document.getElementById('venta-cliente').value.trim();
+
+            if (!Number.isFinite(monto) || monto <= 0) {
+                mostrarToast('Ingresa un precio unitario válido para la venta', 'error');
+                return;
+            }
+
+            db.ventas.unshift({
+                fecha: new Date().toISOString().split('T')[0],
+                categoria: categoria,
+                cantidad: cantidad,
+                monto: Number(monto),
+                cliente: cliente
+            });
+
+            document.getElementById('venta-cantidad').value = '';
+            document.getElementById('venta-monto').value = '';
+            document.getElementById('venta-cliente').value = '';
+            guardarBD("Venta registrada por categoría con éxito");
+        }
+
+        function guardarGasto(e) {
+            e.preventDefault();
+            db.gastos.unshift({
+                fecha: new Date().toISOString().split('T')[0],
+                concepto: document.getElementById('gasto-concepto').value,
+                monto: parseFloat(document.getElementById('gasto-monto').value),
+                categoria: document.getElementById('gasto-categoria').value
+            });
+            document.getElementById('gasto-concepto').value = '';
+            document.getElementById('gasto-monto').value = '';
+            guardarBD();
+        }
+
+        function eliminarItem(tipo, index) {
+            if (confirm("¿Está seguro de eliminar este registro permanentemente?")) {
+                db[tipo].splice(index, 1);
+                guardarBD("Registro eliminado", "error");
+            }
+        }
+
+        function filtrarTabla(tipo) {
+            const query = document.getElementById('search-' + tipo).value.toLowerCase();
+            const tbody = document.getElementById('tabla-' + tipo);
+            const filas = tbody.getElementsByTagName('tr');
+            for (let i = 0; i < filas.length; i++) {
+                const textoFila = filas[i].textContent.toLowerCase();
+                filas[i].style.display = textoFila.includes(query) ? '' : 'none';
+            }
+        }
+
+        // Renderizado general
+        function renderizarTodo() {
+            // Badges en Sidebar
+            document.getElementById('badge-pozas').innerText = db.cuyes.length;
+            document.getElementById('badge-partos').innerText = db.partos.length;
+            document.getElementById('badge-destetados').innerText = db.destetados.length;
+            document.getElementById('badge-bajas').innerText = db.bajas.length;
+            document.getElementById('badge-ventas').innerText = db.ventas.length;
+            document.getElementById('badge-gastos').innerText = db.gastos.length;
+
+            // Actualizar datalist de pozas para autocompletar
+            const datalist = document.getElementById('lista-pozas');
+            datalist.innerHTML = db.cuyes.map(c => `<option value="${c.codigo || c.id}">`).join('');
+
+            // KPIs
+            const totalPozas = db.cuyes.length;
+            let totalCriasVivasPartos = db.partos.reduce((acc, p) => acc + (p.vivas || 0), 0);
+            let totalBajasCount = db.bajas.reduce((acc, b) => acc + (b.cantidad || 0), 0);
+            
+            // --- 1. CÁLCULO DE CUYES DESTETADOS (Hembras y Machos) ---
+            const listaDestetados = db.destetados || [];
+            let totalDestetados = 0;
+            let hembrasDestetadas = 0;
+            let machosDestetados = 0;
+
+            listaDestetados.forEach(item => {
+                // Compatible con formato lote { machos, hembras } y formato individual { cantidad, sexo }
+                if (item.machos !== undefined || item.hembras !== undefined) {
+                    let m = parseInt(item.machos || 0);
+                    let h = parseInt(item.hembras || 0);
+                    machosDestetados += m;
+                    hembrasDestetadas += h;
+                    totalDestetados += (m + h);
+                } else {
+                    let cant = parseInt(item.cantidad || 0);
+                    totalDestetados += cant;
+                    let sexo = (item.sexo || '').toLowerCase();
+                    if (sexo.includes('hembra') || sexo === 'h') {
+                        hembrasDestetadas += cant;
+                    } else if (sexo.includes('macho') || sexo === 'm') {
+                        machosDestetados += cant;
+                    }
+                }
+            });
+
+            // Inyectar en las tarjetas del DOM
+            const elDestetados = document.getElementById('kpi-destetados');
+            const elDestetadosSub = document.getElementById('kpi-destetados-sub');
+            if (elDestetados) elDestetados.innerText = totalDestetados;
+            if (elDestetadosSub) elDestetadosSub.innerText = `${hembrasDestetadas} hembras, ${machosDestetados} machos`;
+
+
+            const totalHembras = totalPozas * 6;
+            const totalMachos = totalPozas;
+            let poblacionTotal = totalHembras + totalMachos + totalCriasVivasPartos - totalBajasCount;
+            if (poblacionTotal < 0) poblacionTotal = 0;
+
+            let totalVentas = calcularTotalVentas();
+            let totalCuyesVendidos = db.ventas.reduce((acc, v) => acc + Number(v.cantidad || 0), 0);
+            const ventasPorCategoria = db.ventas.reduce((totales, venta) => {
+                const categoria = (venta.categoria || '').toLowerCase();
+                const cantidad = Number(venta.cantidad || 0);
+
+                if (categoria.includes('gazapo')) totales.gazapos += cantidad;
+                else if (categoria.includes('reproductor')) totales.reproductores += cantidad;
+                else if (categoria.includes('abono') || categoria.includes('subproducto')) totales.abono += cantidad;
+                else if (categoria.includes('comercial') || categoria.includes('engorde')) totales.comercial += cantidad;
+                else totales.sinCategoria += cantidad;
+
+                return totales;
+            }, { comercial: 0, gazapos: 0, reproductores: 0, abono: 0, sinCategoria: 0 });
+            let totalGastos = db.gastos.reduce((acc, g) => acc + (g.monto || 0), 0);
+            let utilidadNeta = totalVentas - totalGastos;
+            let tasaMortalidad = poblacionTotal > 0 ? ((totalBajasCount / (poblacionTotal + totalBajasCount)) * 100).toFixed(1) : '0.0';
+
+            // Actualización segura de textos KPI en el DOM
+            const elKpiPozas = document.getElementById('kpi-pozas');
+            if (elKpiPozas) elKpiPozas.innerText = totalPozas;
+
+            const elKpiPoblacion = document.getElementById('kpi-poblacion');
+            if (elKpiPoblacion) elKpiPoblacion.innerText = poblacionTotal;
+
+            const elKpiPoblacionSub = document.getElementById('kpi-poblacion-sub');
+            if (elKpiPoblacionSub) elKpiPoblacionSub.innerText = `${totalHembras} hembras, ${totalMachos} machos, ${totalCriasVivasPartos} crías`;
+
+            const elKpiIngresos = document.getElementById('kpi-ingresos');
+            if (elKpiIngresos) elKpiIngresos.innerText = `S/ ${totalVentas.toFixed(2)}`;
+
+            const elKpiVentasSub = document.getElementById('kpi-ventas-sub');
+            if (elKpiVentasSub) elKpiVentasSub.innerText = `${db.ventas.length} registros de ventas e ingresos`;
+
+            const elKpiEngordeSub = document.getElementById('kpi-engorde-sub');
+            const elCantidadVendida = document.getElementById('kpi-engorde');
+            if (elCantidadVendida) elCantidadVendida.innerText = totalCuyesVendidos;
+            if (elKpiEngordeSub) {
+                const desgloseVentas = `Vendidos: Comercial ${ventasPorCategoria.comercial} · Gazapos ${ventasPorCategoria.gazapos} · Reproductores ${ventasPorCategoria.reproductores} · Abono ${ventasPorCategoria.abono}`;
+                elKpiEngordeSub.innerText = ventasPorCategoria.sinCategoria > 0
+                    ? `${desgloseVentas} · Otros/sin categoría ${ventasPorCategoria.sinCategoria}`
+                    : desgloseVentas;
+            }
+
+            const elKpiGastos = document.getElementById('kpi-gastos');
+            if (elKpiGastos) elKpiGastos.innerText = `S/ ${totalGastos.toFixed(2)}`;
+
+            const elKpiGastosSub = document.getElementById('kpi-gastos-sub');
+            if (elKpiGastosSub) elKpiGastosSub.innerText = `${db.gastos.length} registros de egresos`;
+
+            const elKpiBajas = document.getElementById('kpi-bajas');
+            if (elKpiBajas) elKpiBajas.innerText = totalBajasCount;
+
+            const elKpiBajasSub = document.getElementById('kpi-bajas-sub');
+            if (elKpiBajasSub) elKpiBajasSub.innerText = `Tasa de mortalidad: ${tasaMortalidad}%`;
+
+            const utilEl = document.getElementById('kpi-utilidad');
+            utilEl.innerText = `S/ ${utilidadNeta.toFixed(2)}`;
+            utilEl.className = `text-3xl font-extrabold mt-1 ${utilidadNeta >= 0 ? 'text-emerald-600' : 'text-rose-600'}`;
+
+            // Renderizar Tablas principales
+            renderTabla('tabla-cuyes', db.cuyes, ['codigo', 'etapa', 'genero', 'poza'], 'cuyes');
+            renderTabla('tabla-partos', db.partos, ['fecha', 'poza', 'vivas', 'muertas'], 'partos');
+            renderTabla('tabla-destetados', db.destetados, ['fecha', 'poza', 'machos', 'hembras'], 'destetados');
+            renderTabla('tabla-bajas', db.bajas, ['fecha', 'identificador', 'cantidad', 'motivo'], 'bajas');
+            renderTabla('tabla-ventas', db.ventas, ['fecha', 'categoria', 'cantidad', 'monto', 'cliente'], 'ventas');
+            renderTabla('tabla-gastos', db.gastos, ['fecha', 'concepto', 'categoria', 'monto'], 'gastos');
+
+            // Dashboard tablas reducidas
+            document.getElementById('dash-tabla-partos').innerHTML = db.partos.slice(0, 5).map(p => `
+                <tr class="border-b border-stone-100">
+                    <td class="p-3">${p.fecha}</td>
+                    <td class="p-3 font-semibold">${p.poza}</td>
+                    <td class="p-3"><span class="bg-emerald-100 text-emerald-800 text-xs px-2 py-0.5 rounded-full font-bold">+${p.vivas} vivas</span></td>
+                </tr>
+            `).join('') || `<tr><td colspan="3" class="p-4 text-center text-stone-400">No hay partos registrados.</td></tr>`;
+
+            document.getElementById('dash-tabla-destetados').innerHTML = db.destetados.slice(0, 5).map(d => {
+                const m = d.machos !== undefined ? d.machos : (d.sexo === 'Macho' ? d.cantidad : 0);
+                const h = d.hembras !== undefined ? d.hembras : (d.sexo === 'Hembra' ? d.cantidad : 0);
+                return `
+                <tr class="border-b border-stone-100">
+                    <td class="p-3">${d.fecha}</td>
+                    <td class="p-3 font-semibold">${d.poza}</td>
+                    <td class="p-3"><span class="bg-indigo-100 text-indigo-800 text-xs px-2 py-0.5 rounded-full font-bold">${m}M / ${h}H</span></td>
+                </tr>`;
+            }).join('') || `<tr><td colspan="3" class="p-4 text-center text-stone-400">No hay destetes registrados.</td></tr>`;
+
+            actualizarGraficos(totalVentas, totalGastos);
+        }
+
+        function renderTabla(elementId, items, keys, tipo) {
+            const tbody = document.getElementById(elementId);
+            if (!items.length) {
+                tbody.innerHTML = `<tr><td colspan="${keys.length + 1}" class="p-6 text-center text-stone-400">No hay registros disponibles.</td></tr>`;
+                return;
+            }
+            tbody.innerHTML = items.map((item, idx) => `
+                <tr class="border-b border-stone-100 hover:bg-stone-50/50">
+                    ${keys.map(k => {
+                        let val = item[k] !== undefined ? item[k] : (k === 'codigo' ? item['id'] : '');
+                        if (k === 'monto') {
+                            const monto = tipo === 'ventas' ? Number(item.monto) * Number(item.cantidad || 0) : Number(val);
+                            val = 'S/ ' + monto.toFixed(2);
+                        }
+                        return `<td class="p-4">${val}</td>`;
+                    }).join('')}
+                    <td class="p-4">
+                        <button onclick="eliminarItem('${tipo}', ${idx})" class="text-rose-600 hover:text-rose-800 text-xs font-semibold px-2.5 py-1 rounded-lg border border-rose-200 bg-rose-50 transition">Eliminar</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        // Gráficos Chart.js
+        function actualizarGraficos(
+            totalVentas = calcularTotalVentas(),
+            totalGastos = db.gastos.reduce((total, g) => total + (g.monto || 0), 0)
+        ) {
+            let countRep = db.cuyes.filter(c => c.etapa === 'Reproductor').length;
+            let countRec = db.cuyes.filter(c => c.etapa === 'Recría').length;
+            let countEng = db.cuyes.filter(c => c.etapa === 'Engorde').length;
+            let totalVivas = db.partos.reduce((acc, p) => acc + (p.vivas || 0), 0);
+
+            const ctxPob = document.getElementById('chartPoblacion').getContext('2d');
+            if (chartPoblacionInstance) chartPoblacionInstance.destroy();
+            chartPoblacionInstance = new Chart(ctxPob, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Reproductores (Pozas)', 'Recría', 'Engorde', 'Crías Vivas'],
+                    datasets: [{
+                        data: [countRep, countRec, countEng, totalVivas],
+                        backgroundColor: ['#059669', '#3b82f6', '#d97706', '#ec4899'],
+                        borderWidth: 2,
+                        borderColor: '#ffffff'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } } }
+                }
+            });
+
+            let utilidad = totalVentas - totalGastos;
+
+            const ctxFin = document.getElementById('chartFinanzas').getContext('2d');
+            if (chartFinanzasInstance) chartFinanzasInstance.destroy();
+            chartFinanzasInstance = new Chart(ctxFin, {
+                type: 'bar',
+                data: {
+                    labels: ['Ingresos (Ventas)', 'Gastos Operativos', 'Utilidad Neta'],
+                    datasets: [{
+                        data: [totalVentas, totalGastos, utilidad],
+                        backgroundColor: ['#2563eb', '#e11d48', '#059669'],
+                        borderRadius: 8
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: { y: { beginAtZero: true } }
+                }
+            });
+        }
+
+        // Exportar Backup JSON y Excel CSV con BOM UTF-8
+        function exportarBackup() {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(db, null, 2));
+            const dlAnchor = document.createElement('a');
+            dlAnchor.setAttribute("href", dataStr);
+            dlAnchor.setAttribute("download", `SisGranja_Backup_${new Date().toISOString().split('T')[0]}.json`);
+            document.body.appendChild(dlAnchor);
+            dlAnchor.click();
+            dlAnchor.remove();
+            mostrarToast("Backup exportado correctamente");
+        }
+
+        function restaurarBackup(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    db = JSON.parse(e.target.result);
+                    guardarBD("Base de datos restaurada con éxito");
+                } catch (err) {
+                    mostrarToast("Error al procesar el archivo JSON", "error");
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        function exportarExcel() {
+            let csvContent = "\uFEFF=== SISGRANJA - REPORTE ZOOTÉCNICO Y FINANCIERO ===\n\n";
+            
+            csvContent += "--- INVENTARIO DE POZAS Y ANIMALES ---\nCodigo,Etapa,Genero,Galpon\n";
+            db.cuyes.forEach(c => { csvContent += `"${c.codigo || c.id}","${c.etapa}","${c.genero}","${c.poza}"\n`; });
+            
+            csvContent += "\n--- REGISTRO DE VENTAS E INGRESOS ---\nFecha,Categoria,Cantidad,Total Venta (S/),Cliente\n";
+            db.ventas.forEach(v => { csvContent += `"${v.fecha}","${v.categoria || 'Comercial'}","${v.cantidad}","${Number(v.monto) * Number(v.cantidad || 0)}","${v.cliente}"\n`; });
+
+            csvContent += "\n--- GASTOS OPERATIVOS ---\nFecha,Concepto,Categoria,Monto (S/)\n";
+            db.gastos.forEach(g => { csvContent += `"${g.fecha}","${g.concepto}","${g.categoria}","${g.monto}"\n`; });
+
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.setAttribute("href", url);
+            link.setAttribute("download", `SisGranja_Reporte_${new Date().toISOString().split('T')[0]}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            mostrarToast("Reporte Excel exportado con éxito");
+        }
+
+        // Inicialización
+        cargarDatos();
+        renderizarTodo();
+    </script>
+    <link rel="manifest" href="./manifest.json">
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js')
+                    .then(reg => console.log('Service Worker registrado con éxito:', reg.scope))
+                    .catch(err => console.log('Error al registrar Service Worker:', err));
+            });
+        }
+    </script>
+</body>
+</html>
