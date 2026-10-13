@@ -211,7 +211,12 @@
             <!-- 2. GESTIÓN DE POZAS Y ETAPAS -->
             <div id="view-cuyes" class="space-y-6 view-section hidden">
                 <div class="bg-white p-6 rounded-2xl border border-stone-200 shadow-xs">
-                    <h3 class="text-lg font-bold text-stone-800 mb-4">Registrar Nuevo Animal / Poza</h3>
+                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
+                        <h3 class="text-lg font-bold text-stone-800">Registrar Nuevo Animal / Poza</h3>
+                        <button type="button" onclick="generar100PozasAutomaticas()" class="bg-emerald-700 text-white font-bold py-2.5 px-5 rounded-xl text-sm hover:bg-emerald-800 transition shadow-sm">
+                            ⚡ Generar 100 Pozas Automáticas
+                        </button>
+                    </div>
                     <form onsubmit="guardarCuy(event)" class="grid grid-cols-1 sm:grid-cols-4 gap-4">
                         <div>
                             <label class="block text-xs font-bold text-stone-600 mb-1">Código / Poza</label>
@@ -551,7 +556,8 @@
             if (!Array.isArray(db.pozas)) db.pozas = db.cuyes;
 
             const esSimulacion100Pozas = db.cuyes.length === 100 && db.cuyes.every((poza, index) =>
-                poza.codigo === 'PZ-' + String(index + 1).padStart(3, '0')
+                poza.codigo === 'PZ-' + String(index + 1).padStart(3, '0') &&
+                poza.genero === (index % 2 === 0 ? 'Macho' : 'Hembra')
             );
 
             if (esSimulacion100Pozas) {
@@ -644,6 +650,35 @@
             db.gastos = [];
             guardarBD();
             mostrarToast("100 pozas reproductoras cargadas: 700 cuyes, sin destetados ni cuyes para venta.");
+        }
+
+        function generar100PozasAutomaticas() {
+            const numerosExistentes = new Set(db.cuyes.map(poza => {
+                const codigo = String(poza.codigo || poza.id || '').trim().toUpperCase();
+                const coincidencia = codigo.match(/^(?:PZ[-\s]?|POZA\s*)0*(\d+)$/);
+                return coincidencia ? Number(coincidencia[1]) : null;
+            }).filter(Number.isInteger));
+            const nuevasPozas = [];
+
+            for (let numero = 1; numero <= 100; numero++) {
+                if (numerosExistentes.has(numero)) continue;
+
+                nuevasPozas.push({
+                    codigo: 'PZ-' + String(numero).padStart(3, '0'),
+                    etapa: 'Reproductor',
+                    genero: 'Hembra',
+                    poza: numero <= 50 ? 'Galpón A' : 'Galpón B'
+                });
+            }
+
+            if (nuevasPozas.length === 0) {
+                mostrarToast('Las 100 pozas ya están registradas.');
+                return;
+            }
+
+            db.cuyes.push(...nuevasPozas);
+            db.pozas = db.cuyes;
+            guardarBD(`${nuevasPozas.length} pozas reproductoras agregadas al inventario.`);
         }
 
         // Formularios
