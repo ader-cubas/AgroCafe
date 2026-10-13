@@ -43,6 +43,7 @@
         .temperature-ok { background: #e0f3e7; color: #176b4b; border-color: #b8dfc5; }
         .temperature-alert { background: #fff0d6; color: #92530c; border-color: #f1d5a4; }
         .temperature-danger { background: #fce2df; color: #9e433c; border-color: #f2cbc6; }
+        .temperature-cold { background: #dceefa; color: #22628c; border-color: #bfdff2; }
         @media print {
             body { display: block !important; height: auto !important; overflow: visible !important; background: #fff !important; }
             .app-sidebar, .app-topbar, .no-print, #toast-container { display: none !important; }
@@ -143,6 +144,9 @@
                 <button onclick="imprimirReporte()" class="bg-emerald-100 hover:bg-emerald-200 text-emerald-900 text-xs font-semibold px-3 py-2 rounded-lg border border-emerald-200 flex items-center gap-1.5 transition">
                     <i class="ph ph-file-text text-base"></i> Reporte
                 </button>
+                <button onclick="imprimirTodosLosQR()" class="bg-emerald-100 hover:bg-emerald-200 text-emerald-900 text-xs font-semibold px-3 py-2 rounded-lg border border-emerald-200 flex items-center gap-1.5 transition">
+                    <i class="ph ph-qr-code text-base"></i> Generar / Imprimir QR
+                </button>
                 <button onclick="exportarExcel()" class="bg-stone-100 hover:bg-stone-200 text-stone-700 text-xs font-semibold px-3 py-2 rounded-lg border border-stone-300 flex items-center gap-1.5 transition">
                     <i class="ph ph-file-xls text-emerald-600 text-base"></i> Excel / CSV
                 </button>
@@ -205,6 +209,23 @@
                     </div>
                 </div>
 
+                <section id="temperature-panel" class="surface bg-white p-5 sm:p-6 border border-stone-200" aria-labelledby="temperature-title">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                        <div>
+                            <h3 id="temperature-title" class="text-lg font-bold text-stone-800">Control de temperatura del galpón</h3>
+                            <p class="text-sm text-stone-500 mt-1">Confort ideal: 15 a 22 °C</p>
+                        </div>
+                        <div id="temperatura-valor" class="temperature-alert rounded-xl border px-5 py-3 text-3xl font-extrabold tabular-nums" aria-live="polite">--.- °C</div>
+                    </div>
+                    <form onsubmit="guardarTemperatura(event)" class="flex flex-wrap items-end gap-3 mt-4">
+                        <label class="flex-1 min-w-36 text-xs font-bold text-stone-600">Temperatura actual (°C)
+                            <input type="number" id="temperatura-actual" step="0.1" min="-10" max="60" required class="mt-1 w-full px-3 py-2 border rounded-xl text-base" placeholder="Ej. 21.5">
+                        </label>
+                        <button type="submit" class="bg-emerald-700 text-white font-bold px-5 rounded-xl">Guardar Temperatura</button>
+                    </form>
+                    <p id="temperatura-alerta" class="mt-4 rounded-xl border px-4 py-3 text-sm font-semibold" role="status" aria-live="polite">Registra una lectura para ver el estado y la recomendación técnica.</p>
+                </section>
+
                 <!-- Acciones Rápidas -->
                 <div class="bg-white p-6 rounded-2xl border border-stone-200 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-4">
                     <div>
@@ -246,24 +267,8 @@
                     </div>
                 </section>
 
-                <section class="grid grid-cols-1 xl:grid-cols-2 gap-4" aria-label="Control ambiental y proyecciones">
-                    <div id="temperature-panel" class="surface bg-white p-5 sm:p-6 border border-stone-200">
-                        <div class="flex items-start justify-between gap-4">
-                            <div>
-                                <h3 class="text-lg font-bold text-stone-800">Temperatura del galpón</h3>
-                                <p class="text-sm text-stone-500 mt-1">Rango recomendado: 18 a 24 °C</p>
-                            </div>
-                            <i class="ph ph-thermometer text-2xl text-emerald-700"></i>
-                        </div>
-                        <form onsubmit="guardarTemperatura(event)" class="flex flex-wrap items-end gap-3 mt-4">
-                            <label class="flex-1 min-w-36 text-xs font-bold text-stone-600">Lectura actual (°C)
-                                <input type="number" id="temperatura-actual" step="0.1" required class="mt-1 w-full px-3 py-2 border rounded-xl text-base" placeholder="Ej. 21.5">
-                            </label>
-                            <button type="submit" class="bg-emerald-700 text-white font-bold px-5 rounded-xl">Guardar lectura</button>
-                        </form>
-                        <p id="temperatura-alerta" class="mt-4 rounded-xl border px-4 py-3 text-sm font-semibold" role="status" aria-live="polite">Registra una lectura para ver el estado ambiental.</p>
-                    </div>
-                    <div class="surface bg-white p-5 sm:p-6 border border-stone-200">
+                <section class="surface bg-white p-5 sm:p-6 border border-stone-200" aria-label="Proyecciones">
+                    <div>
                         <div class="flex items-start justify-between gap-4">
                             <div>
                                 <h3 class="text-lg font-bold text-stone-800">Proyecciones y avisos</h3>
@@ -915,6 +920,38 @@
             setTimeout(() => ventana.print(), 250);
         }
 
+        async function imprimirTodosLosQR() {
+            if (typeof QRCode === 'undefined') {
+                mostrarToast('No se pudo cargar el generador QR. Verifica la conexión e inténtalo de nuevo.', 'error');
+                return;
+            }
+            const ventana = window.open('', '_blank');
+            if (!ventana) {
+                mostrarToast('Permite las ventanas emergentes para imprimir los QR', 'error');
+                return;
+            }
+            ventana.document.write('<!doctype html><html lang="es"><meta charset="utf-8"><title>Etiquetas QR SisGranja</title><p style="font:16px Arial;padding:24px">Preparando 100 etiquetas QR...</p></html>');
+            const pozas = Array.from({ length: 100 }, (_, indice) => {
+                const codigo = `PZ-${String(indice + 1).padStart(3, '0')}`;
+                const registro = db.cuyes.find(poza => String(poza.codigo || poza.id || '').toUpperCase() === codigo);
+                return { codigo, etapa: registro?.etapa || 'Sin asignar', ubicacion: registro?.poza || 'Ubicación sin registrar' };
+            });
+            try {
+                const etiquetas = await Promise.all(pozas.map(async poza => {
+                    const imagen = await QRCode.toDataURL(`SISGRANJA|${poza.codigo}`, { width: 160, margin: 1, errorCorrectionLevel: 'H' });
+                    return `<article><img src="${imagen}" alt="QR ${poza.codigo}"><strong>${poza.codigo}</strong><span>${escaparHTML(poza.ubicacion)}</span><small>${escaparHTML(poza.etapa)}</small></article>`;
+                }));
+                ventana.document.open();
+                ventana.document.write(`<!doctype html><html lang="es"><meta charset="utf-8"><title>Etiquetas QR SisGranja</title><style>*{box-sizing:border-box}body{font:11px Arial,sans-serif;color:#18352b;margin:10mm}.labels{display:grid;grid-template-columns:repeat(4,1fr);gap:5mm}article{border:1px solid #bccdc0;border-radius:6px;padding:4mm;text-align:center;display:flex;flex-direction:column;align-items:center;break-inside:avoid}img{width:32mm;height:32mm}strong{font-size:14px;margin:2mm 0}span,small{max-width:100%;overflow-wrap:anywhere}@page{size:A4;margin:10mm}</style><h1>SisGranja · Etiquetas QR</h1><main class="labels">${etiquetas.join('')}</main></html>`);
+                ventana.document.close();
+                ventana.onload = () => ventana.print();
+            } catch (error) {
+                ventana.close();
+                console.error('Error al generar etiquetas QR:', error);
+                mostrarToast('No se pudieron preparar todas las etiquetas QR', 'error');
+            }
+        }
+
         function cargarDatos() {
             const saved = localStorage.getItem('sisgranja_cuy_db');
             if (saved) {
@@ -1200,19 +1237,27 @@
         function actualizarTemperatura() {
             const alerta = document.getElementById('temperatura-alerta');
             const panel = document.getElementById('temperature-panel');
+            const valorEl = document.getElementById('temperatura-valor');
             const lectura = db.temperatura;
             if (!lectura || !Number.isFinite(Number(lectura.valor))) {
                 alerta.className = 'mt-4 rounded-xl border px-4 py-3 text-sm font-semibold temperature-alert';
-                alerta.textContent = 'Registra una lectura para ver el estado ambiental.';
+                alerta.textContent = 'Registra una lectura para ver el estado y la recomendación técnica.';
+                valorEl.className = 'temperature-alert rounded-xl border px-5 py-3 text-3xl font-extrabold tabular-nums';
+                valorEl.textContent = '--.- °C';
                 return;
             }
             document.getElementById('temperatura-actual').value = lectura.valor;
             const valor = Number(lectura.valor);
-            const dentroRango = valor >= 18 && valor <= 24;
-            const riesgoAlto = valor < 15 || valor > 28;
-            alerta.className = `mt-4 rounded-xl border px-4 py-3 text-sm font-semibold ${dentroRango ? 'temperature-ok' : riesgoAlto ? 'temperature-danger' : 'temperature-alert'}`;
-            alerta.textContent = `${dentroRango ? 'En rango' : riesgoAlto ? 'Alerta sanitaria' : 'Fuera del rango recomendado'}: ${valor.toFixed(1)} °C · lectura ${new Date(lectura.fecha).toLocaleString('es-PE')}`;
-            panel.setAttribute('data-temperatura', dentroRango ? 'normal' : riesgoAlto ? 'critica' : 'precaucion');
+            let estado;
+            if (valor < 15) estado = { clase: 'temperature-cold', texto: 'Alerta por frío / riesgo de neumonía', recomendacion: 'Evita corrientes de aire, conserva la cama seca y abrigada, y vigila signos respiratorios.' };
+            else if (valor <= 22) estado = { clase: 'temperature-ok', texto: 'Zona de confort ideal', recomendacion: 'Mantén la ventilación estable y continúa con el monitoreo rutinario.' };
+            else if (valor <= 25) estado = { clase: 'temperature-alert', texto: 'Precaución por calor leve', recomendacion: 'Aumenta gradualmente la ventilación y asegura agua limpia y fresca disponible.' };
+            else estado = { clase: 'temperature-danger', texto: 'Alerta crítica de golpe de calor', recomendacion: 'Refuerza ventilación y sombra de inmediato, ofrece agua fresca y revisa a los animales por estrés térmico.' };
+            alerta.className = `mt-4 rounded-xl border px-4 py-3 text-sm font-semibold ${estado.clase}`;
+            alerta.textContent = `${estado.texto}: ${valor.toFixed(1)} °C. ${estado.recomendacion} Lectura ${new Date(lectura.fecha).toLocaleString('es-PE')}.`;
+            valorEl.className = `${estado.clase} rounded-xl border px-5 py-3 text-3xl font-extrabold tabular-nums`;
+            valorEl.textContent = `${valor.toFixed(1)} °C`;
+            panel.setAttribute('data-temperatura', estado.clase.replace('temperature-', ''));
         }
 
         function actualizarProyecciones() {
@@ -1458,6 +1503,7 @@
             totalVentas = calcularTotalVentas(),
             totalGastos = db.gastos.reduce((total, g) => total + (g.monto || 0), 0)
         ) {
+            if (typeof Chart === 'undefined') return;
             let countRep = db.cuyes.filter(c => c.etapa === 'Reproductor').length;
             let countRec = db.cuyes.filter(c => c.etapa === 'Recría').length;
             let countEng = db.cuyes.filter(c => c.etapa === 'Engorde').length;
