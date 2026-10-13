@@ -12,6 +12,7 @@
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
     <!-- Chart.js para gráficos -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.4/build/qrcode.min.js"></script>
     <style>
         :root {
             color-scheme: light;
@@ -31,12 +32,26 @@
         .pit-map { display: grid; grid-template-columns: repeat(10, minmax(0, 1fr)); gap: 8px; }
         .pit-cell { min-height: 50px; border: 1px solid transparent; border-radius: 10px; font-size: 12px; font-weight: 800; transition: transform 120ms ease, box-shadow 120ms ease; }
         .pit-cell:hover { transform: translateY(-2px); box-shadow: 0 4px 10px rgb(24 53 43 / 12%); }
+        .pit-cell.pit-selected { outline: 3px solid #176b4b; outline-offset: 2px; }
         .pit-empty { background: #edf1ee; color: #77827b; border-color: #dfe6e0; }
         .pit-reproductor { background: #d9f2e4; color: #176b4b; border-color: #b9e4ca; }
         .pit-recria { background: #dceefa; color: #22628c; border-color: #bfdff2; }
         .pit-engorde { background: #fff0d6; color: #92530c; border-color: #f5dfb8; }
         .pit-cria { background: #fce2df; color: #9e433c; border-color: #f2cbc6; }
+        .pit-cuarentena { background: #fce8d5; color: #8f4814; border-color: #f2d0ae; }
         .pit-otro { background: #e9e7f7; color: #514891; border-color: #d8d4ef; }
+        .temperature-ok { background: #e0f3e7; color: #176b4b; border-color: #b8dfc5; }
+        .temperature-alert { background: #fff0d6; color: #92530c; border-color: #f1d5a4; }
+        .temperature-danger { background: #fce2df; color: #9e433c; border-color: #f2cbc6; }
+        @media print {
+            body { display: block !important; height: auto !important; overflow: visible !important; background: #fff !important; }
+            .app-sidebar, .app-topbar, .no-print, #toast-container { display: none !important; }
+            .app-main, .app-content { display: block !important; height: auto !important; overflow: visible !important; padding: 0 !important; }
+            .view-section { display: block !important; break-after: page; }
+            .view-section.hidden { display: none !important; }
+            button { display: none !important; }
+            .bg-white { box-shadow: none !important; }
+        }
         @media (max-width: 767px) {
             body { height: 100dvh; min-height: 100dvh; overflow: hidden; }
             .app-sidebar { flex: none; }
@@ -99,6 +114,10 @@
                     <i class="ph ph-receipt text-lg"></i><span>Gastos Operativos</span>
                     <span id="badge-gastos" class="ml-auto bg-emerald-800 text-emerald-200 text-xs px-2 py-0.5 rounded-full">0</span>
                 </button>
+                <button onclick="switchView('salud')" id="nav-salud" class="w-full flex items-center space-x-3 px-4 py-2.5 rounded-xl font-medium text-sm transition hover:bg-emerald-900/60 text-stone-300">
+                    <i class="ph ph-first-aid-kit text-lg"></i><span>Kardex Sanitario</span>
+                    <span id="badge-salud" class="ml-auto bg-emerald-800 text-emerald-200 text-xs px-2 py-0.5 rounded-full">0</span>
+                </button>
             </nav>
         </div>
         <div class="p-4 border-t border-emerald-900/50 text-xs text-stone-400">
@@ -120,6 +139,9 @@
                 </span>
                 <button onclick="window.print()" class="bg-stone-100 hover:bg-stone-200 text-stone-700 text-xs font-semibold px-3 py-2 rounded-lg border border-stone-300 flex items-center gap-1.5 transition">
                     <i class="ph ph-printer text-stone-600 text-base"></i> Imprimir
+                </button>
+                <button onclick="imprimirReporte()" class="bg-emerald-100 hover:bg-emerald-200 text-emerald-900 text-xs font-semibold px-3 py-2 rounded-lg border border-emerald-200 flex items-center gap-1.5 transition">
+                    <i class="ph ph-file-text text-base"></i> Reporte
                 </button>
                 <button onclick="exportarExcel()" class="bg-stone-100 hover:bg-stone-200 text-stone-700 text-xs font-semibold px-3 py-2 rounded-lg border border-stone-300 flex items-center gap-1.5 transition">
                     <i class="ph ph-file-xls text-emerald-600 text-base"></i> Excel / CSV
@@ -207,10 +229,59 @@
                             <span class="flex items-center gap-2"><i class="w-3 h-3 rounded bg-sky-200"></i>Recría</span>
                             <span class="flex items-center gap-2"><i class="w-3 h-3 rounded bg-amber-200"></i>Engorde</span>
                             <span class="flex items-center gap-2"><i class="w-3 h-3 rounded bg-rose-200"></i>Cría</span>
+                            <span class="flex items-center gap-2"><i class="w-3 h-3 rounded" style="background:#fce8d5"></i>Cuarentena</span>
                             <span class="flex items-center gap-2"><i class="w-3 h-3 rounded bg-stone-200"></i>Vacía</span>
                         </div>
                     </div>
                     <div id="pit-map" class="pit-map" aria-label="Mapa de estado de las primeras 100 pozas"></div>
+                    <div class="mt-5 grid grid-cols-1 sm:grid-cols-[minmax(0,1fr)_repeat(5,auto)] gap-2 items-end no-print">
+                        <label class="text-xs font-bold text-stone-600">Acceso rápido por poza
+                            <select id="quick-poza" class="mt-1 w-full px-3 py-2 border rounded-xl text-sm"><option value="">Toca una casilla o selecciona una poza</option></select>
+                        </label>
+                        <button type="button" onclick="abrirRegistroRapido('partos')" class="rounded-xl bg-emerald-700 px-4 text-sm font-bold text-white">Parto</button>
+                        <button type="button" onclick="abrirRegistroRapido('destetados')" class="rounded-xl bg-sky-700 px-4 text-sm font-bold text-white">Destete</button>
+                        <button type="button" onclick="abrirRegistroRapido('bajas')" class="rounded-xl bg-rose-700 px-4 text-sm font-bold text-white">Baja</button>
+                        <button type="button" onclick="abrirRegistroRapido('salud')" class="rounded-xl bg-amber-700 px-4 text-sm font-bold text-white">Sanidad</button>
+                        <button type="button" onclick="mostrarCodigoQR(document.getElementById('quick-poza').value)" class="rounded-xl border border-stone-300 px-4 text-sm font-bold text-stone-800">QR</button>
+                    </div>
+                </section>
+
+                <section class="grid grid-cols-1 xl:grid-cols-2 gap-4" aria-label="Control ambiental y proyecciones">
+                    <div id="temperature-panel" class="surface bg-white p-5 sm:p-6 border border-stone-200">
+                        <div class="flex items-start justify-between gap-4">
+                            <div>
+                                <h3 class="text-lg font-bold text-stone-800">Temperatura del galpón</h3>
+                                <p class="text-sm text-stone-500 mt-1">Rango recomendado: 18 a 24 °C</p>
+                            </div>
+                            <i class="ph ph-thermometer text-2xl text-emerald-700"></i>
+                        </div>
+                        <form onsubmit="guardarTemperatura(event)" class="flex flex-wrap items-end gap-3 mt-4">
+                            <label class="flex-1 min-w-36 text-xs font-bold text-stone-600">Lectura actual (°C)
+                                <input type="number" id="temperatura-actual" step="0.1" required class="mt-1 w-full px-3 py-2 border rounded-xl text-base" placeholder="Ej. 21.5">
+                            </label>
+                            <button type="submit" class="bg-emerald-700 text-white font-bold px-5 rounded-xl">Guardar lectura</button>
+                        </form>
+                        <p id="temperatura-alerta" class="mt-4 rounded-xl border px-4 py-3 text-sm font-semibold" role="status" aria-live="polite">Registra una lectura para ver el estado ambiental.</p>
+                    </div>
+                    <div class="surface bg-white p-5 sm:p-6 border border-stone-200">
+                        <div class="flex items-start justify-between gap-4">
+                            <div>
+                                <h3 class="text-lg font-bold text-stone-800">Proyecciones y avisos</h3>
+                                <p class="text-sm text-stone-500 mt-1">Parto estimado a 68 días; destete a 21 días y venta a 90 días del nacimiento.</p>
+                            </div>
+                            <i class="ph ph-calendar-check text-2xl text-emerald-700"></i>
+                        </div>
+                        <form onsubmit="registrarEmpadre(event)" class="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-4">
+                            <label class="text-xs font-bold text-stone-600">Poza
+                                <select id="empadre-poza" required class="mt-1 w-full px-3 py-2 border rounded-xl text-sm"><option value="">Selecciona una poza</option></select>
+                            </label>
+                            <label class="text-xs font-bold text-stone-600">Fecha de empadre
+                                <input type="date" id="empadre-fecha" required class="mt-1 w-full px-3 py-2 border rounded-xl text-sm">
+                            </label>
+                            <button type="submit" class="self-end bg-emerald-700 text-white font-bold px-4 rounded-xl">Registrar empadre</button>
+                        </form>
+                        <div id="proyecciones-lista" class="mt-4 space-y-2" aria-live="polite"></div>
+                    </div>
                 </section>
 
                 <!-- Gráficos Interactivos -->
@@ -231,6 +302,15 @@
                         </div>
                         <div class="h-64 flex items-center justify-center relative">
                             <canvas id="chartFinanzas"></canvas>
+                        </div>
+                    </div>
+                    <div class="bg-white p-6 rounded-2xl border border-stone-200 shadow-xs flex flex-col justify-between">
+                        <div class="flex items-center justify-between mb-4">
+                            <h4 class="font-bold text-stone-800 text-base">Tasa de mortalidad (%)</h4>
+                            <i class="ph ph-heartbeat text-rose-600 text-xl"></i>
+                        </div>
+                        <div class="h-64 flex items-center justify-center relative">
+                            <canvas id="chartMortalidad"></canvas>
                         </div>
                     </div>
                 </div>
@@ -297,6 +377,7 @@
                                 <option value="Recría">Recría</option>
                                 <option value="Engorde">Engorde (Para Venta)</option>
                                 <option value="Cría">Cría Lactante</option>
+                                <option value="Cuarentena">Cuarentena Sanitaria</option>
                             </select>
                         </div>
                         <div>
@@ -319,7 +400,10 @@
                 <div class="bg-white p-6 rounded-2xl border border-stone-200 shadow-xs space-y-4">
                     <div class="flex items-center justify-between">
                         <h4 class="font-bold text-stone-800 text-base">Inventario Activo</h4>
-                        <input type="text" id="search-cuyes" onkeyup="filtrarTabla('cuyes')" placeholder="Buscar en pozas..." class="px-3 py-1.5 border rounded-xl text-xs outline-none focus:border-emerald-600 w-64">
+                        <div class="flex flex-wrap gap-2">
+                            <select id="filter-etapa" onchange="filtrarTabla('cuyes')" class="px-3 py-2 border rounded-xl text-sm"><option value="">Todas las etapas</option><option>Reproductor</option><option>Recría</option><option>Engorde</option><option>Cría</option><option>Cuarentena</option></select>
+                            <input type="text" id="search-cuyes" onkeyup="filtrarTabla('cuyes')" placeholder="Buscar en pozas..." class="px-3 py-1.5 border rounded-xl text-xs outline-none focus:border-emerald-600 w-64">
+                        </div>
                     </div>
                     <div class="overflow-x-auto">
                         <table class="w-full text-left border-collapse text-sm">
@@ -397,11 +481,11 @@
                             </select>
                         </div>
                         <div>
-                            <label class="block text-xs font-bold text-stone-600 mb-1">Machos Destetados</label>
+                            <label class="block text-xs font-bold text-stone-600 mb-1">Recría de machos</label>
                             <input type="number" id="destete-machos" required min="0" value="0" class="w-full px-3 py-2 border rounded-xl text-sm outline-none focus:border-emerald-600">
                         </div>
                         <div>
-                            <label class="block text-xs font-bold text-stone-600 mb-1">Hembras Destetadas</label>
+                            <label class="block text-xs font-bold text-stone-600 mb-1">Recría de hembras</label>
                             <input type="number" id="destete-hembras" required min="0" value="0" class="w-full px-3 py-2 border rounded-xl text-sm outline-none focus:border-emerald-600">
                         </div>
                         <div class="flex items-end">
@@ -540,6 +624,10 @@
                     <h3 class="text-lg font-bold text-stone-800 mb-4">Registrar Gasto Operativo / Egreso</h3>
                     <form onsubmit="guardarGasto(event)" class="grid grid-cols-1 sm:grid-cols-4 gap-4">
                         <div>
+                            <label class="block text-xs font-bold text-stone-600 mb-1">Fecha del gasto</label>
+                            <input type="date" id="gasto-fecha" required class="w-full px-3 py-2 border rounded-xl text-sm">
+                        </div>
+                        <div>
                             <label class="block text-xs font-bold text-stone-600 mb-1">Concepto</label>
                             <input type="text" id="gasto-concepto" required class="w-full px-3 py-2 border rounded-xl text-sm outline-none focus:border-emerald-600" placeholder="Ej. Compra de alfalfa / Balanceado">
                         </div>
@@ -551,10 +639,16 @@
                             <label class="block text-xs font-bold text-stone-600 mb-1">Categoría</label>
                             <select id="gasto-categoria" class="w-full px-3 py-2 border rounded-xl text-sm outline-none focus:border-emerald-600">
                                 <option value="Alimentación">Alimentación</option>
+                                <option value="Forraje">Forraje</option>
+                                <option value="Medicinas">Medicinas</option>
                                 <option value="Sanidad / Medicamentos">Sanidad / Medicamentos</option>
                                 <option value="Mantenimiento de Pozas">Mantenimiento de Pozas</option>
                                 <option value="Otros Egresos">Otros Egresos</option>
                             </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-stone-600 mb-1">Galpón / Poza</label>
+                            <select id="gasto-ubicacion" class="w-full px-3 py-2 border rounded-xl text-sm outline-none focus:border-emerald-600"><option value="General">General</option></select>
                         </div>
                         <div class="flex items-end">
                             <button type="submit" class="w-full bg-stone-700 text-white font-semibold py-2 px-4 rounded-xl text-sm hover:bg-stone-800 transition shadow-xs">Registrar Egreso</button>
@@ -574,6 +668,7 @@
                                     <th class="p-4">Fecha</th>
                                     <th class="p-4">Concepto</th>
                                     <th class="p-4">Categoría</th>
+                                    <th class="p-4">Ubicación</th>
                                     <th class="p-4">Monto (S/)</th>
                                     <th class="p-4">Acción</th>
                                 </tr>
@@ -584,11 +679,51 @@
                 </div>
             </div>
 
+            <div id="view-salud" class="space-y-6 view-section hidden">
+                <section class="surface bg-white p-5 sm:p-6 border border-stone-200">
+                    <h3 class="text-lg font-bold text-stone-800 mb-4">Kardex sanitario y de insumos</h3>
+                    <form onsubmit="guardarTratamiento(event)" class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-4">
+                        <label class="text-xs font-bold text-stone-600">Aplicación
+                            <input type="date" id="salud-fecha" required class="mt-1 w-full px-3 py-2 border rounded-xl text-sm">
+                        </label>
+                        <label class="text-xs font-bold text-stone-600">Destino
+                            <select id="salud-destino" required class="mt-1 w-full px-3 py-2 border rounded-xl text-sm"><option value="">Selecciona galpón o poza</option></select>
+                        </label>
+                        <label class="text-xs font-bold text-stone-600">Tratamiento / insumo
+                            <input type="text" id="salud-producto" required class="mt-1 w-full px-3 py-2 border rounded-xl text-sm" placeholder="Vitamina, antiparasitario...">
+                        </label>
+                        <label class="text-xs font-bold text-stone-600">Dosis / cantidad
+                            <input type="text" id="salud-cantidad" required class="mt-1 w-full px-3 py-2 border rounded-xl text-sm" placeholder="Ej. 2 ml / 10 unidades">
+                        </label>
+                        <label class="text-xs font-bold text-stone-600">Responsable / nota
+                            <input type="text" id="salud-nota" class="mt-1 w-full px-3 py-2 border rounded-xl text-sm" placeholder="Opcional">
+                        </label>
+                        <div class="sm:col-span-2 xl:col-span-5 flex justify-end">
+                            <button type="submit" class="bg-emerald-700 text-white font-bold px-6 rounded-xl">Guardar aplicación</button>
+                        </div>
+                    </form>
+                </section>
+                <section class="surface bg-white p-5 sm:p-6 border border-stone-200 space-y-4">
+                    <h4 class="font-bold text-stone-800">Historial de tratamientos e insumos</h4>
+                    <div class="overflow-x-auto"><table class="w-full text-left text-sm"><thead class="bg-stone-50 text-stone-500 uppercase text-xs"><tr><th class="p-4">Fecha</th><th class="p-4">Destino</th><th class="p-4">Producto</th><th class="p-4">Dosis</th><th class="p-4">Nota</th><th class="p-4">Acción</th></tr></thead><tbody id="tabla-salud"></tbody></table></div>
+                </section>
+            </div>
+
         </div>
     </main>
 
     <!-- MODAL / TOAST DE NOTIFICACIÓN -->
     <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col space-y-2 pointer-events-none"></div>
+
+    <div id="qr-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-stone-950/60 p-4" role="dialog" aria-modal="true" aria-labelledby="qr-titulo">
+        <div class="w-full max-w-sm rounded-2xl bg-white p-6 text-center shadow-2xl">
+            <h2 id="qr-titulo" class="text-xl font-extrabold text-stone-900">Ficha de poza</h2>
+            <p id="qr-codigo" class="mt-1 font-semibold text-emerald-800"></p>
+            <p id="qr-detalle" class="mt-1 text-sm text-stone-500"></p>
+            <canvas id="qr-canvas" class="mx-auto my-5"></canvas>
+            <div class="flex gap-3"><button onclick="imprimirCodigoQR()" class="flex-1 rounded-xl bg-emerald-700 px-4 text-white font-bold"><i class="ph ph-printer mr-1"></i>Imprimir QR</button><button onclick="cerrarCodigoQR()" class="rounded-xl border border-stone-300 px-4 font-bold">Cerrar</button></div>
+        </div>
+    </div>
 
     <!-- SCRIPT DE GESTIÓN Y GRÁFICOS -->
     <script>
@@ -599,11 +734,37 @@
             destetados: [],
             bajas: [],
             ventas: [],
-            gastos: []
+            gastos: [],
+            gestaciones: [],
+            tratamientos: [],
+            temperatura: null
         };
 
         let chartPoblacionInstance = null;
         let chartFinanzasInstance = null;
+        let chartMortalidadInstance = null;
+        let codigoQRActual = '';
+
+        function fechaHoy() {
+            const hoy = new Date();
+            return `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, '0')}-${String(hoy.getDate()).padStart(2, '0')}`;
+        }
+
+        function sumarDias(fecha, dias) {
+            const resultado = new Date(`${fecha}T00:00:00`);
+            resultado.setDate(resultado.getDate() + dias);
+            return `${resultado.getFullYear()}-${String(resultado.getMonth() + 1).padStart(2, '0')}-${String(resultado.getDate()).padStart(2, '0')}`;
+        }
+
+        function diasHasta(fecha) {
+            const hoy = new Date(`${fechaHoy()}T00:00:00`);
+            const objetivo = new Date(`${fecha}T00:00:00`);
+            return Math.round((objetivo - hoy) / 86400000);
+        }
+
+        function escaparHTML(valor) {
+            return String(valor ?? '').replace(/[&<>"']/g, caracter => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[caracter]);
+        }
 
         function obtenerCodigosPozas() {
             const codigos = Array.from({ length: 100 }, (_, index) => 'PZ-' + String(index + 1).padStart(3, '0'));
@@ -618,11 +779,21 @@
 
         function actualizarSelectoresPozas() {
             const codigos = obtenerCodigosPozas();
-            document.querySelectorAll('#cuy-codigo, #parto-poza, #destete-poza, #baja-identificador').forEach(selector => {
+            document.querySelectorAll('#cuy-codigo, #parto-poza, #destete-poza, #baja-identificador, #empadre-poza, #quick-poza').forEach(selector => {
                 const valorActual = selector.value;
-                const opciones = [new Option('Selecciona una poza', ''), ...codigos.map(codigo => new Option(codigo, codigo))];
+                const textoInicial = selector.id === 'quick-poza' ? 'Toca una casilla o selecciona una poza' : 'Selecciona una poza';
+                const opciones = [new Option(textoInicial, ''), ...codigos.map(codigo => new Option(codigo, codigo))];
                 selector.replaceChildren(...opciones);
                 if (codigos.includes(valorActual)) selector.value = valorActual;
+            });
+
+            const ubicaciones = [...new Set(db.cuyes.map(poza => String(poza.poza || '').trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'es', { numeric: true }));
+            const opcionesUbicacion = [new Option('General', 'General'), ...ubicaciones.map(ubicacion => new Option(ubicacion, ubicacion)), ...codigos.map(codigo => new Option(codigo, codigo))];
+            ['gasto-ubicacion', 'salud-destino'].forEach(id => {
+                const selector = document.getElementById(id);
+                const valorActual = selector.value;
+                selector.replaceChildren(...(id === 'salud-destino' ? [new Option('Selecciona galpón o poza', ''), ...opcionesUbicacion] : opcionesUbicacion));
+                if ([...selector.options].some(opcion => opcion.value === valorActual)) selector.value = valorActual;
             });
         }
 
@@ -656,7 +827,8 @@
                 let estado = { clase: 'pit-empty', etiqueta: 'Vacía' };
                 if (poza) {
                     ocupadas++;
-                    if (etapa.includes('reproductor')) estado = estados.reproductor;
+                    if (etapa.includes('cuarentena')) estado = { clase: 'pit-cuarentena', etiqueta: 'Cuarentena' };
+                    else if (etapa.includes('reproductor')) estado = estados.reproductor;
                     else if (etapa.includes('recr')) estado = estados.recria;
                     else if (etapa.includes('engord')) estado = estados.engorde;
                     else if (etapa.includes('cría') || etapa.includes('cria')) estado = estados.cria;
@@ -669,16 +841,78 @@
                 celda.textContent = codigo.slice(-3);
                 celda.title = `${codigo} · ${estado.etiqueta}${poza && poza.etapa ? ` · ${poza.etapa}` : ''}`;
                 celda.setAttribute('aria-label', celda.title);
-                celda.addEventListener('click', () => switchView('cuyes'));
+                celda.addEventListener('click', () => {
+                    document.getElementById('quick-poza').value = codigo;
+                    mapa.querySelectorAll('.pit-selected').forEach(seleccionada => seleccionada.classList.remove('pit-selected'));
+                    celda.classList.add('pit-selected');
+                });
                 celdas.push(celda);
             }
 
             mapa.replaceChildren(...celdas);
-            resumen.textContent = `${ocupadas} ocupadas de 100 pozas · toca una casilla para abrir el inventario`;
+            resumen.textContent = `${ocupadas} ocupadas de 100 pozas · toca una casilla para seleccionar y registrar`;
         }
 
         function calcularTotalVentas() {
             return db.ventas.reduce((total, v) => total + Number(v.monto) * Number(v.cantidad || 0), 0);
+        }
+
+        function abrirRegistroRapido(vista) {
+            const codigo = document.getElementById('quick-poza').value;
+            if (!codigo) {
+                mostrarToast('Selecciona una poza en el mapa o la lista', 'error');
+                return;
+            }
+            const selectores = { partos: 'parto-poza', destetados: 'destete-poza', bajas: 'baja-identificador' };
+            if (selectores[vista]) document.getElementById(selectores[vista]).value = codigo;
+            if (vista === 'salud') document.getElementById('salud-destino').value = codigo;
+            switchView(vista);
+            const formulario = document.querySelector(`#view-${vista} form`);
+            if (formulario) formulario.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
+        function mostrarCodigoQR(codigo) {
+            if (!codigo) {
+                mostrarToast('Selecciona una poza para generar su QR', 'error');
+                return;
+            }
+            if (typeof QRCode === 'undefined') {
+                mostrarToast('No se pudo cargar el generador QR. Verifica la conexión e inténtalo de nuevo.', 'error');
+                return;
+            }
+            codigoQRActual = String(codigo);
+            document.getElementById('qr-codigo').textContent = codigoQRActual;
+            const ficha = db.cuyes.find(poza => String(poza.codigo || poza.id || '').toUpperCase() === codigoQRActual.toUpperCase());
+            document.getElementById('qr-detalle').textContent = ficha ? `${ficha.etapa || 'Sin etapa'} · ${ficha.poza || 'Ubicación sin registrar'}` : 'Poza disponible para identificación manual';
+            QRCode.toCanvas(document.getElementById('qr-canvas'), `SISGRANJA|${codigoQRActual}`, { width: 240, margin: 2, errorCorrectionLevel: 'H' }, error => {
+                if (error) {
+                    console.error('Error al generar QR:', error);
+                    mostrarToast('No se pudo generar el código QR', 'error');
+                    return;
+                }
+                const modal = document.getElementById('qr-modal');
+                modal.classList.remove('hidden');
+                modal.classList.add('flex');
+            });
+        }
+
+        function cerrarCodigoQR() {
+            const modal = document.getElementById('qr-modal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+
+        function imprimirCodigoQR() {
+            const ventana = window.open('', '_blank', 'width=480,height=560');
+            if (!ventana) {
+                mostrarToast('Permite las ventanas emergentes para imprimir el QR', 'error');
+                return;
+            }
+            const imagen = document.getElementById('qr-canvas').toDataURL('image/png');
+            const detalle = document.getElementById('qr-detalle').textContent;
+            ventana.document.write(`<!doctype html><html lang="es"><meta charset="utf-8"><title>Ficha ${escaparHTML(codigoQRActual)}</title><style>body{font-family:Arial,sans-serif;text-align:center;padding:32px;color:#18352b}img{width:260px;height:260px}.codigo{font-size:28px;font-weight:700;margin:12px}</style><h1>SisGranja</h1><p class="codigo">${escaparHTML(codigoQRActual)}</p><p>${escaparHTML(detalle)}</p><img src="${imagen}" alt="Código QR de ${escaparHTML(codigoQRActual)}"></html>`);
+            ventana.document.close();
+            setTimeout(() => ventana.print(), 250);
         }
 
         function cargarDatos() {
@@ -696,26 +930,17 @@
             if (!Array.isArray(db.bajas)) db.bajas = [];
             if (!Array.isArray(db.ventas)) db.ventas = [];
             if (!Array.isArray(db.gastos)) db.gastos = [];
+            if (!Array.isArray(db.gestaciones)) db.gestaciones = [];
+            if (!Array.isArray(db.tratamientos)) db.tratamientos = [];
             if (!Array.isArray(db.pozas)) db.pozas = db.cuyes;
 
-            const esSimulacion100Pozas = db.cuyes.length === 100 && db.cuyes.every((poza, index) =>
-                poza.codigo === 'PZ-' + String(index + 1).padStart(3, '0') &&
-                poza.genero === (index % 2 === 0 ? 'Macho' : 'Hembra')
-            );
-
-            if (esSimulacion100Pozas) {
-                db.cuyes.forEach(poza => { poza.etapa = 'Reproductor'; });
-                db.pozas = db.cuyes;
-                db.partos = [];
-                db.destetados = [];
-                db.bajas = [];
-                db.ventas = [];
-                db.gastos = [];
-                localStorage.setItem('sisgranja_cuy_db', JSON.stringify(db));
-            }
         }
 
         function guardarBD(mensaje = "Datos guardados correctamente", tipo = 'success') {
+            if (!db || typeof db !== 'object' || Array.isArray(db)) db = {};
+            ['cuyes', 'partos', 'destetados', 'bajas', 'ventas', 'gastos', 'gestaciones', 'tratamientos'].forEach(clave => {
+                if (!Array.isArray(db[clave])) db[clave] = [];
+            });
             if (db.cuyes && !db.pozas) db.pozas = db.cuyes;
             if (db.pozas && !db.cuyes) db.cuyes = db.pozas;
 
@@ -765,7 +990,8 @@
                 destetados: 'Control de Destetados (Separados por Sexo)',
                 bajas: 'Mortalidad y Bajas Sanitarias',
                 ventas: 'Ventas de Cuyes e Ingresos',
-                gastos: 'Gastos Operativos'
+                gastos: 'Gastos Operativos',
+                salud: 'Kardex Sanitario y de Insumos'
             };
             document.getElementById('view-title').innerText = titles[viewName] || 'SisGranja';
             
@@ -791,6 +1017,8 @@
             db.bajas = [];
             db.ventas = [];
             db.gastos = [];
+            db.gestaciones = [];
+            db.tratamientos = [];
             guardarBD();
             mostrarToast("100 pozas reproductoras cargadas: 700 cuyes, sin destetados ni cuyes para venta.");
         }
@@ -839,12 +1067,16 @@
 
         function guardarParto(e) {
             e.preventDefault();
+            const poza = document.getElementById('parto-poza').value;
+            const fecha = fechaHoy();
             db.partos.unshift({
-                fecha: new Date().toISOString().split('T')[0],
-                poza: document.getElementById('parto-poza').value,
+                fecha,
+                poza,
                 vivas: parseInt(document.getElementById('parto-vivas').value),
                 muertas: parseInt(document.getElementById('parto-muertas').value)
             });
+            const gestacion = db.gestaciones.find(item => item.poza === poza && !item.fechaParto);
+            if (gestacion) gestacion.fechaParto = fecha;
             document.getElementById('parto-poza').value = '';
             document.getElementById('parto-vivas').value = '';
             document.getElementById('parto-muertas').value = '0';
@@ -853,12 +1085,16 @@
 
         function guardarDestete(e) {
             e.preventDefault();
+            const poza = document.getElementById('destete-poza').value;
+            const fecha = fechaHoy();
             db.destetados.unshift({
-                fecha: new Date().toISOString().split('T')[0],
-                poza: document.getElementById('destete-poza').value,
+                fecha,
+                poza,
                 machos: parseInt(document.getElementById('destete-machos').value),
                 hembras: parseInt(document.getElementById('destete-hembras').value)
             });
+            const gestacion = db.gestaciones.find(item => item.poza === poza && item.fechaParto && !item.fechaDestete);
+            if (gestacion) gestacion.fechaDestete = fecha;
             document.getElementById('destete-poza').value = '';
             document.getElementById('destete-machos').value = '0';
             document.getElementById('destete-hembras').value = '0';
@@ -910,30 +1146,129 @@
         function guardarGasto(e) {
             e.preventDefault();
             db.gastos.unshift({
-                fecha: new Date().toISOString().split('T')[0],
+                fecha: document.getElementById('gasto-fecha').value || fechaHoy(),
                 concepto: document.getElementById('gasto-concepto').value,
                 monto: parseFloat(document.getElementById('gasto-monto').value),
-                categoria: document.getElementById('gasto-categoria').value
+                categoria: document.getElementById('gasto-categoria').value,
+                ubicacion: document.getElementById('gasto-ubicacion').value
             });
             document.getElementById('gasto-concepto').value = '';
             document.getElementById('gasto-monto').value = '';
+            document.getElementById('gasto-fecha').value = fechaHoy();
             guardarBD();
+        }
+
+        function guardarTemperatura(event) {
+            event.preventDefault();
+            const valor = Number(document.getElementById('temperatura-actual').value);
+            if (!Number.isFinite(valor) || valor < -10 || valor > 60) {
+                mostrarToast('Ingresa una temperatura válida en °C', 'error');
+                return;
+            }
+            db.temperatura = { valor, fecha: new Date().toISOString() };
+            guardarBD('Lectura de temperatura guardada');
+        }
+
+        function registrarEmpadre(event) {
+            event.preventDefault();
+            const poza = document.getElementById('empadre-poza').value;
+            const fechaEmpadre = document.getElementById('empadre-fecha').value;
+            if (db.gestaciones.some(item => item.poza === poza && !item.fechaParto)) {
+                mostrarToast(`Ya existe una gestación pendiente para ${poza}`, 'error');
+                return;
+            }
+            db.gestaciones.unshift({ id: Date.now(), poza, fechaEmpadre, fechaParto: '', fechaDestete: '' });
+            document.getElementById('empadre-fecha').value = fechaHoy();
+            guardarBD('Empadre registrado; proyecciones calculadas');
+        }
+
+        function guardarTratamiento(event) {
+            event.preventDefault();
+            db.tratamientos.unshift({
+                fecha: document.getElementById('salud-fecha').value,
+                destino: document.getElementById('salud-destino').value,
+                producto: document.getElementById('salud-producto').value.trim(),
+                cantidad: document.getElementById('salud-cantidad').value.trim(),
+                nota: document.getElementById('salud-nota').value.trim()
+            });
+            document.getElementById('salud-producto').value = '';
+            document.getElementById('salud-cantidad').value = '';
+            document.getElementById('salud-nota').value = '';
+            guardarBD('Aplicación añadida al kardex');
+        }
+
+        function actualizarTemperatura() {
+            const alerta = document.getElementById('temperatura-alerta');
+            const panel = document.getElementById('temperature-panel');
+            const lectura = db.temperatura;
+            if (!lectura || !Number.isFinite(Number(lectura.valor))) {
+                alerta.className = 'mt-4 rounded-xl border px-4 py-3 text-sm font-semibold temperature-alert';
+                alerta.textContent = 'Registra una lectura para ver el estado ambiental.';
+                return;
+            }
+            document.getElementById('temperatura-actual').value = lectura.valor;
+            const valor = Number(lectura.valor);
+            const dentroRango = valor >= 18 && valor <= 24;
+            const riesgoAlto = valor < 15 || valor > 28;
+            alerta.className = `mt-4 rounded-xl border px-4 py-3 text-sm font-semibold ${dentroRango ? 'temperature-ok' : riesgoAlto ? 'temperature-danger' : 'temperature-alert'}`;
+            alerta.textContent = `${dentroRango ? 'En rango' : riesgoAlto ? 'Alerta sanitaria' : 'Fuera del rango recomendado'}: ${valor.toFixed(1)} °C · lectura ${new Date(lectura.fecha).toLocaleString('es-PE')}`;
+            panel.setAttribute('data-temperatura', dentroRango ? 'normal' : riesgoAlto ? 'critica' : 'precaucion');
+        }
+
+        function actualizarProyecciones() {
+            const contenedor = document.getElementById('proyecciones-lista');
+            const eventos = [];
+            let partosEstimados = 0;
+            db.gestaciones.forEach(gestacion => {
+                if (!/^\d{4}-\d{2}-\d{2}$/.test(gestacion.fechaEmpadre || '')) return;
+                const fechaParto = gestacion.fechaParto || sumarDias(gestacion.fechaEmpadre, 68);
+                if (!gestacion.fechaParto) {
+                    partosEstimados++;
+                    eventos.push({ poza: gestacion.poza, tipo: 'Parto estimado', fecha: fechaParto });
+                }
+                if (fechaParto) {
+                    if (!gestacion.fechaDestete) eventos.push({ poza: gestacion.poza, tipo: 'Destete estimado', fecha: sumarDias(fechaParto, 21) });
+                    eventos.push({ poza: gestacion.poza, tipo: 'Venta estimada', fecha: sumarDias(fechaParto, 90) });
+                }
+            });
+            eventos.sort((a, b) => a.fecha.localeCompare(b.fecha));
+            const resumen = document.createElement('p');
+            resumen.className = 'text-sm font-bold text-emerald-800';
+            resumen.textContent = `${partosEstimados} partos pendientes estimados`;
+            contenedor.replaceChildren(resumen);
+            eventos.slice(0, 8).forEach(evento => {
+                const dias = diasHasta(evento.fecha);
+                const linea = document.createElement('p');
+                linea.className = `rounded-lg px-3 py-2 text-sm ${dias < 0 ? 'bg-rose-50 text-rose-800' : dias <= 7 ? 'bg-amber-50 text-amber-900' : 'bg-stone-50 text-stone-700'}`;
+                linea.textContent = `${evento.tipo} · ${evento.poza} · ${evento.fecha} · ${dias < 0 ? `vencido hace ${Math.abs(dias)} días` : dias === 0 ? 'hoy' : `faltan ${dias} días`}`;
+                contenedor.appendChild(linea);
+            });
+            if (!eventos.length) {
+                const vacio = document.createElement('p');
+                vacio.className = 'text-sm text-stone-500';
+                vacio.textContent = 'Registra un empadre para activar el calendario sanitario y productivo.';
+                contenedor.appendChild(vacio);
+            }
         }
 
         function eliminarItem(tipo, index) {
             if (confirm("¿Está seguro de eliminar este registro permanentemente?")) {
-                db[tipo].splice(index, 1);
+                const coleccion = tipo === 'salud' ? 'tratamientos' : tipo;
+                db[coleccion].splice(index, 1);
                 guardarBD("Registro eliminado", "error");
             }
         }
 
         function filtrarTabla(tipo) {
-            const query = document.getElementById('search-' + tipo).value.toLowerCase();
+            const campoBusqueda = document.getElementById('search-' + tipo);
+            const query = campoBusqueda ? campoBusqueda.value.toLowerCase() : '';
+            const etapa = tipo === 'cuyes' ? document.getElementById('filter-etapa').value.toLowerCase() : '';
             const tbody = document.getElementById('tabla-' + tipo);
             const filas = tbody.getElementsByTagName('tr');
             for (let i = 0; i < filas.length; i++) {
                 const textoFila = filas[i].textContent.toLowerCase();
-                filas[i].style.display = textoFila.includes(query) ? '' : 'none';
+                const etapaFila = filas[i].children[1]?.textContent.toLowerCase() || '';
+                filas[i].style.display = textoFila.includes(query) && (!etapa || etapaFila.includes(etapa)) ? '' : 'none';
             }
         }
 
@@ -946,9 +1281,15 @@
             document.getElementById('badge-bajas').innerText = db.bajas.length;
             document.getElementById('badge-ventas').innerText = db.ventas.length;
             document.getElementById('badge-gastos').innerText = db.gastos.length;
+            document.getElementById('badge-salud').innerText = db.tratamientos.length;
 
             actualizarSelectoresPozas();
             renderizarMapaPozas();
+            actualizarTemperatura();
+            actualizarProyecciones();
+            if (!document.getElementById('empadre-fecha').value) document.getElementById('empadre-fecha').value = fechaHoy();
+            if (!document.getElementById('salud-fecha').value) document.getElementById('salud-fecha').value = fechaHoy();
+            if (!document.getElementById('gasto-fecha').value) document.getElementById('gasto-fecha').value = fechaHoy();
 
             // KPIs
             const totalPozas = db.cuyes.length;
@@ -1007,7 +1348,7 @@
 
                 return totales;
             }, { comercial: 0, gazapos: 0, reproductores: 0, abono: 0, sinCategoria: 0 });
-            let totalGastos = db.gastos.reduce((acc, g) => acc + (g.monto || 0), 0);
+            let totalGastos = db.gastos.reduce((acc, g) => acc + Number(g.monto || 0), 0);
             let utilidadNeta = totalVentas - totalGastos;
             let tasaMortalidad = poblacionTotal > 0 ? ((totalBajasCount / (poblacionTotal + totalBajasCount)) * 100).toFixed(1) : '0.0';
 
@@ -1052,6 +1393,7 @@
             const utilEl = document.getElementById('kpi-utilidad');
             utilEl.innerText = `S/ ${utilidadNeta.toFixed(2)}`;
             utilEl.className = `text-3xl font-extrabold mt-1 ${utilidadNeta >= 0 ? 'text-emerald-600' : 'text-rose-600'}`;
+            document.getElementById('kpi-utilidad-sub').innerText = `Balance: S/ ${totalVentas.toFixed(2)} ingresos - S/ ${totalGastos.toFixed(2)} gastos`;
 
             // Renderizar Tablas principales
             renderTabla('tabla-cuyes', db.cuyes, ['codigo', 'etapa', 'genero', 'poza'], 'cuyes');
@@ -1059,7 +1401,8 @@
             renderTabla('tabla-destetados', db.destetados, ['fecha', 'poza', 'machos', 'hembras'], 'destetados');
             renderTabla('tabla-bajas', db.bajas, ['fecha', 'identificador', 'cantidad', 'motivo'], 'bajas');
             renderTabla('tabla-ventas', db.ventas, ['fecha', 'categoria', 'cantidad', 'monto', 'cliente'], 'ventas');
-            renderTabla('tabla-gastos', db.gastos, ['fecha', 'concepto', 'categoria', 'monto'], 'gastos');
+            renderTabla('tabla-gastos', db.gastos, ['fecha', 'concepto', 'categoria', 'ubicacion', 'monto'], 'gastos');
+            renderTabla('tabla-salud', db.tratamientos, ['fecha', 'destino', 'producto', 'cantidad', 'nota'], 'salud');
 
             // Dashboard tablas reducidas
             document.getElementById('dash-tabla-partos').innerHTML = db.partos.slice(0, 5).map(p => `
@@ -1094,17 +1437,20 @@
                 <tr class="border-b border-stone-100 hover:bg-stone-50/50">
                     ${keys.map(k => {
                         let val = item[k] !== undefined ? item[k] : (k === 'codigo' ? item['id'] : '');
+                        if (k === 'ubicacion') val = item.ubicacion || 'General';
                         if (k === 'monto') {
                             const monto = tipo === 'ventas' ? Number(item.monto) * Number(item.cantidad || 0) : Number(val);
                             val = 'S/ ' + monto.toFixed(2);
                         }
-                        return `<td class="p-4">${val}</td>`;
+                        return `<td class="p-4">${escaparHTML(val)}</td>`;
                     }).join('')}
                     <td class="p-4">
+                        ${tipo === 'cuyes' ? `<button type="button" data-qr="${escaparHTML(item.codigo || item.id || '')}" class="text-emerald-800 hover:text-emerald-950 text-xs font-bold px-3 py-2 rounded-lg border border-emerald-200 bg-emerald-50 transition">QR</button>` : ''}
                         <button onclick="eliminarItem('${tipo}', ${idx})" class="text-rose-600 hover:text-rose-800 text-xs font-semibold px-2.5 py-1 rounded-lg border border-rose-200 bg-rose-50 transition">Eliminar</button>
                     </td>
                 </tr>
             `).join('');
+            tbody.querySelectorAll('[data-qr]').forEach(boton => boton.addEventListener('click', () => mostrarCodigoQR(boton.dataset.qr)));
         }
 
         // Gráficos Chart.js
@@ -1115,6 +1461,8 @@
             let countRep = db.cuyes.filter(c => c.etapa === 'Reproductor').length;
             let countRec = db.cuyes.filter(c => c.etapa === 'Recría').length;
             let countEng = db.cuyes.filter(c => c.etapa === 'Engorde').length;
+            let countCria = db.cuyes.filter(c => c.etapa === 'Cría').length;
+            let countCuarentena = db.cuyes.filter(c => c.etapa === 'Cuarentena').length;
             let totalVivas = db.partos.reduce((acc, p) => acc + (p.vivas || 0), 0);
 
             const ctxPob = document.getElementById('chartPoblacion').getContext('2d');
@@ -1122,10 +1470,10 @@
             chartPoblacionInstance = new Chart(ctxPob, {
                 type: 'doughnut',
                 data: {
-                    labels: ['Reproductores (Pozas)', 'Recría', 'Engorde', 'Crías Vivas'],
+                    labels: ['Reproductores (Pozas)', 'Recría', 'Engorde', 'Cría', 'Cuarentena', 'Crías vivas'],
                     datasets: [{
-                        data: [countRep, countRec, countEng, totalVivas],
-                        backgroundColor: ['#059669', '#3b82f6', '#d97706', '#ec4899'],
+                        data: [countRep, countRec, countEng, countCria, countCuarentena, totalVivas],
+                        backgroundColor: ['#059669', '#3b82f6', '#d97706', '#ec4899', '#d97706', '#be185d'],
                         borderWidth: 2,
                         borderColor: '#ffffff'
                     }]
@@ -1158,6 +1506,29 @@
                     scales: { y: { beginAtZero: true } }
                 }
             });
+
+            const meses = Array.from({ length: 6 }, (_, indice) => {
+                const fecha = new Date();
+                fecha.setDate(1);
+                fecha.setMonth(fecha.getMonth() - (5 - indice));
+                return { clave: `${fecha.getFullYear()}-${String(fecha.getMonth() + 1).padStart(2, '0')}`, etiqueta: fecha.toLocaleDateString('es-PE', { month: 'short', year: '2-digit' }), bajas: 0 };
+            });
+            db.bajas.forEach(baja => {
+                const mes = meses.find(item => item.clave === String(baja.fecha || '').slice(0, 7));
+                if (mes) mes.bajas += Number(baja.cantidad || 0);
+            });
+            const poblacionBase = Math.max(1, db.cuyes.length * 7 + totalVivas);
+            const ctxMortalidad = document.getElementById('chartMortalidad').getContext('2d');
+            if (chartMortalidadInstance) chartMortalidadInstance.destroy();
+            chartMortalidadInstance = new Chart(ctxMortalidad, {
+                type: 'line',
+                data: {
+                    labels: meses.map(mes => mes.etiqueta),
+                    datasets: [{ label: 'Mortalidad mensual (%)', data: meses.map(mes => Number(((mes.bajas / (poblacionBase + mes.bajas)) * 100).toFixed(2))), borderColor: '#be3b36', backgroundColor: 'rgb(190 59 54 / 12%)', fill: true, tension: 0.3 }
+                    ]
+                },
+                options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, ticks: { callback: valor => `${valor}%` } } }, plugins: { legend: { position: 'bottom' } } }
+            });
         }
 
         // Exportar Backup JSON y Excel CSV con BOM UTF-8
@@ -1187,18 +1558,48 @@
             reader.readAsText(file);
         }
 
+        function obtenerSeccionesReporte() {
+            return [
+                { titulo: 'Población y etapas', columnas: ['Código', 'Etapa', 'Género', 'Galpón / ubicación'], filas: db.cuyes.map(poza => [poza.codigo || poza.id, poza.etapa, poza.genero, poza.poza]) },
+                { titulo: 'Nacimientos', columnas: ['Fecha', 'Poza', 'Crías vivas', 'Crías muertas'], filas: db.partos.map(parto => [parto.fecha, parto.poza, parto.vivas, parto.muertas]) },
+                { titulo: 'Destetes', columnas: ['Fecha', 'Poza', 'Recría machos', 'Recría hembras'], filas: db.destetados.map(destete => [destete.fecha, destete.poza, destete.machos ?? (destete.sexo === 'Macho' ? destete.cantidad : 0), destete.hembras ?? (destete.sexo === 'Hembra' ? destete.cantidad : 0)]) },
+                { titulo: 'Bajas y mortalidad', columnas: ['Fecha', 'Identificador', 'Cantidad', 'Motivo'], filas: db.bajas.map(baja => [baja.fecha, baja.identificador, baja.cantidad, baja.motivo]) },
+                { titulo: 'Ventas', columnas: ['Fecha', 'Categoría', 'Cantidad', 'Total (S/)', 'Cliente'], filas: db.ventas.map(venta => [venta.fecha, venta.categoria, venta.cantidad, (Number(venta.monto) * Number(venta.cantidad || 0)).toFixed(2), venta.cliente]) },
+                { titulo: 'Gastos operativos', columnas: ['Fecha', 'Concepto', 'Categoría', 'Ubicación', 'Monto (S/)'], filas: db.gastos.map(gasto => [gasto.fecha, gasto.concepto, gasto.categoria, gasto.ubicacion || 'General', Number(gasto.monto || 0).toFixed(2)]) },
+                { titulo: 'Kardex sanitario e insumos', columnas: ['Fecha', 'Destino', 'Producto', 'Dosis / cantidad', 'Nota'], filas: db.tratamientos.map(item => [item.fecha, item.destino, item.producto, item.cantidad, item.nota]) }
+            ];
+        }
+
+        function imprimirReporte() {
+            const ventana = window.open('', '_blank');
+            if (!ventana) {
+                mostrarToast('Permite las ventanas emergentes para abrir el reporte', 'error');
+                return;
+            }
+            const ingresos = calcularTotalVentas();
+            const gastos = db.gastos.reduce((total, gasto) => total + Number(gasto.monto || 0), 0);
+            const bajas = db.bajas.reduce((total, baja) => total + Number(baja.cantidad || 0), 0);
+            const poblacion = Math.max(0, db.cuyes.length * 7 + db.partos.reduce((total, parto) => total + Number(parto.vivas || 0), 0) - bajas);
+            const secciones = [{ titulo: 'Resumen general', columnas: ['Indicador', 'Valor'], filas: [['Pozas registradas', db.cuyes.length], ['Población estimada', poblacion], ['Partos registrados', db.partos.length], ['Bajas', bajas], ['Ingresos (S/)', ingresos.toFixed(2)], ['Gastos (S/)', gastos.toFixed(2)], ['Balance neto (S/)', (ingresos - gastos).toFixed(2)]] }, ...obtenerSeccionesReporte()];
+            const tablas = secciones.map(seccion => {
+                const encabezados = seccion.columnas.map(columna => `<th>${escaparHTML(columna)}</th>`).join('');
+                const filas = seccion.filas.length ? seccion.filas.map(fila => `<tr>${fila.map(celda => `<td>${escaparHTML(celda)}</td>`).join('')}</tr>`).join('') : `<tr><td colspan="${seccion.columnas.length}">Sin registros</td></tr>`;
+                return `<section><h2>${escaparHTML(seccion.titulo)}</h2><table><thead><tr>${encabezados}</tr></thead><tbody>${filas}</tbody></table></section>`;
+            }).join('');
+            ventana.document.write(`<!doctype html><html lang="es"><meta charset="utf-8"><title>Reporte SisGranja</title><style>body{font:14px Arial,sans-serif;color:#1d3328;margin:28px}h1{color:#176b4b}h2{margin:24px 0 8px;border-bottom:2px solid #cbdccf;padding-bottom:6px}table{width:100%;border-collapse:collapse;margin-bottom:18px}th,td{border:1px solid #d8e1da;padding:7px;text-align:left}th{background:#edf4ee}tr{break-inside:avoid}@media print{body{margin:12mm}}</style><h1>Reporte integral de granja</h1><p>Generado: ${escaparHTML(new Date().toLocaleString('es-PE'))}</p>${tablas}</html>`);
+            ventana.document.close();
+            setTimeout(() => ventana.print(), 300);
+        }
+
         function exportarExcel() {
-            let csvContent = "\uFEFF=== SISGRANJA - REPORTE ZOOTÉCNICO Y FINANCIERO ===\n\n";
-            
-            csvContent += "--- INVENTARIO DE POZAS Y ANIMALES ---\nCodigo,Etapa,Genero,Galpon\n";
-            db.cuyes.forEach(c => { csvContent += `"${c.codigo || c.id}","${c.etapa}","${c.genero}","${c.poza}"\n`; });
-            
-            csvContent += "\n--- REGISTRO DE VENTAS E INGRESOS ---\nFecha,Categoria,Cantidad,Total Venta (S/),Cliente\n";
-            db.ventas.forEach(v => { csvContent += `"${v.fecha}","${v.categoria || 'Comercial'}","${v.cantidad}","${Number(v.monto) * Number(v.cantidad || 0)}","${v.cliente}"\n`; });
-
-            csvContent += "\n--- GASTOS OPERATIVOS ---\nFecha,Concepto,Categoria,Monto (S/)\n";
-            db.gastos.forEach(g => { csvContent += `"${g.fecha}","${g.concepto}","${g.categoria}","${g.monto}"\n`; });
-
+            const csv = valor => `"${String(valor ?? '').replace(/"/g, '""')}"`;
+            const contenido = obtenerSeccionesReporte().map(seccion => [
+                `--- ${seccion.titulo.toUpperCase()} ---`,
+                seccion.columnas.map(csv).join(','),
+                ...(seccion.filas.length ? seccion.filas.map(fila => fila.map(csv).join(',')) : ['Sin registros']),
+                ''
+            ].join('\n')).join('\n');
+            const csvContent = `\uFEFF=== SISGRANJA - REPORTE ZOOTÉCNICO Y FINANCIERO ===\n\n${contenido}`;
             const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
             const url = URL.createObjectURL(blob);
             const link = document.createElement("a");
