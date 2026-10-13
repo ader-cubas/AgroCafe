@@ -556,10 +556,12 @@
                         <label class="text-xs font-bold text-stone-600">Síntoma / patología
                             <select id="necro-diagnostico" required onchange="actualizarAsistenteDiagnostico()" class="mt-1 w-full px-3 py-2 border rounded-xl text-sm">
                                 <option value="">Selecciona un hallazgo</option>
-                                <option value="Neumonía">Neumonía</option>
-                                <option value="Salmonelosis">Salmonelosis</option>
+                                <option value="Linfoadenitis">Linfoadenitis (secas / abscesos ganglionares)</option>
+                                <option value="Salmonelosis / cuadros digestivos agudos">Salmonelosis / cuadros digestivos agudos</option>
+                                <option value="Neumonía / cuadros respiratorios">Neumonía / cuadros respiratorios</option>
                                 <option value="Coccidiosis">Coccidiosis</option>
-                                <option value="Carachama / Ácaros">Carachama / Ácaros</option>
+                                <option value="Sarna / Ácaros / Carachama">Sarna / Ácaros / Carachama</option>
+                                <option value="Piojos, pulgas y ectoparásitos">Piojos, pulgas y ectoparásitos (pediculosis)</option>
                                 <option value="Observación no concluyente">Observación no concluyente</option>
                             </select>
                         </label>
@@ -575,19 +577,27 @@
                             <label class="mt-3 block text-xs font-bold text-stone-700">Confirma el patrón que observas en la foto
                                 <select id="necro-patron-visual" disabled onchange="aplicarPatronVisualIA()" class="mt-1 w-full px-3 py-2 border rounded-xl text-sm">
                                     <option value="">Selecciona el hallazgo visual observado</option>
+                                    <option value="linfoadenitis">Bultos o abscesos en cuello, mandíbula o papada</option>
                                     <option value="respiratorio">Secreción nasal/ocular o respiración dificultosa</option>
                                     <option value="salmonelosis">Diarrea intensa, decaimiento o posible sangre</option>
                                     <option value="coccidiosis">Heces blandas/mucosas y pérdida de condición</option>
-                                    <option value="acaros">Costras, zonas sin pelo o picazón intensa</option>
+                                    <option value="sarna">Costras gruesas, alopecia o picazón intensa</option>
+                                    <option value="ectoparasitos">Piojos/pulgas visibles o rascado persistente</option>
                                     <option value="incierto">No observo un patrón claro</option>
                                 </select>
                             </label>
                             <p class="mt-2 text-xs text-amber-900">Simulación local sin modelo veterinario: la foto no confirma enfermedades. Verifica el patrón y consulta a un profesional.</p>
                         </div>
+                        <label class="text-xs font-bold text-stone-600 sm:col-span-2">Síntomas de referencia
+                            <textarea id="necro-sintomas" readonly rows="3" class="mt-1 w-full px-3 py-2 border rounded-xl text-sm bg-stone-50" placeholder="Se completan al seleccionar una patología."></textarea>
+                        </label>
+                        <label class="text-xs font-bold text-stone-600 sm:col-span-2">Lesiones de referencia
+                            <textarea id="necro-lesiones" readonly rows="3" class="mt-1 w-full px-3 py-2 border rounded-xl text-sm bg-stone-50" placeholder="Se completan al seleccionar una patología."></textarea>
+                        </label>
                         <label class="text-xs font-bold text-stone-600 sm:col-span-2">Manejo inmediato recomendado
                             <textarea id="necro-recomendacion" readonly rows="3" class="mt-1 w-full px-3 py-2 border rounded-xl text-sm bg-stone-50" placeholder="Selecciona una patología para ver medidas de bioseguridad y evaluación."></textarea>
                         </label>
-                        <label class="text-xs font-bold text-stone-600">Días de seguimiento
+                        <label class="text-xs font-bold text-stone-600">Días de protocolo / seguimiento (referencia)
                             <input type="number" id="necro-dias" min="1" max="30" value="3" required class="mt-1 w-full px-3 py-2 border rounded-xl text-sm">
                         </label>
                         <label class="text-xs font-bold text-stone-600">Vía / pauta farmacológica
@@ -596,6 +606,7 @@
                         <label class="text-xs font-bold text-stone-600 sm:col-span-2 xl:col-span-4">Sugerencia farmacológica / dosis
                             <input type="text" id="necro-pauta" readonly value="Sin pauta automática; requiere diagnóstico y prescripción veterinaria" class="mt-1 w-full px-3 py-2 border rounded-xl text-sm bg-stone-50">
                         </label>
+                        <p id="necro-duracion" class="sm:col-span-2 xl:col-span-4 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-900">La duración del tratamiento debe confirmarla el veterinario.</p>
                         <label class="text-xs font-bold text-stone-600 sm:col-span-2 xl:col-span-4">Observaciones de necropsia / síntomas
                             <textarea id="necro-observacion" rows="2" class="mt-1 w-full px-3 py-2 border rounded-xl text-sm" placeholder="Signos observados, fecha de inicio, hallazgos..."></textarea>
                         </label>
@@ -787,7 +798,7 @@
                 </section>
                 <section class="surface bg-white p-5 sm:p-6 border border-stone-200 space-y-4">
                     <h4 class="font-bold text-stone-800">Historial de tratamientos e insumos</h4>
-                    <div class="overflow-x-auto"><table class="w-full text-left text-sm"><thead class="bg-stone-50 text-stone-500 uppercase text-xs"><tr><th class="p-4">Fecha</th><th class="p-4">Destino</th><th class="p-4">Diagnóstico</th><th class="p-4">Producto / manejo</th><th class="p-4">Dosis / seguimiento</th><th class="p-4">Vía</th><th class="p-4">Foto</th><th class="p-4">Nota</th><th class="p-4">Acción</th></tr></thead><tbody id="tabla-salud"></tbody></table></div>
+                    <div class="overflow-x-auto"><table class="w-full text-left text-sm"><thead class="bg-stone-50 text-stone-500 uppercase text-xs"><tr><th class="p-4">Fecha</th><th class="p-4">Destino</th><th class="p-4">Diagnóstico</th><th class="p-4">Síntomas</th><th class="p-4">Lesiones</th><th class="p-4">Producto / manejo</th><th class="p-4">Dosis / seguimiento</th><th class="p-4">Vía</th><th class="p-4">Foto</th><th class="p-4">Nota</th><th class="p-4">Acción</th></tr></thead><tbody id="tabla-salud"></tbody></table></div>
                 </section>
             </div>
 
@@ -1366,21 +1377,97 @@
             resumen.textContent = `Dosis individual: ${formato(dosisIndividual)} ml por cuy · Dosis total para ${cantidad} cuyes: ${formato(dosisTotal)} ml.`;
         }
 
-        function obtenerOrientacionDiagnostica(patologia) {
-            const orientaciones = {
-                Neumonía: 'Aísla al animal en un ambiente seco, tibio y sin corrientes de aire; ofrece agua y solicita valoración veterinaria pronta, especialmente ante respiración dificultosa.',
-                Salmonelosis: 'Aísla el caso, utiliza guantes, extrema el lavado de manos y desinfecta equipos; solicita atención veterinaria urgente y evita manipular alimentos durante el manejo.',
-                Coccidiosis: 'Aísla al animal, retira heces y cama húmeda, limpia el área y solicita evaluación veterinaria con muestra fecal; no mediques sin confirmación.',
-                'Carachama / Ácaros': 'Separa al animal, revisa lesiones y contactos, cambia y limpia la cama; solicita confirmación veterinaria antes de aplicar antiparasitarios o productos ambientales.'
+        function obtenerProtocoloDiagnostico(patologia) {
+            const protocolos = {
+                Linfoadenitis: {
+                    sintomas: 'Bultos o abultamientos abscesados en cuello, mandíbula o papada; pueden madurar y drenar pus espesa.',
+                    lesiones: 'Ganglios linfáticos hipertrofiados con caseum o pus blanquecina/amarillenta.',
+                    manejo: 'Aislamiento estricto de la poza. El drenaje y la desinfección cuidadosa con yodo debe realizarlos personal capacitado, evitando contaminar el piso. Limpiar rigurosamente comederos y consultar al veterinario.',
+                    dias: 3,
+                    duracion: 'Seguimiento veterinario sugerido: 3 días; la duración antibiótica no está especificada y debe prescribirla el veterinario.',
+                    pauta: 'Referencia: Enrofloxacina 5% o penicilinas según criterio veterinario. La dosis no está especificada en este protocolo; no calcular ni administrar sin prescripción.',
+                    via: 'No especificada; confirmar fármaco y vía con el veterinario.'
+                },
+                'Salmonelosis / cuadros digestivos agudos': {
+                    sintomas: 'Decaimiento, pelo erizado, diarrea severa, parálisis del tren posterior o muerte súbita.',
+                    lesiones: 'Hígado congestionado o con puntos de necrosis; posibles adherencias fibrinopurulentas en vísceras.',
+                    manejo: 'Aislamiento inmediato, hidratación y desinfección total de instalaciones. Usar guantes, reforzar higiene y solicitar atención veterinaria urgente por riesgo zoonótico.',
+                    dias: 5,
+                    duracion: 'Referencia de protocolo: 5 días; el veterinario debe confirmar inicio y duración.',
+                    pauta: 'Referencia proporcionada: Enrofloxacina 5% (0.1 ml/kg) o Trimethoprim/Sulfa (0.2 ml/kg) por 5 días.',
+                    via: 'No especificada en la referencia; confirmar vía y producto con el veterinario.'
+                },
+                'Neumonía / cuadros respiratorios': {
+                    sintomas: 'Secreción nasal u ocular, respiración dificultosa y ruidos o ronquidos pulmonares.',
+                    lesiones: 'Pulmones congestivos o hepatizados, con líquido o espuma.',
+                    manejo: 'Control estricto de corrientes de aire y humedad, mantener cama seca, aislamiento y valoración veterinaria pronta. Vigilar dificultad respiratoria.',
+                    dias: 5,
+                    duracion: 'Referencia proporcionada: antibiótico durante 3 a 5 días; 5 días cargados como máximo de referencia, confirmar con el veterinario.',
+                    pauta: 'Referencia proporcionada: Vitamina C y Enrofloxacina 5% (0.1 ml/kg) o Tilosina durante 3 a 5 días.',
+                    via: 'No especificada en la referencia; confirmar vía y producto con el veterinario.'
+                },
+                Coccidiosis: {
+                    sintomas: 'Heces blandas o mucosas, posible presencia de sangre y pérdida notable de condición corporal.',
+                    lesiones: 'Intestinos inflamados con contenido gaseoso o hemorragias intestinales.',
+                    manejo: 'Aislar, retirar heces y cama húmeda, limpiar y desinfectar la poza. Solicitar confirmación veterinaria; controlar hidratación y evolución.',
+                    dias: 2,
+                    duracion: 'Referencia proporcionada: 2 días consecutivos y repetir el tratamiento al día 7; confirmar protocolo y calendario con el veterinario.',
+                    pauta: 'Referencia proporcionada: Toltrazuril 2.5% (0.04 ml/kg) durante 2 días consecutivos; repetir a los 7 días.',
+                    via: 'No especificada en la referencia; confirmar vía y producto con el veterinario.'
+                },
+                'Sarna / Ácaros / Carachama': {
+                    sintomas: 'Prurito severo, inquietud, costras gruesas blanquecinas o amarillentas y alopecia en orejas, hocico, ojos o lomo.',
+                    lesiones: 'Hiperqueratosis, piel engrosada y heridas por rascado constante.',
+                    manejo: 'Aislar animales afectados y desinfectar pozas. Confirmar el agente y revisar contactos; usar antiparasitarios solo bajo supervisión veterinaria.',
+                    dias: 14,
+                    duracion: 'Referencia proporcionada: segunda dosis de refuerzo a los 10–14 días; 14 días cargados para seguimiento y confirmación veterinaria.',
+                    pauta: 'Referencia proporcionada: Ivermectina 1% (0.2 ml/kg), con segunda dosis de refuerzo a los 10–14 días.',
+                    via: 'Vía subcutánea indicada en la referencia; confirmar producto, cálculo y administración con el veterinario.'
+                },
+                'Piojos, pulgas y ectoparásitos': {
+                    sintomas: 'Picazón intensa, rascado continuo contra paredes, pelo revuelto y posible anemia leve.',
+                    lesiones: 'Piojos o pulgas visibles entre el pelaje, sobre todo detrás de las orejas y en la rabadilla.',
+                    manejo: 'Aislar afectados, cambiar y eliminar yacija/viruta contaminada y desinfectar la instalación. Confirmar ectoparásito y usar solo productos seguros para cuyes bajo indicación veterinaria.',
+                    dias: 14,
+                    duracion: 'Referencia proporcionada: repetir a los 10–14 días; seguimiento sugerido hasta el día 14 y confirmación veterinaria.',
+                    pauta: 'Referencia proporcionada: Ivermectina 1% (0.2 ml/kg vía subcutánea) o baño ectoparasiticida seguro, con repetición a los 10–14 días.',
+                    via: 'Subcutánea para ivermectina según la referencia; la vía del baño depende del producto y su etiqueta.'
+                },
+                'Observación no concluyente': {
+                    sintomas: 'Patrón visual no concluyente; registra los signos observados y su evolución.',
+                    lesiones: 'La imagen no permite confirmar ni descartar lesiones internas.',
+                    manejo: 'Aislar si hay signos compatibles con enfermedad y solicitar valoración veterinaria; no iniciar tratamiento empírico.',
+                    dias: 3,
+                    duracion: 'Reevaluación sugerida en 3 días o antes si empeora; confirmar con el veterinario.',
+                    pauta: 'Sin pauta automática; requiere diagnóstico y prescripción veterinaria.',
+                    via: 'No aplica hasta contar con evaluación veterinaria.'
+                }
             };
-            return orientaciones[patologia] || '';
+            const alias = {
+                Salmonelosis: 'Salmonelosis / cuadros digestivos agudos',
+                Neumonía: 'Neumonía / cuadros respiratorios',
+                'Carachama / Ácaros': 'Sarna / Ácaros / Carachama'
+            };
+            return protocolos[alias[patologia] || patologia] || null;
+        }
+
+        function obtenerOrientacionDiagnostica(patologia) {
+            return obtenerProtocoloDiagnostico(patologia)?.manejo || '';
         }
 
         function actualizarAsistenteDiagnostico() {
-            const patologia = document.getElementById('necro-diagnostico').value;
-            document.getElementById('necro-recomendacion').value = obtenerOrientacionDiagnostica(patologia);
-            document.getElementById('necro-via').value = 'Definir exclusivamente con el veterinario';
-            document.getElementById('necro-pauta').value = 'Sin pauta automática; requiere diagnóstico y prescripción veterinaria';
+            const protocolo = obtenerProtocoloDiagnostico(document.getElementById('necro-diagnostico').value);
+            document.getElementById('necro-sintomas').value = protocolo?.sintomas || '';
+            document.getElementById('necro-lesiones').value = protocolo?.lesiones || '';
+            document.getElementById('necro-recomendacion').value = protocolo?.manejo || '';
+            document.getElementById('necro-via').value = protocolo?.via || 'Definir exclusivamente con el veterinario';
+            document.getElementById('necro-pauta').value = protocolo?.pauta || 'Sin pauta automática; requiere diagnóstico y prescripción veterinaria';
+            if (protocolo) {
+                document.getElementById('necro-dias').value = protocolo.dias;
+                document.getElementById('necro-duracion').textContent = protocolo.duracion;
+            } else {
+                document.getElementById('necro-duracion').textContent = 'La duración del tratamiento debe confirmarla el veterinario.';
+            }
         }
 
         async function analizarFotoIA() {
@@ -1432,10 +1519,12 @@
 
         function aplicarPatronVisualIA() {
             const diagnosticos = {
-                respiratorio: 'Neumonía',
-                salmonelosis: 'Salmonelosis',
+                linfoadenitis: 'Linfoadenitis',
+                respiratorio: 'Neumonía / cuadros respiratorios',
+                salmonelosis: 'Salmonelosis / cuadros digestivos agudos',
                 coccidiosis: 'Coccidiosis',
-                acaros: 'Carachama / Ácaros',
+                sarna: 'Sarna / Ácaros / Carachama',
+                ectoparasitos: 'Piojos, pulgas y ectoparásitos',
                 incierto: 'Observación no concluyente'
             };
             const seleccion = document.getElementById('necro-patron-visual').value;
@@ -1516,17 +1605,20 @@
                 const archivo = document.getElementById('necro-foto').files[0];
                 const foto = archivo ? (fotoClinicaAnalizadaBase64 || await comprimirFotoClinica(archivo)) : '';
                 const diagnostico = document.getElementById('necro-diagnostico').value;
-                const recomendacion = obtenerOrientacionDiagnostica(diagnostico);
+                const protocolo = obtenerProtocoloDiagnostico(diagnostico);
+                const recomendacion = protocolo?.manejo || obtenerOrientacionDiagnostica(diagnostico);
                 const dias = Number(document.getElementById('necro-dias').value);
-                const pauta = document.getElementById('necro-pauta').value;
+                const pauta = protocolo?.pauta || document.getElementById('necro-pauta').value;
                 db.tratamientos.unshift({
                     fecha: fechaHoy(),
                     destino: document.getElementById('necro-poza').value,
                     diagnostico,
-                    producto: 'Manejo de soporte / evaluación veterinaria',
-                    cantidad: `${dias} días de seguimiento; sin pauta farmacológica`,
-                    via: 'No aplica; definir tratamiento con el veterinario',
-                    nota: [recomendacion, pauta, document.getElementById('necro-observacion').value.trim()].filter(Boolean).join(' Observación: '),
+                    sintomas: protocolo?.sintomas || document.getElementById('necro-sintomas').value,
+                    lesiones: protocolo?.lesiones || document.getElementById('necro-lesiones').value,
+                    producto: pauta,
+                    cantidad: `${dias} días; ${protocolo?.duracion || 'seguimiento veterinario'}`,
+                    via: protocolo?.via || document.getElementById('necro-via').value,
+                    nota: [recomendacion, document.getElementById('necro-observacion').value.trim()].filter(Boolean).join(' Observación: '),
                     foto
                 });
                 guardarBD('Diagnóstico, manejo y foto guardados en el Kardex');
@@ -1534,10 +1626,15 @@
                 document.getElementById('necro-preview').classList.add('hidden');
                 document.getElementById('necro-preview').removeAttribute('src');
                 document.getElementById('necro-diagnostico').value = '';
+                document.getElementById('necro-sintomas').value = '';
+                document.getElementById('necro-lesiones').value = '';
+                document.getElementById('necro-dias').value = '3';
+                document.getElementById('necro-via').value = 'Definir exclusivamente con el veterinario';
                 document.getElementById('necro-patron-visual').value = '';
                 document.getElementById('necro-patron-visual').disabled = true;
                 document.getElementById('necro-ia-panel').classList.add('hidden');
                 document.getElementById('necro-pauta').value = 'Sin pauta automática; requiere diagnóstico y prescripción veterinaria';
+                document.getElementById('necro-duracion').textContent = 'La duración del tratamiento debe confirmarla el veterinario.';
                 document.getElementById('necro-recomendacion').value = '';
                 document.getElementById('necro-observacion').value = '';
                 fotoClinicaAnalizadaBase64 = '';
@@ -1777,7 +1874,7 @@
             renderTabla('tabla-bajas', db.bajas, ['fecha', 'identificador', 'cantidad', 'motivo'], 'bajas');
             renderTabla('tabla-ventas', db.ventas, ['fecha', 'categoria', 'cantidad', 'monto', 'cliente'], 'ventas');
             renderTabla('tabla-gastos', db.gastos, ['fecha', 'concepto', 'categoria', 'ubicacion', 'monto'], 'gastos');
-            renderTabla('tabla-salud', db.tratamientos, ['fecha', 'destino', 'diagnostico', 'producto', 'cantidad', 'via', 'foto', 'nota'], 'salud');
+            renderTabla('tabla-salud', db.tratamientos, ['fecha', 'destino', 'diagnostico', 'sintomas', 'lesiones', 'producto', 'cantidad', 'via', 'foto', 'nota'], 'salud');
 
             // Dashboard tablas reducidas
             document.getElementById('dash-tabla-partos').innerHTML = db.partos.slice(0, 5).map(p => `
@@ -1944,7 +2041,7 @@
                 { titulo: 'Bajas y mortalidad', columnas: ['Fecha', 'Identificador', 'Cantidad', 'Motivo'], filas: db.bajas.map(baja => [baja.fecha, baja.identificador, baja.cantidad, baja.motivo]) },
                 { titulo: 'Ventas', columnas: ['Fecha', 'Categoría', 'Cantidad', 'Total (S/)', 'Cliente'], filas: db.ventas.map(venta => [venta.fecha, venta.categoria, venta.cantidad, (Number(venta.monto) * Number(venta.cantidad || 0)).toFixed(2), venta.cliente]) },
                 { titulo: 'Gastos operativos', columnas: ['Fecha', 'Concepto', 'Categoría', 'Ubicación', 'Monto (S/)'], filas: db.gastos.map(gasto => [gasto.fecha, gasto.concepto, gasto.categoria, gasto.ubicacion || 'General', Number(gasto.monto || 0).toFixed(2)]) },
-                { titulo: 'Kardex sanitario e insumos', columnas: ['Fecha', 'Destino', 'Diagnóstico', 'Producto / manejo', 'Dosis / seguimiento', 'Vía', 'Foto', 'Nota'], filas: db.tratamientos.map(item => [item.fecha, item.destino, item.diagnostico, item.producto, item.cantidad, item.via, item.foto ? 'Foto guardada' : 'Sin foto', item.nota]) }
+                { titulo: 'Kardex sanitario e insumos', columnas: ['Fecha', 'Destino', 'Diagnóstico', 'Síntomas', 'Lesiones', 'Producto / manejo', 'Dosis / seguimiento', 'Vía', 'Foto', 'Nota'], filas: db.tratamientos.map(item => [item.fecha, item.destino, item.diagnostico, item.sintomas, item.lesiones, item.producto, item.cantidad, item.via, item.foto ? 'Foto guardada' : 'Sin foto', item.nota]) }
             ];
         }
 
