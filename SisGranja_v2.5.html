@@ -560,12 +560,30 @@
                                 <option value="Salmonelosis">Salmonelosis</option>
                                 <option value="Coccidiosis">Coccidiosis</option>
                                 <option value="Carachama / Ácaros">Carachama / Ácaros</option>
+                                <option value="Observación no concluyente">Observación no concluyente</option>
                             </select>
                         </label>
                         <label class="text-xs font-bold text-stone-600">Foto de lesión / animal
                             <input type="file" id="necro-foto" accept="image/*" capture="environment" onchange="previsualizarFotoNecropsia(event)" class="mt-1 w-full px-3 py-2 border rounded-xl text-sm">
                         </label>
-                        <div class="flex items-center"><img id="necro-preview" class="hidden max-h-28 rounded-lg border border-stone-200" alt="Vista previa de la foto clínica"></div>
+                        <div class="flex flex-col items-start gap-2">
+                            <img id="necro-preview" class="hidden max-h-28 rounded-lg border border-stone-200" alt="Vista previa de la foto clínica">
+                            <button type="button" id="necro-ai-button" onclick="analizarFotoIA()" class="rounded-xl bg-emerald-700 px-4 py-3 font-bold text-white">🤖 Analizar foto con IA</button>
+                        </div>
+                        <div id="necro-ia-panel" class="hidden sm:col-span-2 xl:col-span-4 rounded-xl border border-emerald-200 bg-emerald-50 p-4">
+                            <p id="necro-ia-estado" class="text-sm font-semibold text-emerald-900" role="status" aria-live="polite"></p>
+                            <label class="mt-3 block text-xs font-bold text-stone-700">Confirma el patrón que observas en la foto
+                                <select id="necro-patron-visual" disabled onchange="aplicarPatronVisualIA()" class="mt-1 w-full px-3 py-2 border rounded-xl text-sm">
+                                    <option value="">Selecciona el hallazgo visual observado</option>
+                                    <option value="respiratorio">Secreción nasal/ocular o respiración dificultosa</option>
+                                    <option value="salmonelosis">Diarrea intensa, decaimiento o posible sangre</option>
+                                    <option value="coccidiosis">Heces blandas/mucosas y pérdida de condición</option>
+                                    <option value="acaros">Costras, zonas sin pelo o picazón intensa</option>
+                                    <option value="incierto">No observo un patrón claro</option>
+                                </select>
+                            </label>
+                            <p class="mt-2 text-xs text-amber-900">Simulación local sin modelo veterinario: la foto no confirma enfermedades. Verifica el patrón y consulta a un profesional.</p>
+                        </div>
                         <label class="text-xs font-bold text-stone-600 sm:col-span-2">Manejo inmediato recomendado
                             <textarea id="necro-recomendacion" readonly rows="3" class="mt-1 w-full px-3 py-2 border rounded-xl text-sm bg-stone-50" placeholder="Selecciona una patología para ver medidas de bioseguridad y evaluación."></textarea>
                         </label>
@@ -574,6 +592,9 @@
                         </label>
                         <label class="text-xs font-bold text-stone-600">Vía / pauta farmacológica
                             <input type="text" id="necro-via" readonly value="Definir exclusivamente con el veterinario" class="mt-1 w-full px-3 py-2 border rounded-xl text-sm bg-stone-50">
+                        </label>
+                        <label class="text-xs font-bold text-stone-600 sm:col-span-2 xl:col-span-4">Sugerencia farmacológica / dosis
+                            <input type="text" id="necro-pauta" readonly value="Sin pauta automática; requiere diagnóstico y prescripción veterinaria" class="mt-1 w-full px-3 py-2 border rounded-xl text-sm bg-stone-50">
                         </label>
                         <label class="text-xs font-bold text-stone-600 sm:col-span-2 xl:col-span-4">Observaciones de necropsia / síntomas
                             <textarea id="necro-observacion" rows="2" class="mt-1 w-full px-3 py-2 border rounded-xl text-sm" placeholder="Signos observados, fecha de inicio, hallazgos..."></textarea>
@@ -808,6 +829,7 @@
         let chartFinanzasInstance = null;
         let chartMortalidadInstance = null;
         let codigoQRActual = '';
+        let fotoClinicaAnalizadaBase64 = '';
 
         function fechaHoy() {
             const hoy = new Date();
@@ -1357,12 +1379,81 @@
         function actualizarAsistenteDiagnostico() {
             const patologia = document.getElementById('necro-diagnostico').value;
             document.getElementById('necro-recomendacion').value = obtenerOrientacionDiagnostica(patologia);
-            document.getElementById('necro-via').value = patologia ? 'Definir exclusivamente con el veterinario' : 'Definir exclusivamente con el veterinario';
+            document.getElementById('necro-via').value = 'Definir exclusivamente con el veterinario';
+            document.getElementById('necro-pauta').value = 'Sin pauta automática; requiere diagnóstico y prescripción veterinaria';
+        }
+
+        async function analizarFotoIA() {
+            const archivo = document.getElementById('necro-foto').files[0];
+            const boton = document.getElementById('necro-ai-button');
+            const panel = document.getElementById('necro-ia-panel');
+            const estado = document.getElementById('necro-ia-estado');
+            const patron = document.getElementById('necro-patron-visual');
+            if (!archivo) {
+                mostrarToast('Primero toma o selecciona una foto para analizar', 'error');
+                return;
+            }
+            boton.disabled = true;
+            boton.textContent = 'Analizando imagen local...';
+            estado.textContent = 'Comprimiendo y revisando la legibilidad de la foto en este dispositivo; no se envía a internet.';
+            panel.classList.remove('hidden');
+            patron.disabled = true;
+            try {
+                fotoClinicaAnalizadaBase64 = await comprimirFotoClinica(archivo);
+                const imagen = await new Promise((resolve, reject) => {
+                    const elemento = new Image();
+                    elemento.onload = () => resolve(elemento);
+                    elemento.onerror = () => reject(new Error('No se pudo abrir la imagen local'));
+                    elemento.src = fotoClinicaAnalizadaBase64;
+                });
+                const lienzo = document.createElement('canvas');
+                lienzo.width = 48;
+                lienzo.height = 48;
+                const contexto = lienzo.getContext('2d', { willReadFrequently: true });
+                contexto.drawImage(imagen, 0, 0, 48, 48);
+                const pixeles = contexto.getImageData(0, 0, 48, 48).data;
+                let luminancia = 0;
+                for (let indice = 0; indice < pixeles.length; indice += 4) {
+                    luminancia += 0.2126 * pixeles[indice] + 0.7152 * pixeles[indice + 1] + 0.0722 * pixeles[indice + 2];
+                }
+                luminancia /= pixeles.length / 4;
+                const calidad = luminancia < 45 ? 'La foto parece oscura; considera repetirla con más luz.' : luminancia > 225 ? 'La foto parece sobreexpuesta; reduce el reflejo y vuelve a tomarla.' : 'La iluminación permite revisar la imagen; confirma manualmente el hallazgo observado.';
+                patron.disabled = false;
+                estado.textContent = `Revisión local completada (${imagen.width} × ${imagen.height} px). ${calidad} Esta simulación no clasifica enfermedades ni sustituye un modelo veterinario.`;
+            } catch (error) {
+                fotoClinicaAnalizadaBase64 = '';
+                panel.classList.add('hidden');
+                mostrarToast(error.message || 'No se pudo analizar la imagen', 'error');
+            } finally {
+                boton.disabled = false;
+                boton.textContent = '🤖 Analizar foto con IA';
+            }
+        }
+
+        function aplicarPatronVisualIA() {
+            const diagnosticos = {
+                respiratorio: 'Neumonía',
+                salmonelosis: 'Salmonelosis',
+                coccidiosis: 'Coccidiosis',
+                acaros: 'Carachama / Ácaros',
+                incierto: 'Observación no concluyente'
+            };
+            const seleccion = document.getElementById('necro-patron-visual').value;
+            const diagnostico = diagnosticos[seleccion] || '';
+            document.getElementById('necro-diagnostico').value = diagnostico;
+            actualizarAsistenteDiagnostico();
+            if (seleccion === 'incierto') {
+                document.getElementById('necro-recomendacion').value = 'No se identifica un patrón específico. Aísla si hay signos de enfermedad, registra cambios y solicita una revisión veterinaria.';
+            }
         }
 
         function previsualizarFotoNecropsia(event) {
             const archivo = event.target.files[0];
             const preview = document.getElementById('necro-preview');
+            fotoClinicaAnalizadaBase64 = '';
+            document.getElementById('necro-ia-panel').classList.add('hidden');
+            document.getElementById('necro-patron-visual').value = '';
+            document.getElementById('necro-patron-visual').disabled = true;
             if (!archivo) {
                 preview.classList.add('hidden');
                 preview.removeAttribute('src');
@@ -1423,10 +1514,11 @@
             if (boton) boton.disabled = true;
             try {
                 const archivo = document.getElementById('necro-foto').files[0];
-                const foto = await comprimirFotoClinica(archivo);
+                const foto = archivo ? (fotoClinicaAnalizadaBase64 || await comprimirFotoClinica(archivo)) : '';
                 const diagnostico = document.getElementById('necro-diagnostico').value;
                 const recomendacion = obtenerOrientacionDiagnostica(diagnostico);
                 const dias = Number(document.getElementById('necro-dias').value);
+                const pauta = document.getElementById('necro-pauta').value;
                 db.tratamientos.unshift({
                     fecha: fechaHoy(),
                     destino: document.getElementById('necro-poza').value,
@@ -1434,7 +1526,7 @@
                     producto: 'Manejo de soporte / evaluación veterinaria',
                     cantidad: `${dias} días de seguimiento; sin pauta farmacológica`,
                     via: 'No aplica; definir tratamiento con el veterinario',
-                    nota: [recomendacion, document.getElementById('necro-observacion').value.trim()].filter(Boolean).join(' Observación: '),
+                    nota: [recomendacion, pauta, document.getElementById('necro-observacion').value.trim()].filter(Boolean).join(' Observación: '),
                     foto
                 });
                 guardarBD('Diagnóstico, manejo y foto guardados en el Kardex');
@@ -1442,8 +1534,13 @@
                 document.getElementById('necro-preview').classList.add('hidden');
                 document.getElementById('necro-preview').removeAttribute('src');
                 document.getElementById('necro-diagnostico').value = '';
+                document.getElementById('necro-patron-visual').value = '';
+                document.getElementById('necro-patron-visual').disabled = true;
+                document.getElementById('necro-ia-panel').classList.add('hidden');
+                document.getElementById('necro-pauta').value = 'Sin pauta automática; requiere diagnóstico y prescripción veterinaria';
                 document.getElementById('necro-recomendacion').value = '';
                 document.getElementById('necro-observacion').value = '';
+                fotoClinicaAnalizadaBase64 = '';
             } catch (error) {
                 console.error('Error al guardar el registro clínico:', error);
                 mostrarToast(error.message || 'No se pudo guardar la foto en el Kardex', 'error');
