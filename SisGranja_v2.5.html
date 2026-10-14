@@ -554,7 +554,7 @@
                             <select id="necro-poza" required class="mt-1 w-full px-3 py-2 border rounded-xl text-sm"><option value="">Selecciona una poza</option></select>
                         </label>
                         <label class="text-xs font-bold text-stone-600">Síntoma / patología
-                            <select id="necro-diagnostico" required onchange="actualizarAsistenteDiagnostico()" class="mt-1 w-full px-3 py-2 border rounded-xl text-sm">
+                            <select id="necro-diagnostico" required onchange="aplicarProtocoloDiagnostico(this.value)" class="mt-1 w-full px-3 py-2 border rounded-xl text-sm">
                                 <option value="">Selecciona un hallazgo</option>
                                 <option value="Linfoadenitis">Linfoadenitis (secas / abscesos ganglionares)</option>
                                 <option value="Salmonelosis / cuadros digestivos agudos">Salmonelosis / cuadros digestivos agudos</option>
@@ -1382,7 +1382,7 @@
                     dias: 3,
                     duracion: 'Seguimiento veterinario sugerido: 3 días; la duración antibiótica no está especificada y debe prescribirla el veterinario.',
                     pauta: 'Referencia: Enrofloxacina 5% o penicilinas según criterio veterinario. La dosis no está especificada en este protocolo; no calcular ni administrar sin prescripción.',
-                    via: 'No especificada; confirmar fármaco y vía con el veterinario.'
+                    via: 'La ficha no define la vía para Enrofloxacina o penicilinas; el veterinario debe confirmar fármaco, formulación y vía antes de administrar.'
                 },
                 'Salmonelosis / cuadros digestivos agudos': {
                     sintomas: 'Decaimiento, pelo erizado, diarrea severa, parálisis del tren posterior o muerte súbita.',
@@ -1400,7 +1400,7 @@
                     dias: 5,
                     duracion: 'Referencia proporcionada: antibiótico durante 3 a 5 días; 5 días cargados como máximo de referencia, confirmar con el veterinario.',
                     pauta: 'Referencia proporcionada: Vitamina C y Enrofloxacina 5% (0.1 ml/kg) o Tilosina durante 3 a 5 días.',
-                    via: 'No especificada en la referencia; confirmar vía y producto con el veterinario.'
+                    via: 'La referencia no define la vía para Enrofloxacina o Tilosina; confirmar formulación y vía con el veterinario antes de administrar.'
                 },
                 Coccidiosis: {
                     sintomas: 'Heces blandas o mucosas, posible presencia de sangre y pérdida notable de condición corporal.',
@@ -1409,7 +1409,7 @@
                     dias: 2,
                     duracion: 'Referencia proporcionada: 2 días consecutivos y repetir el tratamiento al día 7; confirmar protocolo y calendario con el veterinario.',
                     pauta: 'Referencia proporcionada: Toltrazuril 2.5% (0.04 ml/kg) durante 2 días consecutivos; repetir a los 7 días.',
-                    via: 'No especificada en la referencia; confirmar vía y producto con el veterinario.'
+                    via: 'La referencia no define la vía ni la formulación de Toltrazuril; confirmar ambas con el veterinario antes de administrar.'
                 },
                 'Sarna / Ácaros / Carachama': {
                     sintomas: 'Prurito severo, inquietud, costras gruesas blanquecinas o amarillentas y alopecia en orejas, hocico, ojos o lomo.',
@@ -1451,19 +1451,21 @@
             return obtenerProtocoloDiagnostico(patologia)?.manejo || '';
         }
 
-        function actualizarAsistenteDiagnostico() {
-            const protocolo = obtenerProtocoloDiagnostico(document.getElementById('necro-diagnostico').value);
-            document.getElementById('necro-sintomas').value = protocolo?.sintomas || '';
-            document.getElementById('necro-lesiones').value = protocolo?.lesiones || '';
-            document.getElementById('necro-recomendacion').value = protocolo?.manejo || '';
-            document.getElementById('necro-via').value = protocolo?.via || 'Definir exclusivamente con el veterinario';
-            document.getElementById('necro-pauta').value = protocolo?.pauta || 'Sin pauta automática; requiere diagnóstico y prescripción veterinaria';
-            if (protocolo) {
-                document.getElementById('necro-dias').value = protocolo.dias;
-                document.getElementById('necro-duracion').textContent = protocolo.duracion;
-            } else {
-                document.getElementById('necro-duracion').textContent = 'La duración del tratamiento debe confirmarla el veterinario.';
-            }
+        function aplicarProtocoloDiagnostico(patologia) {
+            const protocolo = obtenerProtocoloDiagnostico(patologia);
+            const campos = {
+                'necro-sintomas': protocolo?.sintomas || '',
+                'necro-lesiones': protocolo?.lesiones || '',
+                'necro-recomendacion': protocolo?.manejo || '',
+                'necro-via': protocolo?.via || 'Selecciona una patología para consultar su vía documentada.',
+                'necro-pauta': protocolo?.pauta || 'Selecciona una patología para consultar su pauta documentada.'
+            };
+            Object.entries(campos).forEach(([id, valor]) => {
+                document.getElementById(id).value = valor;
+            });
+            document.getElementById('necro-dias').value = protocolo?.dias || 3;
+            document.getElementById('necro-duracion').textContent = protocolo?.duracion || 'Selecciona una patología para consultar la duración de referencia.';
+            return protocolo;
         }
 
         function detectarPatronVisualLocal(imagen) {
@@ -1561,7 +1563,7 @@
             const seleccion = document.getElementById('necro-patron-visual').value;
             const diagnostico = diagnosticos[seleccion] || '';
             document.getElementById('necro-diagnostico').value = diagnostico;
-            actualizarAsistenteDiagnostico();
+            aplicarProtocoloDiagnostico(diagnostico);
             if (seleccion === 'incierto') {
                 document.getElementById('necro-recomendacion').value = 'No se identifica un patrón específico. Aísla si hay signos de enfermedad, registra cambios y solicita una revisión veterinaria.';
             }
