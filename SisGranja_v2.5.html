@@ -579,7 +579,7 @@
                                     <option value="">Selecciona el hallazgo visual observado</option>
                                     <option value="linfoadenitis">Bultos o abscesos en cuello, mandíbula o papada</option>
                                     <option value="respiratorio">Secreción nasal/ocular o respiración dificultosa</option>
-                                    <option value="salmonelosis">Zonas rojizas oscuras o congestión (sugerencia)</option>
+                                    <option value="salmonelosis">Congestión rojiza o puntos necróticos oscuros (sugerencia)</option>
                                     <option value="coccidiosis">Heces blandas/mucosas y pérdida de condición</option>
                                     <option value="sarna">Costras gruesas, alopecia o picazón intensa</option>
                                     <option value="ectoparasitos">Piojos/pulgas visibles o rascado persistente</option>
@@ -1391,7 +1391,7 @@
                     dias: 5,
                     duracion: 'Referencia de protocolo: 5 días; el veterinario debe confirmar inicio y duración.',
                     pauta: 'Referencia proporcionada: Enrofloxacina 5% (0.1 ml/kg) o Trimethoprim/Sulfa (0.2 ml/kg) por 5 días.',
-                    via: 'No especificada en la referencia; confirmar vía y producto con el veterinario.'
+                    via: 'La referencia no especifica la vía para estas alternativas; confirmar producto y vía con el veterinario antes de administrar.'
                 },
                 'Neumonía / cuadros respiratorios': {
                     sintomas: 'Secreción nasal u ocular, respiración dificultosa y ruidos o ronquidos pulmonares.',
@@ -1474,20 +1474,28 @@
             contexto.drawImage(imagen, 0, 0, 64, 64);
             const pixeles = contexto.getImageData(0, 0, 64, 64).data;
             const zonasRojizas = new Array(64).fill(0);
+            const zonasOscuras = new Array(64).fill(0);
             let pixelesRojizos = 0;
+            let pixelesOscuros = 0;
             for (let indice = 0; indice < pixeles.length; indice += 4) {
                 const rojo = pixeles[indice];
                 const verde = pixeles[indice + 1];
                 const azul = pixeles[indice + 2];
+                const pixel = indice / 4;
+                const zona = Math.floor(pixel / 512) * 8 + Math.floor((pixel % 64) / 8);
                 if (rojo > 70 && rojo > verde * 1.22 && rojo > azul * 1.15 && verde < 180) {
                     pixelesRojizos++;
-                    const pixel = indice / 4;
-                    const zona = Math.floor(pixel / 512) * 8 + Math.floor((pixel % 64) / 8);
                     zonasRojizas[zona]++;
+                }
+                if (rojo > verde * 1.1 && rojo > azul * 1.05 && rojo + verde + azul < 250) {
+                    pixelesOscuros++;
+                    zonasOscuras[zona]++;
                 }
             }
             const zonasConcentradas = zonasRojizas.filter(cantidad => cantidad >= 3).length;
-            return pixelesRojizos / 4096 >= 0.025 && zonasConcentradas >= 2 ? 'salmonelosis' : 'incierto';
+            const congestionRojiza = pixelesRojizos / 4096 >= 0.025 && zonasConcentradas >= 2;
+            const puntosNecroticosAgrupados = pixelesOscuros / 4096 >= 0.003 && zonasOscuras.filter(cantidad => cantidad >= 2).length >= 2;
+            return congestionRojiza || puntosNecroticosAgrupados ? 'salmonelosis' : 'incierto';
         }
 
         async function analizarFotoIA() {
@@ -1528,7 +1536,7 @@
                 patron.value = detectarPatronVisualLocal(imagen);
                 patron.disabled = false;
                 aplicarPatronVisualIA();
-                const sugerencia = patron.value === 'salmonelosis' ? 'Se observan zonas rojizas concentradas; se sugiere revisar el patrón de congestión.' : 'No se encontró un patrón cromático específico; se seleccionó observación no concluyente.';
+                const sugerencia = patron.value === 'salmonelosis' ? 'Se observan zonas rojizas o puntos oscuros agrupados; revisa si corresponden a hallazgos hepáticos.' : 'No se encontró un patrón cromático específico; se seleccionó observación no concluyente.';
                 estado.textContent = `Revisión local completada (${imagen.width} × ${imagen.height} px). ${sugerencia} ${calidad} Esta sugerencia no confirma enfermedades ni sustituye un modelo veterinario.`;
             } catch (error) {
                 fotoClinicaAnalizadaBase64 = '';
