@@ -600,11 +600,11 @@
                         <label class="text-xs font-bold text-stone-600">Días de protocolo / seguimiento (referencia)
                             <input type="number" id="necro-dias" min="1" max="30" value="3" required class="mt-1 w-full px-3 py-2 border rounded-xl text-sm">
                         </label>
-                        <label class="text-xs font-bold text-stone-600">Vía / pauta farmacológica
-                            <input type="text" id="necro-via" readonly value="Definir exclusivamente con el veterinario" class="mt-1 w-full px-3 py-2 border rounded-xl text-sm bg-stone-50">
+                        <label class="text-xs font-bold text-stone-600 sm:col-span-2 xl:col-span-2">Vía / pauta farmacológica
+                            <textarea id="necro-via" readonly rows="3" class="mt-1 w-full px-3 py-2 border rounded-xl text-sm bg-stone-50" placeholder="Se completa al seleccionar una patología."></textarea>
                         </label>
                         <label class="text-xs font-bold text-stone-600 sm:col-span-2 xl:col-span-4">Sugerencia farmacológica / dosis
-                            <input type="text" id="necro-pauta" readonly value="Sin pauta automática; requiere diagnóstico y prescripción veterinaria" class="mt-1 w-full px-3 py-2 border rounded-xl text-sm bg-stone-50">
+                            <textarea id="necro-pauta" readonly rows="3" class="mt-1 w-full px-3 py-2 border rounded-xl text-sm bg-stone-50" placeholder="Se completa al seleccionar una patología."></textarea>
                         </label>
                         <p id="necro-duracion" class="sm:col-span-2 xl:col-span-4 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-900">La duración del tratamiento debe confirmarla el veterinario.</p>
                         <label class="text-xs font-bold text-stone-600 sm:col-span-2 xl:col-span-4">Observaciones de necropsia / síntomas
@@ -1382,7 +1382,7 @@
                     dias: 3,
                     duracion: 'Seguimiento veterinario sugerido: 3 días; la duración antibiótica no está especificada y debe prescribirla el veterinario.',
                     pauta: 'Referencia: Enrofloxacina 5% o penicilinas según criterio veterinario. La dosis no está especificada en este protocolo; no calcular ni administrar sin prescripción.',
-                    via: 'La ficha no define la vía para Enrofloxacina o penicilinas; el veterinario debe confirmar fármaco, formulación y vía antes de administrar.'
+                    viaPauta: 'Vía oral o parenteral (aislamiento estricto y drenaje/desinfección de abscesos).'
                 },
                 'Salmonelosis / cuadros digestivos agudos': {
                     sintomas: 'Decaimiento, pelo erizado, diarrea severa, parálisis del tren posterior o muerte súbita.',
@@ -1391,7 +1391,7 @@
                     dias: 5,
                     duracion: 'Referencia de protocolo: 5 días; el veterinario debe confirmar inicio y duración.',
                     pauta: 'Referencia proporcionada: Enrofloxacina 5% (0.1 ml/kg) o Trimethoprim/Sulfa (0.2 ml/kg) por 5 días.',
-                    via: 'La referencia no especifica la vía para estas alternativas; confirmar producto y vía con el veterinario antes de administrar.'
+                    viaPauta: 'Vía oral (agua de bebida o sonda individual). Tratar a todo el lote afectado.'
                 },
                 'Neumonía / cuadros respiratorios': {
                     sintomas: 'Secreción nasal u ocular, respiración dificultosa y ruidos o ronquidos pulmonares.',
@@ -1400,7 +1400,7 @@
                     dias: 5,
                     duracion: 'Referencia proporcionada: antibiótico durante 3 a 5 días; 5 días cargados como máximo de referencia, confirmar con el veterinario.',
                     pauta: 'Referencia proporcionada: Vitamina C y Enrofloxacina 5% (0.1 ml/kg) o Tilosina durante 3 a 5 días.',
-                    via: 'La referencia no define la vía para Enrofloxacina o Tilosina; confirmar formulación y vía con el veterinario antes de administrar.'
+                    viaPauta: 'Vía oral o intramuscular según indicación clínica. Mejorar ventilación.'
                 },
                 Coccidiosis: {
                     sintomas: 'Heces blandas o mucosas, posible presencia de sangre y pérdida notable de condición corporal.',
@@ -1409,7 +1409,7 @@
                     dias: 2,
                     duracion: 'Referencia proporcionada: 2 días consecutivos y repetir el tratamiento al día 7; confirmar protocolo y calendario con el veterinario.',
                     pauta: 'Referencia proporcionada: Toltrazuril 2.5% (0.04 ml/kg) durante 2 días consecutivos; repetir a los 7 días.',
-                    via: 'La referencia no define la vía ni la formulación de Toltrazuril; confirmar ambas con el veterinario antes de administrar.'
+                    viaPauta: 'Vía oral (Toltrazuril/Sulfas en agua de bebida por 3 a 5 días).'
                 },
                 'Sarna / Ácaros / Carachama': {
                     sintomas: 'Prurito severo, inquietud, costras gruesas blanquecinas o amarillentas y alopecia en orejas, hocico, ojos o lomo.',
@@ -1418,7 +1418,7 @@
                     dias: 14,
                     duracion: 'Referencia proporcionada: segunda dosis de refuerzo a los 10–14 días; 14 días cargados para seguimiento y confirmación veterinaria.',
                     pauta: 'Referencia proporcionada: Ivermectina 1% (0.2 ml/kg), con segunda dosis de refuerzo a los 10–14 días.',
-                    via: 'Vía subcutánea indicada en la referencia; confirmar producto, cálculo y administración con el veterinario.'
+                    viaPauta: 'Vía subcutánea (Ivermectina) o aplicación tópica/baños según prescripción.'
                 },
                 'Piojos, pulgas y ectoparásitos': {
                     sintomas: 'Picazón intensa, rascado continuo contra paredes, pelo revuelto y posible anemia leve.',
@@ -1427,7 +1427,7 @@
                     dias: 14,
                     duracion: 'Referencia proporcionada: repetir a los 10–14 días; seguimiento sugerido hasta el día 14 y confirmación veterinaria.',
                     pauta: 'Referencia proporcionada: Ivermectina 1% (0.2 ml/kg vía subcutánea) o baño ectoparasiticida seguro, con repetición a los 10–14 días.',
-                    via: 'Subcutánea para ivermectina según la referencia; la vía del baño depende del producto y su etiqueta.'
+                    viaPauta: 'Vía tópica / espolvoreo / baño antiparasitario en ambiente y animales.'
                 },
                 'Observación no concluyente': {
                     sintomas: 'Patrón visual no concluyente; registra los signos observados y su evolución.',
@@ -1436,7 +1436,7 @@
                     dias: 3,
                     duracion: 'Reevaluación sugerida en 3 días o antes si empeora; confirmar con el veterinario.',
                     pauta: 'Sin pauta automática; requiere diagnóstico y prescripción veterinaria.',
-                    via: 'No aplica hasta contar con evaluación veterinaria.'
+                    viaPauta: 'No aplica hasta contar con evaluación veterinaria.'
                 }
             };
             const alias = {
@@ -1457,7 +1457,7 @@
                 'necro-sintomas': protocolo?.sintomas || '',
                 'necro-lesiones': protocolo?.lesiones || '',
                 'necro-recomendacion': protocolo?.manejo || '',
-                'necro-via': protocolo?.via || 'Selecciona una patología para consultar su vía documentada.',
+                'necro-via': protocolo?.viaPauta || 'Selecciona una patología para consultar su vía documentada.',
                 'necro-pauta': protocolo?.pauta || 'Selecciona una patología para consultar su pauta documentada.'
             };
             Object.entries(campos).forEach(([id, valor]) => {
@@ -1665,7 +1665,7 @@
                     lesiones: protocolo?.lesiones || document.getElementById('necro-lesiones').value,
                     producto: pauta,
                     cantidad: `${dias} días; ${protocolo?.duracion || 'seguimiento veterinario'}`,
-                    via: protocolo?.via || document.getElementById('necro-via').value,
+                    via: protocolo?.viaPauta || document.getElementById('necro-via').value,
                     nota: [recomendacion, document.getElementById('necro-observacion').value.trim()].filter(Boolean).join(' Observación: '),
                     foto
                 };
@@ -1695,7 +1695,7 @@
                 document.getElementById('necro-sintomas').value = '';
                 document.getElementById('necro-lesiones').value = '';
                 document.getElementById('necro-dias').value = '3';
-                document.getElementById('necro-via').value = 'Definir exclusivamente con el veterinario';
+                document.getElementById('necro-via').value = '';
                 document.getElementById('necro-patron-visual').value = '';
                 document.getElementById('necro-patron-visual').disabled = true;
                 document.getElementById('necro-ia-panel').classList.add('hidden');
