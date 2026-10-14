@@ -1614,11 +1614,20 @@
                 elemento.src = original;
             });
             const lienzo = document.createElement('canvas');
-            const escala = Math.min(1, 800 / imagen.width);
-            lienzo.width = Math.max(1, Math.round(imagen.width * escala));
-            lienzo.height = Math.max(1, Math.round(imagen.height * escala));
-            lienzo.getContext('2d').drawImage(imagen, 0, 0, lienzo.width, lienzo.height);
-            return lienzo.toDataURL('image/jpeg', 0.75);
+            const escala = Math.min(1, 800 / Math.max(imagen.width, imagen.height));
+            let ancho = Math.max(1, Math.round(imagen.width * escala));
+            let alto = Math.max(1, Math.round(imagen.height * escala));
+            const limiteCaracteres = 120000;
+            while (true) {
+                lienzo.width = ancho;
+                lienzo.height = alto;
+                lienzo.getContext('2d').drawImage(imagen, 0, 0, ancho, alto);
+                const comprimida = lienzo.toDataURL('image/jpeg', 0.7);
+                if (comprimida.length <= limiteCaracteres || Math.max(ancho, alto) <= 160) return comprimida;
+                const escalaReducida = Math.max(160, Math.round(Math.max(ancho, alto) * 0.8)) / Math.max(ancho, alto);
+                ancho = Math.max(1, Math.round(ancho * escalaReducida));
+                alto = Math.max(1, Math.round(alto * escalaReducida));
+            }
         }
 
         function esLimiteAlmacenamiento(error) {
@@ -1658,10 +1667,10 @@
                         if (!esLimiteAlmacenamiento(error)) throw error;
                         registro.foto = '';
                         fotoSoloTemporal = true;
-                        guardarBD('Diagnóstico guardado; la foto queda solo en la vista previa temporal', 'warning');
+                        guardarBD('Diagnóstico guardado; la foto queda solo en la vista previa temporal');
                     }
                 } else {
-                    guardarBD(fotoSoloTemporal ? 'Diagnóstico guardado; la foto queda solo en la vista previa temporal' : 'Diagnóstico guardado en el Kardex', fotoSoloTemporal ? 'warning' : 'success');
+                    guardarBD(fotoSoloTemporal ? 'Diagnóstico guardado; la foto queda solo en la vista previa temporal' : 'Diagnóstico guardado en el Kardex');
                 }
                 if (!fotoSoloTemporal) {
                     document.getElementById('necro-foto').value = '';
