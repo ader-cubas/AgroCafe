@@ -143,6 +143,9 @@
             gap: 20px;
         }
 
+        .dashboard-totals { margin-bottom: 20px; }
+        .dashboard-total-value { font-size: 1.45rem; font-weight: 700; color: var(--primary); }
+
         .card {
             background-color: var(--card-bg);
             border-radius: 16px;
@@ -361,6 +364,20 @@
 
         <!-- VISTA 1: PANEL PRINCIPAL -->
         <div id="view-dashboard" class="section-view active">
+            <div class="grid-layout dashboard-totals" aria-label="Resumen financiero">
+                <div class="card col-4">
+                    <div class="card-header"><i data-lucide="receipt"></i> Total Gastos de Cultivo</div>
+                    <strong class="dashboard-total-value" id="dashboardTotalGastos">S/ 0.00</strong>
+                </div>
+                <div class="card col-4">
+                    <div class="card-header"><i data-lucide="badge-dollar-sign"></i> Total Ventas / Ingresos</div>
+                    <strong class="dashboard-total-value" id="dashboardTotalIngresos">S/ 0.00</strong>
+                </div>
+                <div class="card col-4">
+                    <div class="card-header"><i data-lucide="scale"></i> Ganancia / Utilidad Neta</div>
+                    <strong class="dashboard-total-value" id="dashboardUtilidadNeta">S/ 0.00</strong>
+                </div>
+            </div>
             <div class="grid-layout">
                 <div class="card col-8">
                     <div class="card-header"><i data-lucide="trending-up"></i> Inteligencia de Mercado - Precios Bolsa NY & Local</div>
@@ -522,7 +539,7 @@
                             <input type="number" id="inputCant" class="form-control" placeholder="4" min="0.01" step="any">
                         </div>
                         <div class="form-group" style="margin:0;">
-                            <label>Precio Unitario (S/ por día/unidad)</label>
+                            <label>Precio Unitario (S/)</label>
                             <input type="number" id="inputPrecioUnitario" class="form-control" placeholder="60.00" min="0.01" step="0.01">
                         </div>
                         <div class="form-group" style="margin:0;">
@@ -535,7 +552,7 @@
                 <div class="table-scroll">
                     <table class="records-table">
                         <thead>
-                            <tr><th>Fecha</th><th>Descripción</th><th>Categoría</th><th>Cantidad / Días</th><th>Precio Unitario (S/ por día/unidad)</th><th>Costo Total (S/)</th><th>Acciones</th></tr>
+                            <tr><th>Fecha</th><th>Descripción</th><th>Categoría</th><th>Cantidad / Días</th><th>Precio Unitario (S/)</th><th>Costo Total (S/)</th><th>Acciones</th></tr>
                         </thead>
                         <tbody id="tablaCostosDinamica"></tbody>
                     </table>
@@ -549,22 +566,28 @@
                 <div class="card-header" style="color: #2b7042;"><i data-lucide="dollar-sign"></i> Registro de Ventas y Cosecha (Ingresos)</div>
                 <div style="background: #eef7f2; padding: 18px; border-radius: 12px; margin-bottom: 20px; border: 1px solid #c3e6cb;">
                     <h3 style="margin-bottom: 12px; font-size: 1.05rem; color: #2b7042;">Registrar Venta de Café</h3>
-                    <div style="display: grid; grid-template-columns: 2fr 1fr 1fr 1fr auto; gap: 12px; align-items: end;">
+                    <div style="display: grid; grid-template-columns: 2fr 1.2fr 1.5fr 1fr auto; gap: 12px; align-items: end;" class="form-grid-mobile">
                         <div class="form-group" style="margin:0;">
                             <label>Comprador / Cooperativa</label>
                             <input type="text" id="inputComprador" class="form-control" placeholder="Ej. Acopio Lonya Grande">
                         </div>
                         <div class="form-group" style="margin:0;">
-                            <label>Quintales (QQ)</label>
-                            <input type="number" id="inputQQ" class="form-control" placeholder="15">
+                            <label>Cantidad (Quintales / Kilos)</label>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                                <input type="number" id="inputCantidadVenta" class="form-control" placeholder="15" min="0.01" step="any">
+                                <select id="inputUnidadVenta" class="form-control" aria-label="Unidad de venta">
+                                    <option value="QQ">Quintales (QQ)</option>
+                                    <option value="kg">Kilos (kg)</option>
+                                </select>
+                            </div>
                         </div>
                         <div class="form-group" style="margin:0;">
-                            <label>Precio x QQ (S/)</label>
-                            <input type="number" id="inputPrecioQQ" class="form-control" placeholder="740">
+                            <label>Precio Unitario por Quintal/Kilo (S/)</label>
+                            <input type="number" id="inputPrecioUnitarioVenta" class="form-control" placeholder="740" min="0.01" step="0.01">
                         </div>
                         <div class="form-group" style="margin:0;">
-                            <label>Total Ingreso (S/)</label>
-                            <input type="text" id="inputTotalVenta" class="form-control" readonly style="background:#fff;" placeholder="Calculado">
+                            <label>Ingreso Total (S/)</label>
+                            <input type="number" id="inputIngresoTotal" class="form-control" readonly style="background:#fff;" placeholder="Calculado">
                         </div>
                         <button class="btn" style="background-color: #2b7042;" onclick="registrarNuevaVenta()"><i data-lucide="check-circle"></i> Registrar Venta</button>
                     </div>
@@ -572,7 +595,7 @@
                 <div class="table-scroll">
                     <table class="records-table">
                         <thead>
-                            <tr><th>Fecha</th><th>Comprador / Destino</th><th>Cantidad (QQ)</th><th>Precio x QQ</th><th>Ingreso Total (S/)</th><th>Acciones</th></tr>
+                            <tr><th>Fecha</th><th>Comprador / Destino</th><th>Cantidad (Quintales / Kilos)</th><th>Precio Unitario por Quintal/Kilo (S/)</th><th>Ingreso Total (S/)</th><th>Acciones</th></tr>
                         </thead>
                         <tbody id="tablaVentasDinamica"></tbody>
                     </table>
@@ -731,10 +754,10 @@
                 const fila = document.createElement('tr');
                 agregarCelda(fila, venta.fecha);
                 agregarCelda(fila, venta.comprador);
-                agregarCelda(fila, Number(venta.cantidad) + ' QQ');
-                agregarCelda(fila, 'S/ ' + Number(venta.precio).toFixed(2));
+                agregarCelda(fila, Number(venta.cantidad) + ' ' + (venta.unidad || 'QQ'));
+                agregarCelda(fila, 'S/ ' + Number(venta.precioUnitario ?? venta.precio).toFixed(2));
                 const ingreso = document.createElement('td');
-                ingreso.textContent = 'S/ ' + (Number(venta.cantidad) * Number(venta.precio)).toFixed(2);
+                ingreso.textContent = 'S/ ' + obtenerIngresoVenta(venta).toFixed(2);
                 ingreso.style.color = '#2b7042';
                 ingreso.style.fontWeight = 'bold';
                 fila.appendChild(ingreso);
@@ -753,6 +776,7 @@
                 fila.appendChild(crearCeldaAcciones('parcelas', parcela.id));
                 tablaParcelas.appendChild(fila);
             });
+            actualizarResumenDashboard();
         }
 
         renderizarRegistros();
@@ -766,15 +790,22 @@
         }
 
         // Cálculo automático de ventas
-        document.getElementById('inputQQ').addEventListener('input', calcularTotalVenta);
-        document.getElementById('inputPrecioQQ').addEventListener('input', calcularTotalVenta);
+        document.getElementById('inputCantidadVenta').addEventListener('input', calcularIngresoTotal);
+        document.getElementById('inputPrecioUnitarioVenta').addEventListener('input', calcularIngresoTotal);
         document.getElementById('inputCant').addEventListener('input', calcularCostoTotal);
         document.getElementById('inputPrecioUnitario').addEventListener('input', calcularCostoTotal);
 
-        function calcularTotalVenta() {
-            const qq = parseFloat(document.getElementById('inputQQ').value) || 0;
-            const precio = parseFloat(document.getElementById('inputPrecioQQ').value) || 0;
-            document.getElementById('inputTotalVenta').value = "S/ " + (qq * precio).toFixed(2);
+        function calcularIngresoTotal() {
+            const cantidad = parseFloat(document.getElementById('inputCantidadVenta').value);
+            const precioUnitario = parseFloat(document.getElementById('inputPrecioUnitarioVenta').value);
+            const campoTotal = document.getElementById('inputIngresoTotal');
+
+            if (!Number.isFinite(cantidad) || !Number.isFinite(precioUnitario)) {
+                campoTotal.value = '';
+                return;
+            }
+
+            campoTotal.value = (cantidad * precioUnitario).toFixed(2);
         }
 
         function calcularCostoTotal() {
@@ -792,31 +823,90 @@
 
         function registrarNuevaVenta() {
             const comprador = document.getElementById('inputComprador').value;
-            const qq = document.getElementById('inputQQ').value;
-            const precio = document.getElementById('inputPrecioQQ').value;
+            const cantidad = parseFloat(document.getElementById('inputCantidadVenta').value);
+            const precioUnitario = parseFloat(document.getElementById('inputPrecioUnitarioVenta').value);
+            const unidad = document.getElementById('inputUnidadVenta').value;
 
-            if(!comprador || !qq || !precio) {
-                alert("Por favor completa todos los campos de la venta.");
+            if (!comprador || !Number.isFinite(cantidad) || cantidad <= 0 || !Number.isFinite(precioUnitario) || precioUnitario <= 0) {
+                alert("Completa el comprador, una cantidad válida y el precio unitario.");
                 return;
             }
 
+            const ingresoTotal = Number((cantidad * precioUnitario).toFixed(2));
             const nuevasVentas = [{
                 id: generarId(),
                 fecha: new Date().toLocaleDateString(),
                 comprador,
-                cantidad: parseFloat(qq),
-                precio: parseFloat(precio)
+                cantidad,
+                unidad,
+                precioUnitario,
+                precio: precioUnitario,
+                ingresoTotal
             }, ...registros.ventas];
             if (!guardarRegistros('ventas', nuevasVentas)) return;
             registros.ventas = nuevasVentas;
             renderizarRegistros();
 
             document.getElementById('inputComprador').value = '';
-            document.getElementById('inputQQ').value = '';
-            document.getElementById('inputPrecioQQ').value = '';
-            document.getElementById('inputTotalVenta').value = '';
+            document.getElementById('inputCantidadVenta').value = '';
+            document.getElementById('inputUnidadVenta').value = 'QQ';
+            document.getElementById('inputPrecioUnitarioVenta').value = '';
+            document.getElementById('inputIngresoTotal').value = '';
             alert("¡Venta de café registrada con éxito!");
         }
+
+        function obtenerIngresoVenta(venta) {
+            const ingresoGuardado = Number(venta.ingresoTotal);
+            if (Number.isFinite(ingresoGuardado) && venta.ingresoTotal !== undefined && venta.ingresoTotal !== null) {
+                return ingresoGuardado;
+            }
+
+            const cantidad = Number(venta.cantidad);
+            const precioUnitario = Number(venta.precioUnitario ?? venta.precio);
+            return (Number.isFinite(cantidad) ? cantidad : 0) * (Number.isFinite(precioUnitario) ? precioUnitario : 0);
+        }
+
+        function leerRegistrosAlmacenados(tipo) {
+            try {
+                const contenido = localStorage.getItem(clavesAlmacenamiento[tipo]);
+                if (contenido === null) return registros[tipo];
+                const guardados = JSON.parse(contenido);
+                return Array.isArray(guardados) ? guardados : registros[tipo];
+            } catch (error) {
+                console.error('No se pudieron leer los registros de ' + tipo, error);
+                return registros[tipo];
+            }
+        }
+
+        function actualizarResumenDashboard() {
+            const gastosGuardados = leerRegistrosAlmacenados('gastos');
+            const ventasGuardadas = leerRegistrosAlmacenados('ventas');
+            const totalGastos = gastosGuardados
+                .reduce((total, gasto) => total + (Number(gasto.costo) || 0), 0);
+            const totalIngresos = ventasGuardadas
+                .reduce((total, venta) => total + obtenerIngresoVenta(venta), 0);
+            const utilidadNeta = Number((totalIngresos - totalGastos).toFixed(2));
+
+            document.getElementById('dashboardTotalGastos').textContent = 'S/ ' + totalGastos.toFixed(2);
+            document.getElementById('dashboardTotalIngresos').textContent = 'S/ ' + totalIngresos.toFixed(2);
+            const indicadorUtilidad = document.getElementById('dashboardUtilidadNeta');
+            indicadorUtilidad.textContent = 'S/ ' + utilidadNeta.toFixed(2);
+            indicadorUtilidad.style.color = utilidadNeta < 0 ? '#a83232' : '#2b7042';
+        }
+
+        window.addEventListener('storage', event => {
+            const tipo = Object.keys(clavesAlmacenamiento).find(nombre => clavesAlmacenamiento[nombre] === event.key);
+            if (!tipo) return;
+
+            try {
+                const guardados = JSON.parse(event.newValue || '[]');
+                if (!Array.isArray(guardados)) return;
+                registros[tipo] = tipo === 'gastos' ? migrarGastos(guardados) : guardados;
+                renderizarRegistros();
+            } catch (error) {
+                console.error('No se pudieron sincronizar los registros entre pestañas.', error);
+            }
+        });
 
         function enviarMensajeChat() {
             const input = document.getElementById('chatInput');
