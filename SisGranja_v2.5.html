@@ -348,10 +348,11 @@
                                         <th class="p-3">Fecha</th>
                                         <th class="p-3">Poza Origen</th>
                                         <th class="p-3">Machos / Hembras</th>
+                                        <th class="p-3">Pozas Destino</th>
                                     </tr>
                                 </thead>
                                 <tbody id="dash-tabla-destetados">
-                                    <tr><td colspan="3" class="p-4 text-center text-stone-400">No hay destetes registrados.</td></tr>
+                                    <tr><td colspan="4" class="p-4 text-center text-stone-400">No hay destetes registrados.</td></tr>
                                 </tbody>
                             </table>
                         </div>
@@ -418,6 +419,7 @@
                                     <th class="p-4">Etapa</th>
                                     <th class="p-4">Género</th>
                                     <th class="p-4">Galpón / Ubicación</th>
+                                    <th class="p-4">Stock Actual</th>
                                     <th class="p-4">Acción</th>
                                 </tr>
                             </thead>
@@ -478,20 +480,36 @@
             <div id="view-destetados" class="space-y-6 view-section hidden">
                 <div class="bg-white p-6 rounded-2xl border border-stone-200 shadow-xs">
                     <h3 class="text-lg font-bold text-stone-800 mb-4">Registrar Destete por Sexo</h3>
-                    <form onsubmit="guardarDestete(event)" class="grid grid-cols-1 sm:grid-cols-4 gap-4">
+                    <form onsubmit="guardarDestete(event)" class="grid grid-cols-1 md:grid-cols-4 gap-4">
                         <div>
                             <label class="block text-xs font-bold text-stone-600 mb-1">Poza Origen</label>
                             <select id="destete-poza" required class="w-full px-3 py-2 border rounded-xl text-sm outline-none focus:border-emerald-600">
                                 <option value="">Selecciona una poza</option>
                             </select>
                         </div>
-                        <div>
-                            <label class="block text-xs font-bold text-stone-600 mb-1">Recría de machos</label>
-                            <input type="number" id="destete-machos" required min="0" value="0" class="w-full px-3 py-2 border rounded-xl text-sm outline-none focus:border-emerald-600">
+                        <div class="space-y-3">
+                            <div>
+                                <label class="block text-xs font-bold text-stone-600 mb-1">Cantidad de Machos</label>
+                                <input type="number" id="destete-machos" required min="0" value="0" class="w-full px-3 py-2 border rounded-xl text-sm outline-none focus:border-emerald-600">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-stone-600 mb-1">Poza Destino Machos</label>
+                                <select id="destete-poza-machos" required class="w-full px-3 py-2 border rounded-xl text-sm outline-none focus:border-emerald-600">
+                                    <option value="">Selecciona una poza</option>
+                                </select>
+                            </div>
                         </div>
-                        <div>
-                            <label class="block text-xs font-bold text-stone-600 mb-1">Recría de hembras</label>
-                            <input type="number" id="destete-hembras" required min="0" value="0" class="w-full px-3 py-2 border rounded-xl text-sm outline-none focus:border-emerald-600">
+                        <div class="space-y-3">
+                            <div>
+                                <label class="block text-xs font-bold text-stone-600 mb-1">Cantidad de Hembras</label>
+                                <input type="number" id="destete-hembras" required min="0" value="0" class="w-full px-3 py-2 border rounded-xl text-sm outline-none focus:border-emerald-600">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-stone-600 mb-1">Poza Destino Hembras</label>
+                                <select id="destete-poza-hembras" required class="w-full px-3 py-2 border rounded-xl text-sm outline-none focus:border-emerald-600">
+                                    <option value="">Selecciona una poza</option>
+                                </select>
+                            </div>
                         </div>
                         <div class="flex items-end">
                             <button type="submit" class="w-full bg-indigo-600 text-white font-semibold py-2 px-4 rounded-xl text-sm hover:bg-indigo-700 transition shadow-xs">Guardar Destete</button>
@@ -512,6 +530,8 @@
                                     <th class="p-4">Poza Origen</th>
                                     <th class="p-4">Machos Destetados</th>
                                     <th class="p-4">Hembras Destetadas</th>
+                                    <th class="p-4">Destino Machos</th>
+                                    <th class="p-4">Destino Hembras</th>
                                     <th class="p-4">Acción</th>
                                 </tr>
                             </thead>
@@ -876,7 +896,7 @@
 
         function actualizarSelectoresPozas() {
             const codigos = obtenerCodigosPozas();
-            document.querySelectorAll('#cuy-codigo, #parto-poza, #destete-poza, #baja-identificador, #empadre-poza, #quick-poza, #necro-poza').forEach(selector => {
+            document.querySelectorAll('#cuy-codigo, #parto-poza, #destete-poza, #destete-poza-machos, #destete-poza-hembras, #baja-identificador, #empadre-poza, #quick-poza, #necro-poza').forEach(selector => {
                 const valorActual = selector.value;
                 const textoInicial = selector.id === 'quick-poza' ? 'Toca una casilla o selecciona una poza' : 'Selecciona una poza';
                 const opciones = [new Option(textoInicial, ''), ...codigos.map(codigo => new Option(codigo, codigo))];
@@ -892,6 +912,37 @@
                 selector.replaceChildren(...(id === 'salud-destino' ? [new Option('Selecciona galpón o poza', ''), ...opcionesUbicacion] : opcionesUbicacion));
                 if ([...selector.options].some(opcion => opcion.value === valorActual)) selector.value = valorActual;
             });
+        }
+
+        function obtenerStockActualPoza(poza) {
+            const codigo = String(poza.codigo || poza.id || '').trim().toUpperCase();
+            const etapa = String(poza.etapa || '').toLowerCase();
+            const stockInicial = poza.stockInicial !== undefined
+                ? Number(poza.stockInicial) || 0
+                : (etapa.includes('reproductor') ? 7 : 0);
+            const coincidePoza = valor => String(valor || '').trim().toUpperCase() === codigo;
+            const nacimientos = db.partos
+                .filter(parto => coincidePoza(parto.poza))
+                .reduce((total, parto) => total + Number(parto.vivas || 0), 0);
+            const destetadosOrigen = db.destetados
+                .filter(destete => coincidePoza(destete.poza))
+                .reduce((total, destete) => {
+                    if (destete.machos !== undefined || destete.hembras !== undefined) {
+                        return total + Number(destete.machos || 0) + Number(destete.hembras || 0);
+                    }
+                    const sexo = String(destete.sexo || '').toLowerCase();
+                    return total + (sexo.includes('macho') || sexo.includes('hembra') || sexo === 'm' || sexo === 'h' ? Number(destete.cantidad || 0) : 0);
+                }, 0);
+            const destetadosDestino = db.destetados.reduce((total, destete) => {
+                const machos = coincidePoza(destete.pozaMachosDestino) ? Number(destete.machos || 0) : 0;
+                const hembras = coincidePoza(destete.pozaHembrasDestino) ? Number(destete.hembras || 0) : 0;
+                return total + machos + hembras;
+            }, 0);
+            const bajas = db.bajas
+                .filter(baja => coincidePoza(baja.identificador))
+                .reduce((total, baja) => total + Number(baja.cantidad || 0), 0);
+
+            return stockInicial + nacimientos - destetadosOrigen + destetadosDestino - bajas;
         }
 
         function renderizarMapaPozas() {
@@ -1215,12 +1266,36 @@
         function guardarDestete(e) {
             e.preventDefault();
             const poza = document.getElementById('destete-poza').value;
+            const machos = Number.parseInt(document.getElementById('destete-machos').value, 10) || 0;
+            const hembras = Number.parseInt(document.getElementById('destete-hembras').value, 10) || 0;
+            const pozaMachosDestino = document.getElementById('destete-poza-machos').value;
+            const pozaHembrasDestino = document.getElementById('destete-poza-hembras').value;
+            const totalDestetados = machos + hembras;
+            const codigoPoza = valor => String(valor || '').trim().toUpperCase();
+
+            if (machos < 0 || hembras < 0) {
+                mostrarToast('Las cantidades del destete no pueden ser negativas.', 'error');
+                return;
+            }
+
+            const asegurarPozaInventario = (codigo, genero) => {
+                if (!codigo) return;
+                if (db.cuyes.some(item => codigoPoza(item.codigo || item.id) === codigoPoza(codigo))) return;
+                db.cuyes.push({ codigo, etapa: 'Recría', genero, poza: 'Sin asignar', stockInicial: 0 });
+            };
+            if (totalDestetados > 0) {
+                asegurarPozaInventario(poza, 'Sin especificar');
+                if (machos > 0) asegurarPozaInventario(pozaMachosDestino, 'Macho');
+                if (hembras > 0) asegurarPozaInventario(pozaHembrasDestino, 'Hembra');
+            }
             const fecha = fechaHoy();
             db.destetados.unshift({
                 fecha,
                 poza,
-                machos: parseInt(document.getElementById('destete-machos').value),
-                hembras: parseInt(document.getElementById('destete-hembras').value)
+                machos,
+                hembras,
+                pozaMachosDestino,
+                pozaHembrasDestino
             });
             const gestacion = db.gestaciones.find(item => item.poza === poza && item.fechaParto && !item.fechaDestete);
             if (gestacion) gestacion.fechaDestete = fecha;
@@ -1894,7 +1969,6 @@
 
             // KPIs
             const totalPozas = db.cuyes.length;
-            let totalCriasVivasPartos = db.partos.reduce((acc, p) => acc + (p.vivas || 0), 0);
             let totalBajasCount = db.bajas.reduce((acc, b) => acc + (b.cantidad || 0), 0);
             
             // --- 1. CÁLCULO DE CUYES DESTETADOS (Hembras y Machos) ---
@@ -1930,9 +2004,7 @@
             if (elDestetadosSub) elDestetadosSub.innerText = `${hembrasDestetadas} hembras, ${machosDestetados} machos`;
 
 
-            const totalHembras = totalPozas * 6;
-            const totalMachos = totalPozas;
-            let poblacionTotal = totalHembras + totalMachos + totalCriasVivasPartos - totalBajasCount;
+            let poblacionTotal = db.cuyes.reduce((total, poza) => total + obtenerStockActualPoza(poza), 0);
             if (poblacionTotal < 0) poblacionTotal = 0;
 
             let totalVentas = calcularTotalVentas();
@@ -1961,7 +2033,7 @@
             if (elKpiPoblacion) elKpiPoblacion.innerText = poblacionTotal;
 
             const elKpiPoblacionSub = document.getElementById('kpi-poblacion-sub');
-            if (elKpiPoblacionSub) elKpiPoblacionSub.innerText = `${totalHembras} hembras, ${totalMachos} machos, ${totalCriasVivasPartos} crías`;
+            if (elKpiPoblacionSub) elKpiPoblacionSub.innerText = 'Stock calculado con partos, destetes y bajas registrados';
 
             const elKpiIngresos = document.getElementById('kpi-ingresos');
             if (elKpiIngresos) elKpiIngresos.innerText = `S/ ${totalVentas.toFixed(2)}`;
@@ -1997,9 +2069,9 @@
             document.getElementById('kpi-utilidad-sub').innerText = `Balance: S/ ${totalVentas.toFixed(2)} ingresos - S/ ${totalGastos.toFixed(2)} gastos`;
 
             // Renderizar Tablas principales
-            renderTabla('tabla-cuyes', db.cuyes, ['codigo', 'etapa', 'genero', 'poza'], 'cuyes');
+            renderTabla('tabla-cuyes', db.cuyes, ['codigo', 'etapa', 'genero', 'poza', 'stockActual'], 'cuyes');
             renderTabla('tabla-partos', db.partos, ['fecha', 'poza', 'vivas', 'muertas'], 'partos');
-            renderTabla('tabla-destetados', db.destetados, ['fecha', 'poza', 'machos', 'hembras'], 'destetados');
+            renderTabla('tabla-destetados', db.destetados, ['fecha', 'poza', 'machos', 'hembras', 'pozaMachosDestino', 'pozaHembrasDestino'], 'destetados');
             renderTabla('tabla-bajas', db.bajas, ['fecha', 'identificador', 'cantidad', 'motivo'], 'bajas');
             renderTabla('tabla-ventas', db.ventas, ['fecha', 'categoria', 'cantidad', 'monto', 'cliente'], 'ventas');
             renderTabla('tabla-gastos', db.gastos, ['fecha', 'concepto', 'categoria', 'ubicacion', 'monto'], 'gastos');
@@ -2017,13 +2089,15 @@
             document.getElementById('dash-tabla-destetados').innerHTML = db.destetados.slice(0, 5).map(d => {
                 const m = d.machos !== undefined ? d.machos : (d.sexo === 'Macho' ? d.cantidad : 0);
                 const h = d.hembras !== undefined ? d.hembras : (d.sexo === 'Hembra' ? d.cantidad : 0);
+                const destinos = [m > 0 ? `Machos: ${d.pozaMachosDestino || 'No registrado'}` : '', h > 0 ? `Hembras: ${d.pozaHembrasDestino || 'No registrado'}` : ''].filter(Boolean).join(' / ');
                 return `
                 <tr class="border-b border-stone-100">
                     <td class="p-3">${d.fecha}</td>
                     <td class="p-3 font-semibold">${d.poza}</td>
                     <td class="p-3"><span class="bg-indigo-100 text-indigo-800 text-xs px-2 py-0.5 rounded-full font-bold">${m}M / ${h}H</span></td>
+                    <td class="p-3">${escaparHTML(destinos || 'No registrado')}</td>
                 </tr>`;
-            }).join('') || `<tr><td colspan="3" class="p-4 text-center text-stone-400">No hay destetes registrados.</td></tr>`;
+            }).join('') || `<tr><td colspan="4" class="p-4 text-center text-stone-400">No hay destetes registrados.</td></tr>`;
 
             actualizarGraficos(totalVentas, totalGastos);
         }
@@ -2039,6 +2113,7 @@
                     ${keys.map(k => {
                         let val = item[k] !== undefined ? item[k] : (k === 'codigo' ? item['id'] : '');
                         if (k === 'ubicacion') val = item.ubicacion || 'General';
+                        if (k === 'stockActual' && tipo === 'cuyes') val = obtenerStockActualPoza(item);
                         if (k === 'diasProtocolo') val = item.diasProtocolo ?? 'No consignado';
                         if (k === 'foto') return `<td class="p-4">${item.foto ? `<button type="button" data-foto="${idx}" class="text-emerald-800 font-bold underline">Ver foto</button>` : 'Sin foto'}</td>`;
                         if (k === 'monto') {
@@ -2069,7 +2144,6 @@
             let countCria = db.cuyes.filter(c => c.etapa === 'Cría').length;
             let countCuarentena = db.cuyes.filter(c => c.etapa === 'Cuarentena').length;
             let totalVivas = db.partos.reduce((acc, p) => acc + (p.vivas || 0), 0);
-
             const ctxPob = document.getElementById('chartPoblacion').getContext('2d');
             if (chartPoblacionInstance) chartPoblacionInstance.destroy();
             chartPoblacionInstance = new Chart(ctxPob, {
@@ -2122,7 +2196,7 @@
                 const mes = meses.find(item => item.clave === String(baja.fecha || '').slice(0, 7));
                 if (mes) mes.bajas += Number(baja.cantidad || 0);
             });
-            const poblacionBase = Math.max(1, db.cuyes.length * 7 + totalVivas);
+            const poblacionBase = Math.max(1, db.cuyes.reduce((total, poza) => total + obtenerStockActualPoza(poza), 0));
             const ctxMortalidad = document.getElementById('chartMortalidad').getContext('2d');
             if (chartMortalidadInstance) chartMortalidadInstance.destroy();
             chartMortalidadInstance = new Chart(ctxMortalidad, {
@@ -2165,7 +2239,7 @@
 
         function obtenerSeccionesReporte() {
             return [
-                { titulo: 'Población y etapas', columnas: ['Código', 'Etapa', 'Género', 'Galpón / ubicación'], filas: db.cuyes.map(poza => [poza.codigo || poza.id, poza.etapa, poza.genero, poza.poza]) },
+                { titulo: 'Población y etapas', columnas: ['Código', 'Etapa', 'Género', 'Galpón / ubicación', 'Stock actual'], filas: db.cuyes.map(poza => [poza.codigo || poza.id, poza.etapa, poza.genero, poza.poza, obtenerStockActualPoza(poza)]) },
                 { titulo: 'Nacimientos', columnas: ['Fecha', 'Poza', 'Crías vivas', 'Crías muertas'], filas: db.partos.map(parto => [parto.fecha, parto.poza, parto.vivas, parto.muertas]) },
                 { titulo: 'Destetes', columnas: ['Fecha', 'Poza', 'Recría machos', 'Recría hembras'], filas: db.destetados.map(destete => [destete.fecha, destete.poza, destete.machos ?? (destete.sexo === 'Macho' ? destete.cantidad : 0), destete.hembras ?? (destete.sexo === 'Hembra' ? destete.cantidad : 0)]) },
                 { titulo: 'Bajas y mortalidad', columnas: ['Fecha', 'Identificador', 'Cantidad', 'Motivo'], filas: db.bajas.map(baja => [baja.fecha, baja.identificador, baja.cantidad, baja.motivo]) },
