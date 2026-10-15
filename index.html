@@ -321,6 +321,10 @@
             .menu-item { padding: 10px 12px; font-size: 0.85rem; white-space: nowrap; }
             main { padding: 15px; }
             .col-8, .col-4, .col-6 { grid-column: span 12; }
+            .form-grid-mobile { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+            .form-grid-mobile .form-group:first-child,
+            .form-grid-mobile .form-group:nth-child(2),
+            .form-grid-mobile button { grid-column: 1 / -1; }
         }
     </style>
 </head>
@@ -495,7 +499,7 @@
                 <div class="card-header"><i data-lucide="receipt"></i> Registro Detallado de Gastos e Insumos</div>
                 <div style="background: #faf8f5; padding: 18px; border-radius: 12px; margin-bottom: 20px; border: 1px solid var(--border-color);">
                     <h3 style="margin-bottom: 12px; font-size: 1.05rem; color: var(--primary);">Registrar Nueva Labor o Gasto</h3>
-                    <div style="display: grid; grid-template-columns: 2fr 2fr 1fr 1fr auto; gap: 12px; align-items: end;" class="form-grid-mobile">
+                    <div style="display: grid; grid-template-columns: 2fr 2fr 1fr 1.4fr 1fr auto; gap: 12px; align-items: end;" class="form-grid-mobile">
                         <div class="form-group" style="margin:0;">
                             <label>Descripción</label>
                             <input type="text" id="inputLabor" class="form-control" placeholder="Ej. Jornales de deshierbe">
@@ -514,12 +518,16 @@
                             </select>
                         </div>
                         <div class="form-group" style="margin:0;">
-                            <label>Cantidad / Jornales</label>
-                            <input type="text" id="inputCant" class="form-control" placeholder="4 Jornales">
+                            <label>Cantidad / Días</label>
+                            <input type="number" id="inputCant" class="form-control" placeholder="4" min="0.01" step="any">
+                        </div>
+                        <div class="form-group" style="margin:0;">
+                            <label>Precio Unitario (S/ por día/unidad)</label>
+                            <input type="number" id="inputPrecioUnitario" class="form-control" placeholder="60.00" min="0.01" step="0.01">
                         </div>
                         <div class="form-group" style="margin:0;">
                             <label>Costo Total (S/)</label>
-                            <input type="number" id="inputCosto" class="form-control" placeholder="240">
+                            <input type="number" id="inputCosto" class="form-control" placeholder="240.00" readonly>
                         </div>
                         <button class="btn" onclick="registrarNuevoGasto()"><i data-lucide="plus-circle"></i> Agregar Gasto</button>
                     </div>
@@ -527,7 +535,7 @@
                 <div class="table-scroll">
                     <table class="records-table">
                         <thead>
-                            <tr><th>Fecha</th><th>Descripción</th><th>Categoría</th><th>Cantidad</th><th>Costo Total (S/)</th><th>Acciones</th></tr>
+                            <tr><th>Fecha</th><th>Descripción</th><th>Categoría</th><th>Cantidad / Días</th><th>Precio Unitario (S/ por día/unidad)</th><th>Costo Total (S/)</th><th>Acciones</th></tr>
                         </thead>
                         <tbody id="tablaCostosDinamica"></tbody>
                     </table>
@@ -633,11 +641,40 @@
                 : Date.now().toString(36) + Math.random().toString(36).slice(2);
         }
 
+        function migrarGastos(registrosGuardados) {
+            const registrosMigrados = registrosGuardados.map(gasto => {
+                const cantidadAnterior = gasto.cantidad;
+                const cantidadParseada = Number.parseFloat(cantidadAnterior);
+                const cantidad = Number.isFinite(cantidadParseada) && cantidadParseada > 0 ? cantidadParseada : 1;
+                const costo = Number(gasto.costo) || 0;
+                const precioGuardado = Number(gasto.precioUnitario);
+                const precioUnitario = Number.isFinite(precioGuardado) && gasto.precioUnitario !== null && gasto.precioUnitario !== ''
+                    ? precioGuardado
+                    : costo / cantidad;
+                const unidadAnterior = typeof cantidadAnterior === 'string'
+                    ? cantidadAnterior.replace(/^[\d.,\s]+/, '').trim()
+                    : '';
+
+                return {
+                    ...gasto,
+                    cantidad,
+                    unidad: gasto.unidad || unidadAnterior,
+                    precioUnitario,
+                    costo
+                };
+            });
+
+            if (JSON.stringify(registrosMigrados) !== JSON.stringify(registrosGuardados)) {
+                guardarRegistros('gastos', registrosMigrados);
+            }
+            return registrosMigrados;
+        }
+
         const registros = {
-            gastos: cargarRegistros('gastos', [
-                { id: 'gasto-inicial-1', fecha: '12/10/2026', descripcion: 'Deshierbe y limpieza manual', categoria: 'Deshierbe y Limpieza', cantidad: '4 Jornales', costo: 240 },
-                { id: 'gasto-inicial-2', fecha: '28/09/2026', descripcion: 'Abonamiento NPK + Guano de Isla', categoria: 'Abonamiento / Fertilización', cantidad: '5 Sacos', costo: 650 }
-            ]),
+            gastos: migrarGastos(cargarRegistros('gastos', [
+                { id: 'gasto-inicial-1', fecha: '12/10/2026', descripcion: 'Deshierbe y limpieza manual', categoria: 'Deshierbe y Limpieza', cantidad: 4, unidad: 'Jornales', precioUnitario: 60, costo: 240 },
+                { id: 'gasto-inicial-2', fecha: '28/09/2026', descripcion: 'Abonamiento NPK + Guano de Isla', categoria: 'Abonamiento / Fertilización', cantidad: 5, unidad: 'Sacos', precioUnitario: 130, costo: 650 }
+            ])),
             ventas: cargarRegistros('ventas', [
                 { id: 'venta-inicial-1', fecha: '10/10/2026', comprador: 'Acopio Lonya Grande', cantidad: 10, precio: 740 }
             ]),
@@ -681,7 +718,8 @@
                 agregarCelda(fila, gasto.fecha);
                 agregarCelda(fila, gasto.descripcion);
                 agregarCelda(fila, gasto.categoria);
-                agregarCelda(fila, gasto.cantidad);
+                agregarCelda(fila, gasto.cantidad + (gasto.unidad ? ' ' + gasto.unidad : ''));
+                agregarCelda(fila, 'S/ ' + Number(gasto.precioUnitario).toFixed(2));
                 agregarCelda(fila, 'S/ ' + Number(gasto.costo).toFixed(2));
                 fila.appendChild(crearCeldaAcciones('gastos', gasto.id));
                 tablaGastos.appendChild(fila);
@@ -730,11 +768,26 @@
         // Cálculo automático de ventas
         document.getElementById('inputQQ').addEventListener('input', calcularTotalVenta);
         document.getElementById('inputPrecioQQ').addEventListener('input', calcularTotalVenta);
+        document.getElementById('inputCant').addEventListener('input', calcularCostoTotal);
+        document.getElementById('inputPrecioUnitario').addEventListener('input', calcularCostoTotal);
 
         function calcularTotalVenta() {
             const qq = parseFloat(document.getElementById('inputQQ').value) || 0;
             const precio = parseFloat(document.getElementById('inputPrecioQQ').value) || 0;
             document.getElementById('inputTotalVenta').value = "S/ " + (qq * precio).toFixed(2);
+        }
+
+        function calcularCostoTotal() {
+            const cantidad = parseFloat(document.getElementById('inputCant').value);
+            const precioUnitario = parseFloat(document.getElementById('inputPrecioUnitario').value);
+            const campoTotal = document.getElementById('inputCosto');
+
+            if (!Number.isFinite(cantidad) || !Number.isFinite(precioUnitario)) {
+                campoTotal.value = '';
+                return;
+            }
+
+            campoTotal.value = (cantidad * precioUnitario).toFixed(2);
         }
 
         function registrarNuevaVenta() {
@@ -826,18 +879,24 @@
         function registrarNuevoGasto() {
             const labor = document.getElementById('inputLabor').value;
             const cat = document.getElementById('inputCat').value;
-            const cant = document.getElementById('inputCant').value;
-            const costo = document.getElementById('inputCosto').value;
+            const cantidad = parseFloat(document.getElementById('inputCant').value);
+            const precioUnitario = parseFloat(document.getElementById('inputPrecioUnitario').value);
 
-            if(!labor || !costo) { alert("Completa la descripción y el costo."); return; }
+            if (!labor || !Number.isFinite(cantidad) || cantidad <= 0 || !Number.isFinite(precioUnitario) || precioUnitario <= 0) {
+                alert("Completa la descripción, una cantidad válida y el precio unitario.");
+                return;
+            }
+
+            const costo = Number((cantidad * precioUnitario).toFixed(2));
 
             const nuevosGastos = [{
                 id: generarId(),
                 fecha: new Date().toLocaleDateString(),
                 descripcion: labor,
                 categoria: cat,
-                cantidad: cant || '1',
-                costo: parseFloat(costo)
+                cantidad,
+                precioUnitario,
+                costo
             }, ...registros.gastos];
             if (!guardarRegistros('gastos', nuevosGastos)) return;
             registros.gastos = nuevosGastos;
@@ -845,6 +904,7 @@
 
             document.getElementById('inputLabor').value = '';
             document.getElementById('inputCant').value = '';
+            document.getElementById('inputPrecioUnitario').value = '';
             document.getElementById('inputCosto').value = '';
             alert("¡Gasto registrado con éxito!");
         }
