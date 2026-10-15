@@ -1,557 +1,463 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="theme-color" content="#183f32">
-    <title>AgroCafé Pro | Gestión de finca</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,600;9..144,700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/regular/style.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AgroCafé Pro - Sistema Inteligente de Gestión Cafetalera</title>
+    <!-- Chart.js para los gráficos de precios -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
     <style>
         :root {
-            color-scheme: light;
-            --forest: #183f32;
-            --forest-soft: #285a46;
-            --leaf: #548264;
-            --gold: #c49a43;
-            --rust: #b96045;
-            --ink: #1d2a24;
-            --muted: #77827b;
-            --line: #e5e9e3;
-            --canvas: #f4f6f2;
-            --white: #fff;
-            --shadow: 0 10px 26px rgb(25 54 40 / 6%);
+            --primary: #1b4332;
+            --primary-light: #2d6a4f;
+            --accent: #d4a373;
+            --bg-body: #f4f1ea;
+            --card-bg: #ffffff;
+            --text-main: #2b2b2b;
+            --text-muted: #6c757d;
+            --border-color: #e2dcd0;
         }
-        * { box-sizing: border-box; }
-        body { margin: 0; background: var(--canvas); color: var(--ink); font-family: 'DM Sans', sans-serif; }
-        button, input, select { font: inherit; }
-        button { cursor: pointer; }
-        button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px solid #d9b762; outline-offset: 2px; }
-        .app { min-height: 100vh; display: grid; grid-template-columns: 246px minmax(0, 1fr); }
-        .sidebar { background: var(--forest); color: #eaf0eb; display: flex; flex-direction: column; padding: 25px 16px 18px; }
-        .brand { display: flex; align-items: center; gap: 11px; padding: 0 9px 27px; }
-        .brand-mark { width: 42px; height: 42px; display: grid; place-items: center; border-radius: 13px; color: #1f382c; background: #e2bd65; font-size: 23px; }
-        .brand-name { font-family: Fraunces, Georgia, serif; font-size: 19px; line-height: 1.1; color: #fff; }
-        .brand-sub { margin-top: 4px; color: #a7c3af; font-size: 10px; letter-spacing: 1.25px; text-transform: uppercase; }
-        .nav-label { padding: 10px 11px 8px; color: #96b29e; font-size: 10px; font-weight: 700; letter-spacing: 1.25px; text-transform: uppercase; }
-        .nav-list { display: grid; gap: 5px; }
-        .nav-button { min-height: 43px; padding: 0 12px; display: flex; align-items: center; gap: 11px; border: 0; border-radius: 8px; background: transparent; color: #d4e1d7; text-align: left; font-size: 13px; font-weight: 600; transition: background .18s ease, color .18s ease; }
-        .nav-button i { font-size: 18px; }
-        .nav-button:hover { background: rgb(255 255 255 / 8%); color: #fff; }
-        .nav-button.active { background: #e4eee4; color: var(--forest); }
-        .side-bottom { margin-top: auto; padding: 16px 10px 0; border-top: 1px solid rgb(255 255 255 / 13%); }
-        .farm-status { display: flex; align-items: center; gap: 9px; font-size: 12px; font-weight: 600; }
-        .status-dot { width: 8px; height: 8px; border-radius: 50%; background: #9ac678; box-shadow: 0 0 0 4px rgb(154 198 120 / 15%); }
-        .side-note { margin-top: 7px; color: #a7c3af; font-size: 11px; }
-        .main { min-width: 0; }
-        .topbar { height: 72px; padding: 0 34px; display: flex; justify-content: space-between; align-items: center; background: var(--white); border-bottom: 1px solid var(--line); }
-        .breadcrumb { color: var(--muted); font-size: 12px; }
-        .top-actions { display: flex; align-items: center; gap: 17px; }
-        .today { color: #657169; font-size: 12px; }
-        .profile { width: 34px; height: 34px; display: grid; place-items: center; border-radius: 50%; background: #e6eee4; color: var(--forest); font-size: 12px; font-weight: 700; }
-        .content { width: min(1460px, 100%); margin: 0 auto; padding: 30px 34px 42px; }
-        .view { display: none; animation: appear .24s ease both; }
-        .view.active { display: block; }
-        @keyframes appear { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
-        .page-heading { display: flex; justify-content: space-between; align-items: end; gap: 16px; margin-bottom: 20px; }
-        .eyebrow { color: var(--leaf); font-size: 10px; font-weight: 700; letter-spacing: 1.35px; text-transform: uppercase; }
-        h1, h2, h3, p { margin-top: 0; }
-        h1 { margin-bottom: 5px; color: var(--ink); font-family: Fraunces, Georgia, serif; font-size: 30px; line-height: 1.15; font-weight: 600; }
-        .page-heading p { margin: 0; color: var(--muted); font-size: 13px; }
-        .button { min-height: 40px; padding: 0 14px; display: inline-flex; justify-content: center; align-items: center; gap: 8px; border: 1px solid transparent; border-radius: 7px; font-size: 12px; font-weight: 700; transition: transform .16s ease, background .16s ease; }
-        .button:hover { transform: translateY(-1px); }
-        .button-primary { background: var(--forest); color: #fff; }
-        .button-primary:hover { background: var(--forest-soft); }
-        .button-quiet { background: #fff; border-color: var(--line); color: #46554b; }
-        .button-quiet:hover { background: #f8faf7; }
-        .summary-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 13px; margin-bottom: 18px; }
-        .metric { min-height: 126px; padding: 17px 18px; background: #fff; border: 1px solid var(--line); border-radius: 9px; box-shadow: var(--shadow); }
-        .metric-top { display: flex; align-items: center; justify-content: space-between; color: #647168; font-size: 11px; font-weight: 600; }
-        .metric-icon { width: 30px; height: 30px; display: grid; place-items: center; border-radius: 8px; font-size: 17px; }
-        .icon-green { background: #e8f1e6; color: #3d7451; }
-        .icon-gold { background: #f7f0dc; color: #a57d2e; }
-        .icon-rust { background: #f7e9e3; color: #a6543e; }
-        .icon-sage { background: #e7eeee; color: #55716b; }
-        .metric-value { margin-top: 11px; font-family: Fraunces, Georgia, serif; font-size: 29px; font-weight: 600; line-height: 1; }
-        .metric-foot { margin-top: 8px; color: var(--muted); font-size: 10px; }
-        .metric-foot strong { color: var(--leaf); font-weight: 700; }
-        .feature-strip { min-height: 150px; margin-bottom: 18px; display: grid; grid-template-columns: minmax(0, 1fr) 31%; overflow: hidden; background: #e8eee6; border-radius: 9px; }
-        .feature-copy { padding: 22px 25px; align-self: center; }
-        .feature-copy .eyebrow { margin-bottom: 9px; }
-        .feature-copy h2 { margin-bottom: 7px; font-family: Fraunces, Georgia, serif; font-size: 21px; font-weight: 600; }
-        .feature-copy p { max-width: 540px; margin-bottom: 13px; color: #5f6c63; font-size: 12px; line-height: 1.6; }
-        .feature-meta { display: flex; gap: 18px; color: #42624d; font-size: 11px; font-weight: 700; }
-        .feature-meta span { display: inline-flex; align-items: center; gap: 6px; }
-        .feature-image { position: relative; min-height: 150px; background: #667b4c; }
-        .feature-image img { position: absolute; width: 100%; height: 100%; object-fit: cover; object-position: center 55%; }
-        .feature-image::after { position: absolute; inset: 0; content: ''; background: linear-gradient(90deg, rgb(24 63 50 / 12%), transparent 70%); }
-        .dashboard-grid { display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(260px, .85fr); gap: 16px; margin-bottom: 18px; }
-        .panel { min-width: 0; background: #fff; border: 1px solid var(--line); border-radius: 9px; box-shadow: var(--shadow); }
-        .panel-head { min-height: 60px; padding: 15px 18px; display: flex; justify-content: space-between; align-items: center; gap: 12px; border-bottom: 1px solid #edf0ec; }
-        .panel-title { margin: 0; font-size: 13px; font-weight: 700; }
-        .panel-caption { margin: 4px 0 0; color: var(--muted); font-size: 10px; }
-        .text-link { padding: 5px 2px; border: 0; background: transparent; color: var(--leaf); font-size: 11px; font-weight: 700; }
-        .chart-wrap { min-height: 215px; padding: 17px 18px 13px; }
-        .chart { height: 164px; display: grid; grid-template-columns: repeat(7, 1fr); align-items: end; gap: 13px; border-bottom: 1px solid #dfe6df; background: repeating-linear-gradient(to bottom, transparent 0, transparent 39px, #edf1ed 40px); }
-        .chart-day { height: 100%; display: flex; flex-direction: column; justify-content: end; align-items: center; gap: 7px; color: #828c85; font-size: 9px; }
-        .chart-bar { width: min(30px, 70%); min-height: 5px; border-radius: 4px 4px 0 0; background: #83a68a; transition: height .3s ease; }
-        .chart-bar.highlight { background: var(--gold); }
-        .chart-total { margin-top: 10px; display: flex; justify-content: space-between; color: var(--muted); font-size: 10px; }
-        .task-list { padding: 4px 18px 8px; }
-        .task-row { padding: 12px 0; display: grid; grid-template-columns: 23px minmax(0, 1fr) auto; gap: 9px; align-items: start; border-bottom: 1px solid #edf0ec; }
-        .task-row:last-child { border-bottom: 0; }
-        .task-check { width: 19px; height: 19px; margin-top: 1px; accent-color: var(--leaf); }
-        .task-name { margin-bottom: 3px; font-size: 11px; font-weight: 700; }
-        .task-detail { color: var(--muted); font-size: 10px; }
-        .task-date { color: #876e3b; font-size: 9px; font-weight: 700; white-space: nowrap; }
-        .table-panel { overflow: hidden; }
-        .table-tools { display: flex; align-items: center; gap: 8px; }
-        .search { width: 190px; min-height: 34px; padding: 0 10px; border: 1px solid var(--line); border-radius: 6px; background: #fff; color: var(--ink); font-size: 11px; }
-        .table-scroll { overflow-x: auto; }
-        table { width: 100%; border-collapse: collapse; text-align: left; white-space: nowrap; }
-        th { padding: 11px 16px; background: #f8faf7; color: #79847c; font-size: 9px; font-weight: 700; letter-spacing: .7px; text-transform: uppercase; }
-        td { padding: 13px 16px; border-top: 1px solid #edf0ec; font-size: 11px; }
-        .lot-name { font-weight: 700; }
-        .lot-code { margin-top: 3px; color: var(--muted); font-size: 9px; }
-        .tag { padding: 4px 7px; display: inline-flex; align-items: center; gap: 5px; border-radius: 99px; background: #edf4eb; color: #47724f; font-size: 9px; font-weight: 700; }
-        .tag.gold { background: #f7f0dc; color: #8d6b2d; }
-        .tag.rust { background: #f8eae5; color: #a7553e; }
-        .progress-cell { min-width: 120px; }
-        .progress-track { height: 5px; margin-top: 6px; overflow: hidden; border-radius: 99px; background: #e9eee8; }
-        .progress-track span { height: 100%; display: block; border-radius: inherit; background: var(--leaf); }
-        .muted { color: var(--muted); }
-        .toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 9px; }
-        .toolbar input, .toolbar select { min-height: 38px; padding: 0 10px; border: 1px solid var(--line); border-radius: 6px; background: #fff; font-size: 11px; }
-        .empty-row { padding: 28px; color: var(--muted); text-align: center; }
-        .quick-footer { margin-top: 18px; padding: 15px 18px; display: flex; justify-content: space-between; align-items: center; gap: 13px; color: #dce9dc; background: var(--forest); border-radius: 8px; }
-        .quick-footer strong { font-family: Fraunces, Georgia, serif; font-size: 14px; font-weight: 600; }
-        .quick-footer span { color: #b9ccbc; font-size: 10px; }
-        dialog { width: min(480px, calc(100% - 28px)); padding: 0; border: 0; border-radius: 10px; color: var(--ink); box-shadow: 0 24px 80px rgb(10 30 20 / 28%); }
-        dialog::backdrop { background: rgb(12 28 20 / 46%); backdrop-filter: blur(2px); }
-        .dialog-head { padding: 18px 21px; display: flex; align-items: start; justify-content: space-between; border-bottom: 1px solid var(--line); }
-        .dialog-head h2 { margin: 0; font-family: Fraunces, Georgia, serif; font-size: 19px; }
-        .dialog-head p { margin: 4px 0 0; color: var(--muted); font-size: 11px; }
-        .close-button { width: 30px; height: 30px; border: 0; border-radius: 6px; background: #f0f3ee; color: #526157; font-size: 19px; }
-        .dialog-body { padding: 18px 21px 20px; display: grid; gap: 13px; }
-        .form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
-        .field { display: grid; gap: 6px; color: #5e6a61; font-size: 10px; font-weight: 700; }
-        .field input, .field select { width: 100%; min-height: 40px; padding: 0 10px; border: 1px solid #dce3da; border-radius: 6px; background: #fff; color: var(--ink); font-size: 12px; }
-        .dialog-actions { padding-top: 3px; display: flex; justify-content: end; gap: 8px; }
-        .toast { position: fixed; z-index: 5; right: 20px; bottom: 20px; max-width: min(360px, calc(100vw - 40px)); padding: 12px 15px; border-radius: 7px; background: var(--forest); color: #fff; box-shadow: var(--shadow); font-size: 12px; opacity: 0; transform: translateY(8px); pointer-events: none; transition: opacity .18s ease, transform .18s ease; }
-        .toast.show { opacity: 1; transform: translateY(0); }
-        @media (max-width: 1080px) {
-            .app { grid-template-columns: 215px minmax(0, 1fr); }
-            .content { padding: 24px 22px 34px; }
-            .topbar { padding: 0 22px; }
-            .summary-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
-        @media (max-width: 760px) {
-            .app { display: block; }
-            .sidebar { padding: 12px 12px 8px; }
-            .brand { padding: 0 5px 12px; }
-            .brand-mark { width: 35px; height: 35px; }
-            .brand-name { font-size: 16px; }
-            .brand-sub, .nav-label, .side-bottom { display: none; }
-            .nav-list { display: flex; overflow-x: auto; gap: 4px; scrollbar-width: thin; }
-            .nav-button { min-width: max-content; min-height: 39px; padding: 0 10px; font-size: 11px; }
-            .nav-button i { font-size: 16px; }
-            .topbar { height: 54px; padding: 0 16px; }
-            .today { display: none; }
-            .content { padding: 21px 15px 30px; }
-            .page-heading { align-items: start; }
-            h1 { font-size: 25px; }
-            .page-heading p { font-size: 11px; }
-            .summary-grid { gap: 9px; }
-            .metric { min-height: 112px; padding: 13px; }
-            .metric-top { font-size: 10px; }
-            .metric-value { font-size: 25px; }
-            .feature-strip { grid-template-columns: 1fr; }
-            .feature-copy { padding: 18px; }
-            .feature-image { min-height: 100px; }
-            .dashboard-grid { grid-template-columns: 1fr; }
-            .panel-head { padding: 13px 14px; }
-            .chart-wrap { padding-right: 13px; padding-left: 13px; }
-            .chart { gap: 6px; }
-            .search { width: 145px; }
-            .quick-footer { align-items: start; flex-direction: column; }
+
+        body {
+            background-color: var(--bg-body);
+            color: var(--text-main);
+            display: flex;
+            min-height: 100vh;
         }
-        @media (max-width: 420px) {
-            .summary-grid { grid-template-columns: 1fr 1fr; }
-            .page-heading { flex-direction: column; }
-            .page-heading > .button { align-self: stretch; }
-            .form-grid { grid-template-columns: 1fr; }
-            .table-tools { width: 100%; }
-            .search { flex: 1; }
+
+        /* Sidebar Navegación */
+        aside {
+            width: 260px;
+            background-color: var(--primary);
+            color: white;
+            padding: 20px 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 25px;
+            box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 1.3rem;
+            font-weight: bold;
+            color: #e9f5ec;
+            border-bottom: 1px solid rgba(255,255,255,0.15);
+            padding-bottom: 15px;
+        }
+
+        .menu {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .menu-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 15px;
+            border-radius: 8px;
+            color: #d1e7dd;
+            text-decoration: none;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .menu-item:hover, .menu-item.active {
+            background-color: var(--primary-light);
+            color: white;
+        }
+
+        /* Área de Contenido Principal */
+        main {
+            flex: 1;
+            padding: 30px;
+            overflow-y: auto;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+        }
+
+        .user-profile {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: white;
+            padding: 6px 15px;
+            border-radius: 20px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            font-weight: 600;
+        }
+
+        /* Cards Grid */
+        .grid-layout {
+            display: grid;
+            grid-template-columns: repeat(12, 1fr);
+            gap: 20px;
+        }
+
+        .card {
+            background-color: var(--card-bg);
+            border-radius: 12px;
+            padding: 20px;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.03);
+        }
+
+        .col-12 { grid-column: span 12; }
+        .col-8  { grid-column: span 8; }
+        .col-4  { grid-column: span 4; }
+        .col-6  { grid-column: span 6; }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 15px;
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--primary);
+            border-bottom: 2px solid var(--bg-body);
+            padding-bottom: 10px;
+        }
+
+        /* Módulo Precios */
+        .price-summary {
+            display: flex;
+            justify-content: space-between;
+            background: #f8f6f0;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+
+        .price-badge {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #2b7042;
+        }
+
+        /* Módulo Diagnóstico IA */
+        .upload-zone {
+            border: 2px dashed #b7b0a1;
+            border-radius: 10px;
+            padding: 25px;
+            text-align: center;
+            background-color: #faf8f5;
+            cursor: pointer;
+            transition: border 0.2s;
+        }
+
+        .upload-zone:hover {
+            border-color: var(--primary-light);
+        }
+
+        .btn {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: background 0.2s;
+        }
+
+        .btn:hover {
+            background-color: var(--primary-light);
+        }
+
+        .btn-accent {
+            background-color: #8c5a2b;
+        }
+
+        .btn-accent:hover {
+            background-color: #6e451f;
+        }
+
+        .result-box {
+            margin-top: 15px;
+            padding: 15px;
+            border-radius: 8px;
+            background-color: #eef7f2;
+            border-left: 5px solid var(--primary-light);
+            display: none;
+        }
+
+        /* Tablas */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+
+        th, td {
+            padding: 10px 12px;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+            font-size: 0.95rem;
+        }
+
+        th {
+            background-color: #f8f6f0;
+            color: var(--primary);
+        }
+
+        @media (max-width: 900px) {
+            body { flex-direction: column; }
+            aside { width: 100%; }
+            .col-8, .col-4, .col-6 { grid-column: span 12; }
         }
     </style>
 </head>
 <body>
-<div class="app">
-    <aside class="sidebar">
+
+    <!-- Menú Lateral -->
+    <aside>
         <div class="brand">
-            <div class="brand-mark" aria-hidden="true"><i class="ph ph-coffee-bean"></i></div>
-            <div><div class="brand-name">AgroCafé Pro</div><div class="brand-sub">Gestión de finca</div></div>
+            <i data-lucide="sprout"></i> AgroCafé Pro
         </div>
-        <div class="nav-label">Operación</div>
-        <nav class="nav-list" aria-label="Navegación principal">
-            <button class="nav-button active" data-target="dashboard"><i class="ph ph-squares-four"></i>Resumen</button>
-            <button class="nav-button" data-target="lots"><i class="ph ph-plant"></i>Lotes</button>
-            <button class="nav-button" data-target="harvests"><i class="ph ph-basket"></i>Cosechas</button>
-            <button class="nav-button" data-target="tasks"><i class="ph ph-list-checks"></i>Labores</button>
-        </nav>
-        <div class="side-bottom">
-            <div class="farm-status"><span class="status-dot"></span><span>Finca conectada</span></div>
-            <div class="side-note">Datos guardados en este dispositivo</div>
-        </div>
+        <ul class="menu">
+            <li><a class="menu-item active" onclick="switchTab('dashboard')"><i data-lucide="layout-dashboard"></i> Panel Principal</a></li>
+            <li><a class="menu-item" onclick="switchTab('diagnostico')"><i data-lucide="scan-eye"></i> Diagnóstico IA</a></li>
+            <li><a class="menu-item" onclick="switchTab('precios')"><i data-lucide="line-chart"></i> Mercado & Precios</a></li>
+            <li><a class="menu-item" onclick="switchTab('costos')"><i data-lucide="receipt"></i> Registro de Costos</a></li>
+            <li><a class="menu-item" onclick="switchTab('parcelas')"><i data-lucide="map-pin"></i> Parcelas & Lotes</a></li>
+        </ul>
     </aside>
 
-    <main class="main">
-        <header class="topbar">
-            <div class="breadcrumb">AgroCafé Pro <span aria-hidden="true">/</span> <span id="breadcrumb-view">Resumen</span></div>
-            <div class="top-actions"><span class="today" id="today-label"></span><div class="profile" aria-label="Perfil de finca">AC</div></div>
+    <!-- Área de Trabajo -->
+    <main>
+        <header>
+            <div>
+                <h1 style="color: var(--primary);">Sistema de Gestión y Diagnóstico Cafetalero</h1>
+                <p style="color: var(--text-muted); font-size: 0.9rem;">Campaña Agrícola 2026 - San Ignacio / Jaén / Cajamarca</p>
+            </div>
+            <div class="user-profile">
+                <i data-lucide="user"></i> Ader Cubas
+            </div>
         </header>
-        <div class="content">
-            <section class="view active" id="view-dashboard" data-view="dashboard">
-                <div class="page-heading">
-                    <div><div class="eyebrow">Temporada 2026 · Zona cafetalera</div><h1>Resumen de finca</h1><p>Seguimiento claro del cultivo, la cosecha y las labores del equipo.</p></div>
-                    <button class="button button-primary" data-open="harvest"><i class="ph ph-plus"></i>Registrar cosecha</button>
+
+        <div class="grid-layout">
+
+            <!-- CARTA 1: INTELIGENCIA DE MERCADO -->
+            <div class="card col-8">
+                <div class="card-header">
+                    <i data-lucide="trending-up"></i> Inteligencia de Mercado - Precios Fluctuantes
                 </div>
-                <div class="summary-grid" id="summary-grid"></div>
-                <section class="feature-strip" aria-label="Estado de la temporada">
-                    <div class="feature-copy">
-                        <div class="eyebrow">En campo · Recolección selectiva</div>
-                        <h2>Una temporada que avanza con buen ritmo</h2>
-                        <p>Controla la producción por lote y conserva cada movimiento de cosecha en el registro de finca.</p>
-                        <div class="feature-meta"><span><i class="ph ph-calendar-blank"></i> Ciclo principal</span><span><i class="ph ph-map-pin"></i> Valle Central</span></div>
+                <div class="price-summary">
+                    <div>
+                        <span style="font-size: 0.85rem; color: var(--text-muted);">Bolsa de Nueva York (ICE NY)</span>
+                        <div class="price-badge">US$ 215.40 / QQ</div>
                     </div>
-                    <div class="feature-image"><img src="https://images.unsplash.com/photo-1447933601403-0c6688de566e?auto=format&fit=crop&w=1000&q=85" alt="Granos de café seleccionados para la cosecha"></div>
-                </section>
-                <div class="dashboard-grid">
-                    <section class="panel">
-                        <div class="panel-head"><div><h2 class="panel-title">Ritmo de cosecha</h2><p class="panel-caption">Kilogramos recolectados durante la última semana</p></div><span class="tag"><i class="ph ph-trend-up"></i> Semana actual</span></div>
-                        <div class="chart-wrap"><div class="chart" id="harvest-chart" aria-label="Gráfico de cosecha semanal"></div><div class="chart-total"><span>Producción diaria registrada</span><strong id="week-total">0 kg</strong></div></div>
-                    </section>
-                    <section class="panel">
-                        <div class="panel-head"><div><h2 class="panel-title">Labores próximas</h2><p class="panel-caption">Tareas abiertas de la finca</p></div><button class="text-link" data-target="tasks">Ver labores</button></div>
-                        <div class="task-list" id="dashboard-tasks"></div>
-                    </section>
+                    <div>
+                        <span style="font-size: 0.85rem; color: var(--text-muted);">Ref. Local (Jaén / Cajamarca)</span>
+                        <div class="price-badge" style="color: #8c5a2b;">S/ 735.00 / QQ</div>
+                    </div>
+                    <div>
+                        <span style="font-size: 0.85rem; color: var(--text-muted);">Tendencia Semanal</span>
+                        <div style="color: #2b7042; font-weight: bold;">▲ +3.2% (Alza)</div>
+                    </div>
                 </div>
-                <section class="panel table-panel">
-                    <div class="panel-head"><div><h2 class="panel-title">Lotes en seguimiento</h2><p class="panel-caption">Avance de cosecha por parcela</p></div><button class="text-link" data-target="lots">Ver todos los lotes</button></div>
-                    <div class="table-scroll"><table><thead><tr><th>Lote / finca</th><th>Variedad</th><th>Área</th><th>Estado</th><th>Avance de cosecha</th><th>Pronóstico</th></tr></thead><tbody id="dashboard-lots"></tbody></table></div>
-                </section>
-            </section>
+                <canvas id="chartPrecios" height="110"></canvas>
+            </div>
 
-            <section class="view" id="view-lots" data-view="lots">
-                <div class="page-heading"><div><div class="eyebrow">Producción agrícola</div><h1>Lotes de café</h1><p>Parcelas, variedades y avance de la temporada.</p></div><button class="button button-primary" data-open="lot"><i class="ph ph-plus"></i>Nuevo lote</button></div>
-                <section class="panel table-panel">
-                    <div class="panel-head"><div><h2 class="panel-title">Inventario de lotes</h2><p class="panel-caption" id="lot-count">0 lotes registrados</p></div><div class="table-tools"><input class="search" id="lot-search" type="search" placeholder="Buscar lote o variedad" aria-label="Buscar lotes"></div></div>
-                    <div class="table-scroll"><table><thead><tr><th>Lote / finca</th><th>Variedad</th><th>Área</th><th>Plantas</th><th>Estado</th><th>Cosechado</th><th>Pronóstico</th></tr></thead><tbody id="lots-table"></tbody></table></div>
-                </section>
-            </section>
+            <!-- CARTA 2: RESUMEN DE PARCELA ACTUAL -->
+            <div class="card col-4">
+                <div class="card-header">
+                    <i data-lucide="map"></i> Lote Activo: "San Isidro"
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 12px;">
+                    <div style="display: flex; justify-content: space-between;">
+                        <span>Área Cultivada:</span>
+                        <strong>2.5 Hectáreas</strong>
+                    </div>
+                    <div style="display: flex; justify-content: space-between;">
+                        <span>Variedad:</span>
+                        <strong>Catimor / Gran Colombia</strong>
+                    </div>
+                    <div style="display: flex; justify-content: space-between;">
+                        <span>Etapa Actual:</span>
+                        <strong style="color: #8c5a2b;">Llenado de Grano / Cosecha</strong>
+                    </div>
+                    <hr style="border: none; border-top: 1px solid var(--border-color);">
+                    <div style="display: flex; justify-content: space-between; font-size: 1.1rem;">
+                        <span>Costo Est. Quintal:</span>
+                        <strong style="color: var(--primary);">S/ 350.00 / QQ</strong>
+                    </div>
+                </div>
+            </div>
 
-            <section class="view" id="view-harvests" data-view="harvests">
-                <div class="page-heading"><div><div class="eyebrow">Trazabilidad de producción</div><h1>Registro de cosechas</h1><p>Consulta y exporta los kilos recogidos por fecha y lote.</p></div><div class="toolbar"><button class="button button-quiet" id="export-harvests"><i class="ph ph-download-simple"></i>Exportar CSV</button><button class="button button-primary" data-open="harvest"><i class="ph ph-plus"></i>Registrar cosecha</button></div></div>
-                <section class="panel table-panel"><div class="panel-head"><div><h2 class="panel-title">Historial de cosecha</h2><p class="panel-caption" id="harvest-count">0 registros</p></div><div class="table-tools"><input class="search" id="harvest-search" type="search" placeholder="Buscar lote" aria-label="Buscar en cosechas"></div></div><div class="table-scroll"><table><thead><tr><th>Fecha</th><th>Lote</th><th>Finca</th><th>Calidad</th><th>Peso</th></tr></thead><tbody id="harvests-table"></tbody></table></div></section>
-            </section>
+            <!-- CARTA 3: DIAGNÓSTICO IA DE FOTOS Y SUELOS -->
+            <div class="card col-6">
+                <div class="card-header">
+                    <i data-lucide="camera"></i> Diagnóstico IA de Hojas y Frutos
+                </div>
+                <div class="upload-zone" onclick="document.getElementById('fileHoja').click()">
+                    <i data-lucide="upload-cloud" style="width: 40px; height: 40px; color: var(--primary);"></i>
+                    <p style="margin-top: 10px; font-weight: 600;">Haz clic o sube una foto de la planta</p>
+                    <p style="font-size: 0.8rem; color: var(--text-muted);">Detecta Roya, Ojo de Gallo, Broca o deficiencias foliares</p>
+                    <input type="file" id="fileHoja" accept="image/*" style="display: none;" onchange="simularDiagnosticoHoja()">
+                </div>
+                <div id="resultHoja" class="result-box">
+                    <strong>🔍 Diagnóstico Inteligente de IA:</strong>
+                    <p id="textoResultHoja" style="margin-top: 5px; font-size: 0.9rem;"></p>
+                </div>
+            </div>
 
-            <section class="view" id="view-tasks" data-view="tasks">
-                <div class="page-heading"><div><div class="eyebrow">Planificación de campo</div><h1>Labores de finca</h1><p>Organiza actividades y marca el trabajo completado.</p></div><button class="button button-primary" data-open="task"><i class="ph ph-plus"></i>Nueva labor</button></div>
-                <section class="panel table-panel"><div class="panel-head"><div><h2 class="panel-title">Plan de trabajo</h2><p class="panel-caption">Selecciona una tarea para cambiar su estado.</p></div><select id="task-filter" aria-label="Filtrar labores" class="toolbar"><option value="all">Todas las labores</option><option value="open">Pendientes</option><option value="done">Completadas</option></select></div><div id="tasks-table" class="task-list"></div></section>
-            </section>
+            <!-- CARTA 4: ESCANEO DE ANÁLISIS DE SUELO -->
+            <div class="card col-6">
+                <div class="card-header">
+                    <i data-lucide="file-text"></i> Análisis de Suelo (PDF o Foto)
+                </div>
+                <div class="upload-zone" style="background-color: #fdfaf6;" onclick="document.getElementById('fileSuelo').click()">
+                    <i data-lucide="file-check-2" style="width: 40px; height: 40px; color: #8c5a2b;"></i>
+                    <p style="margin-top: 10px; font-weight: 600;">Subir PDF o foto del laboratorio de suelo</p>
+                    <p style="font-size: 0.8rem; color: var(--text-muted);">Genera automáticamente la receta de abonamiento NPK</p>
+                    <input type="file" id="fileSuelo" accept="image/*,application/pdf" style="display: none;" onchange="simularDiagnosticoSuelo()">
+                </div>
+                <div id="resultSuelo" class="result-box" style="border-left-color: #8c5a2b; background-color: #faf5ef;">
+                    <strong>🌱 Plan de Abonamiento Personalizado:</strong>
+                    <p id="textoResultSuelo" style="margin-top: 5px; font-size: 0.9rem;"></p>
+                </div>
+            </div>
+
+            <!-- CARTA 5: REGISTRO DE COSTOS Y JORNALES -->
+            <div class="card col-12">
+                <div class="card-header" style="justify-content: space-between;">
+                    <span><i data-lucide="dollar-sign"></i> Registro de Gastos y Mano de Obra (Labores Culturales)</span>
+                    <button class="btn" onclick="agregarGasto()"><i data-lucide="plus-circle"></i> Registrar Gasto</button>
+                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Fecha</th>
+                            <th>Labor / Insumo</th>
+                            <th>Categoría</th>
+                            <th>Jornales / Cant.</th>
+                            <th>Costo Total (S/)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tablaCostos">
+                        <tr>
+                            <td>12/10/2026</td>
+                            <td>Deshierbe y limpieza manual (Deschaleadora)</td>
+                            <td>Mano de Obra</td>
+                            <td>4 Jornales</td>
+                            <td>S/ 240.00</td>
+                        </tr>
+                        <tr>
+                            <td>28/09/2026</td>
+                            <td>Abonamiento NPK + Guano de Isla</td>
+                            <td>Fertilizante</td>
+                            <td>5 Sacos</td>
+                            <td>S/ 650.00</td>
+                        </tr>
+                        <tr>
+                            <td>15/09/2026</td>
+                            <td>Jornales de Cosecha / Recolección cereza</td>
+                            <td>Cosecha</td>
+                            <td>120 Kg</td>
+                            <td>S/ 360.00</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
         </div>
     </main>
-</div>
 
-<dialog id="lot-dialog">
-    <form class="dialog-form" id="lot-form">
-        <div class="dialog-head"><div><h2>Agregar lote</h2><p>Ingresa los datos principales de la parcela.</p></div><button type="button" class="close-button" data-close="lot-dialog" aria-label="Cerrar">×</button></div>
-        <div class="dialog-body">
-            <label class="field">Nombre del lote<input name="name" required maxlength="50" placeholder="Ej. El Mirador"></label>
-            <div class="form-grid"><label class="field">Finca<input name="farm" required maxlength="50" placeholder="Ej. Finca La Esperanza"></label><label class="field">Variedad<select name="variety"><option>Caturra</option><option>Catuaí</option><option>Bourbon</option><option>Typica</option><option>Geisha</option><option>Otra</option></select></label></div>
-            <div class="form-grid"><label class="field">Área (ha)<input name="hectares" type="number" required min="0.01" step="0.01"></label><label class="field">Plantas<input name="plants" type="number" min="0" step="1" value="0"></label></div>
-            <label class="field">Estado<select name="stage"><option>Floración</option><option>Fructificación</option><option selected>Cosecha</option><option>Reposo</option></select></label>
-            <div class="dialog-actions"><button type="button" class="button button-quiet" data-close="lot-dialog">Cancelar</button><button class="button button-primary" type="submit">Guardar lote</button></div>
-        </div>
-    </form>
-</dialog>
+    <script>
+        // Inicializar Iconos
+        lucide.createIcons();
 
-<dialog id="harvest-dialog">
-    <form class="dialog-form" id="harvest-form">
-        <div class="dialog-head"><div><h2>Registrar cosecha</h2><p>El peso se sumará al inventario del lote elegido.</p></div><button type="button" class="close-button" data-close="harvest-dialog" aria-label="Cerrar">×</button></div>
-        <div class="dialog-body">
-            <label class="field">Lote<select name="lotId" id="harvest-lot" required></select></label>
-            <div class="form-grid"><label class="field">Fecha<input name="date" id="harvest-date" type="date" required></label><label class="field">Peso (kg)<input name="kg" type="number" required min="0.1" step="0.1" placeholder="0.0"></label></div>
-            <label class="field">Calidad<select name="quality"><option>Premium</option><option>Primera</option><option>Segunda</option></select></label>
-            <div class="dialog-actions"><button type="button" class="button button-quiet" data-close="harvest-dialog">Cancelar</button><button class="button button-primary" type="submit">Guardar cosecha</button></div>
-        </div>
-    </form>
-</dialog>
-
-<dialog id="task-dialog">
-    <form class="dialog-form" id="task-form">
-        <div class="dialog-head"><div><h2>Nueva labor</h2><p>Agrega una actividad al plan de campo.</p></div><button type="button" class="close-button" data-close="task-dialog" aria-label="Cerrar">×</button></div>
-        <div class="dialog-body">
-            <label class="field">Actividad<input name="name" required maxlength="80" placeholder="Ej. Revisar drenajes"></label>
-            <div class="form-grid"><label class="field">Lote<select name="lotId" id="task-lot"></select></label><label class="field">Fecha<input name="date" type="date" required></label></div>
-            <div class="dialog-actions"><button type="button" class="button button-quiet" data-close="task-dialog">Cancelar</button><button class="button button-primary" type="submit">Agregar labor</button></div>
-        </div>
-    </form>
-</dialog>
-<div class="toast" id="toast" role="status" aria-live="polite"></div>
-
-<script>
-(() => {
-    const storageKey = 'agrocafe_pro_v1';
-    const initialData = {
-        lots: [
-            { id: 'LOT-024', name: 'El Mirador', farm: 'Finca La Esperanza', variety: 'Caturra', hectares: 2.4, plants: 1800, stage: 'Cosecha', harvestedKg: 412, forecastKg: 640 },
-            { id: 'LOT-019', name: 'La Quebrada', farm: 'Finca La Esperanza', variety: 'Catuaí', hectares: 1.8, plants: 1420, stage: 'Cosecha', harvestedKg: 286, forecastKg: 510 },
-            { id: 'LOT-031', name: 'Alto Naranjo', farm: 'Finca Los Pinos', variety: 'Bourbon', hectares: 3.1, plants: 2300, stage: 'Fructificación', harvestedKg: 0, forecastKg: 780 },
-            { id: 'LOT-012', name: 'La Ladera', farm: 'Finca Los Pinos', variety: 'Typica', hectares: 1.3, plants: 980, stage: 'Cosecha', harvestedKg: 114, forecastKg: 305 }
-        ],
-        harvests: [
-            { id: 'H-1008', date: '2026-10-15', lotId: 'LOT-024', kg: 68, quality: 'Premium' },
-            { id: 'H-1007', date: '2026-10-14', lotId: 'LOT-019', kg: 54, quality: 'Primera' },
-            { id: 'H-1006', date: '2026-10-13', lotId: 'LOT-024', kg: 72, quality: 'Premium' },
-            { id: 'H-1005', date: '2026-10-12', lotId: 'LOT-012', kg: 31, quality: 'Primera' },
-            { id: 'H-1004', date: '2026-10-11', lotId: 'LOT-019', kg: 46, quality: 'Segunda' }
-        ],
-        tasks: [
-            { id: 'T-01', name: 'Recolectar cereza madura', lotId: 'LOT-024', date: '2026-10-16', done: false },
-            { id: 'T-02', name: 'Revisar trampas de broca', lotId: 'LOT-019', date: '2026-10-17', done: false },
-            { id: 'T-03', name: 'Limpieza de canales de drenaje', lotId: 'LOT-031', date: '2026-10-18', done: false },
-            { id: 'T-04', name: 'Muestreo de humedad del suelo', lotId: 'LOT-012', date: '2026-10-15', done: true }
-        ]
-    };
-    let data = loadData();
-    let toastTimer;
-
-    function loadData() {
-        try {
-            const saved = JSON.parse(localStorage.getItem(storageKey));
-            if (saved && Array.isArray(saved.lots) && Array.isArray(saved.harvests) && Array.isArray(saved.tasks)) return saved;
-        } catch (error) {
-            console.warn('No se pudieron leer los datos guardados de AgroCafé Pro.', error);
-        }
-        return structuredClone(initialData);
-    }
-
-    function saveData(message) {
-        localStorage.setItem(storageKey, JSON.stringify(data));
-        renderAll();
-        if (message) showToast(message);
-    }
-
-    function escapeHtml(value) {
-        return String(value ?? '').replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char]);
-    }
-
-    function formatNumber(value, decimals = 0) {
-        return Number(value || 0).toLocaleString('es-PE', { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
-    }
-
-    function formatDate(date) {
-        if (!date) return 'Sin fecha';
-        return new Date(`${date}T00:00:00`).toLocaleDateString('es-PE', { day: '2-digit', month: 'short', year: 'numeric' });
-    }
-
-    function lotById(id) {
-        return data.lots.find(lot => lot.id === id);
-    }
-
-    function statusClass(stage) {
-        if (stage === 'Cosecha') return 'tag';
-        if (stage === 'Fructificación') return 'tag gold';
-        return 'tag rust';
-    }
-
-    function renderSummary() {
-        const harvested = data.lots.reduce((sum, lot) => sum + Number(lot.harvestedKg || 0), 0);
-        const forecast = data.lots.reduce((sum, lot) => sum + Number(lot.forecastKg || 0), 0);
-        const activeLots = data.lots.filter(lot => lot.stage !== 'Reposo').length;
-        const pendingTasks = data.tasks.filter(task => !task.done).length;
-        const metrics = [
-            { label: 'Cosecha acumulada', value: `${formatNumber(harvested)} <small>kg</small>`, foot: 'Peso registrado en lotes', icon: 'ph-basket', color: 'icon-green' },
-            { label: 'Pronóstico de temporada', value: `${formatNumber(forecast)} <small>kg</small>`, foot: 'Estimación de los lotes', icon: 'ph-chart-line-up', color: 'icon-gold' },
-            { label: 'Lotes activos', value: formatNumber(activeLots), foot: `${formatNumber(data.lots.length)} lotes en inventario`, icon: 'ph-plant', color: 'icon-sage' },
-            { label: 'Labores pendientes', value: formatNumber(pendingTasks), foot: 'Actividades por completar', icon: 'ph-list-checks', color: 'icon-rust' }
-        ];
-        document.getElementById('summary-grid').innerHTML = metrics.map(metric => `
-            <article class="metric"><div class="metric-top"><span>${metric.label}</span><span class="metric-icon ${metric.color}"><i class="ph ${metric.icon}"></i></span></div><div class="metric-value">${metric.value}</div><div class="metric-foot">${metric.foot}</div></article>
-        `).join('');
-    }
-
-    function renderChart() {
-        const days = Array.from({ length: 7 }, (_, index) => {
-            const date = new Date();
-            date.setDate(date.getDate() - (6 - index));
-            const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
-            return { key, label: date.toLocaleDateString('es-PE', { weekday: 'short' }).replace('.', ''), total: data.harvests.filter(item => item.date === key).reduce((sum, item) => sum + Number(item.kg || 0), 0) };
-        });
-        const max = Math.max(1, ...days.map(day => day.total));
-        document.getElementById('harvest-chart').innerHTML = days.map((day, index) => `
-            <div class="chart-day" title="${escapeHtml(day.label)}: ${formatNumber(day.total)} kg"><div class="chart-bar ${index === 6 ? 'highlight' : ''}" style="height:${Math.max(day.total ? 8 : 3, day.total / max * 100)}%"></div><span>${escapeHtml(day.label)}</span></div>
-        `).join('');
-        document.getElementById('week-total').textContent = `${formatNumber(days.reduce((sum, day) => sum + day.total, 0))} kg`;
-    }
-
-    function lotRow(lot, compact = false) {
-        const progress = lot.forecastKg > 0 ? Math.min(100, Math.round(lot.harvestedKg / lot.forecastKg * 100)) : 0;
-        const name = `<div class="lot-name">${escapeHtml(lot.name)}</div><div class="lot-code">${escapeHtml(lot.id)} · ${escapeHtml(lot.farm)}</div>`;
-        return `<tr><td>${name}</td><td>${escapeHtml(lot.variety)}</td><td>${formatNumber(lot.hectares, 1)} ha</td>${compact ? '' : `<td>${formatNumber(lot.plants)}</td>`}<td><span class="${statusClass(lot.stage)}">${escapeHtml(lot.stage)}</span></td><td class="progress-cell">${formatNumber(lot.harvestedKg)} / ${formatNumber(lot.forecastKg)} kg<div class="progress-track"><span style="width:${progress}%"></span></div></td>${compact ? `<td>${formatNumber(lot.forecastKg)} kg</td>` : `<td>${formatNumber(lot.forecastKg)} kg</td>`}</tr>`;
-    }
-
-    function renderLots() {
-        const query = document.getElementById('lot-search').value.trim().toLowerCase();
-        const matches = data.lots.filter(lot => `${lot.name} ${lot.farm} ${lot.variety} ${lot.id}`.toLowerCase().includes(query));
-        document.getElementById('lot-count').textContent = `${data.lots.length} lotes registrados`;
-        document.getElementById('lots-table').innerHTML = matches.length ? matches.map(lot => lotRow(lot)).join('') : '<tr><td class="empty-row" colspan="7">No hay lotes que coincidan con la búsqueda.</td></tr>';
-        document.getElementById('dashboard-lots').innerHTML = data.lots.slice(0, 4).map(lot => lotRow(lot, true)).join('') || '<tr><td class="empty-row" colspan="6">Agrega un lote para empezar.</td></tr>';
-    }
-
-    function renderHarvests() {
-        const query = document.getElementById('harvest-search').value.trim().toLowerCase();
-        const records = [...data.harvests].sort((a, b) => b.date.localeCompare(a.date));
-        const matches = records.filter(item => `${lotById(item.lotId)?.name || ''} ${item.quality} ${item.date}`.toLowerCase().includes(query));
-        document.getElementById('harvest-count').textContent = `${records.length} registros · ${formatNumber(records.reduce((sum, item) => sum + Number(item.kg || 0), 0))} kg registrados`;
-        document.getElementById('harvests-table').innerHTML = matches.length ? matches.map(item => {
-            const lot = lotById(item.lotId);
-            const qualityClass = item.quality === 'Premium' ? 'tag gold' : 'tag';
-            return `<tr><td>${formatDate(item.date)}</td><td class="lot-name">${escapeHtml(lot?.name || 'Lote eliminado')}</td><td>${escapeHtml(lot?.farm || '—')}</td><td><span class="${qualityClass}">${escapeHtml(item.quality)}</span></td><td><strong>${formatNumber(item.kg, 1)} kg</strong></td></tr>`;
-        }).join('') : '<tr><td class="empty-row" colspan="5">No hay cosechas que coincidan.</td></tr>';
-    }
-
-    function renderTasks() {
-        const dashboardTasks = data.tasks.filter(task => !task.done).sort((a, b) => a.date.localeCompare(b.date)).slice(0, 4);
-        document.getElementById('dashboard-tasks').innerHTML = dashboardTasks.length ? dashboardTasks.map(task => {
-            const lot = lotById(task.lotId);
-            return `<div class="task-row"><span class="task-check" aria-hidden="true"><i class="ph ph-circle"></i></span><div><div class="task-name">${escapeHtml(task.name)}</div><div class="task-detail">${escapeHtml(lot?.name || 'Finca')}</div></div><span class="task-date">${formatDate(task.date)}</span></div>`;
-        }).join('') : '<div class="empty-row">No hay labores pendientes.</div>';
-        const filter = document.getElementById('task-filter').value;
-        const tasks = [...data.tasks].sort((a, b) => a.date.localeCompare(b.date)).filter(task => filter === 'all' || (filter === 'done' ? task.done : !task.done));
-        document.getElementById('tasks-table').innerHTML = tasks.length ? tasks.map(task => {
-            const lot = lotById(task.lotId);
-            return `<div class="task-row"><input class="task-check" type="checkbox" data-task="${escapeHtml(task.id)}" ${task.done ? 'checked' : ''} aria-label="Marcar ${escapeHtml(task.name)} como ${task.done ? 'pendiente' : 'completada'}"><div><div class="task-name">${escapeHtml(task.name)}</div><div class="task-detail">${escapeHtml(lot?.name || 'Finca')} · ${formatDate(task.date)}</div></div><span class="${task.done ? 'tag' : 'tag gold'}">${task.done ? 'Lista' : 'Pendiente'}</span></div>`;
-        }).join('') : '<div class="empty-row">No hay labores para este filtro.</div>';
-    }
-
-    function updateLotOptions() {
-        const options = data.lots.map(lot => `<option value="${escapeHtml(lot.id)}">${escapeHtml(lot.name)} · ${escapeHtml(lot.farm)}</option>`).join('');
-        document.getElementById('harvest-lot').innerHTML = options || '<option value="">Primero agrega un lote</option>';
-        document.getElementById('task-lot').innerHTML = `<option value="">Finca general</option>${options}`;
-        document.querySelector('#harvest-form button[type="submit"]').disabled = !data.lots.length;
-    }
-
-    function renderAll() {
-        renderSummary();
-        renderChart();
-        renderLots();
-        renderHarvests();
-        renderTasks();
-        updateLotOptions();
-    }
-
-    function showToast(message) {
-        const toast = document.getElementById('toast');
-        toast.textContent = message;
-        toast.classList.add('show');
-        clearTimeout(toastTimer);
-        toastTimer = setTimeout(() => toast.classList.remove('show'), 2800);
-    }
-
-    function openDialog(name) {
-        if (name === 'harvest') {
-            if (!data.lots.length) {
-                showToast('Agrega un lote antes de registrar una cosecha.');
-                openDialog('lot');
-                return;
+        // Gráfico de Precios Fluctuantes
+        const ctx = document.getElementById('chartPrecios').getContext('2d');
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: ['May', 'Jun', 'Jul', 'Ago', 'Set', 'Oct (Actual)'],
+                datasets: [
+                    {
+                        label: 'Bolsa NY (US$/QQ)',
+                        data: [185, 192, 205, 198, 210, 215.4],
+                        borderColor: '#1b4332',
+                        backgroundColor: 'rgba(27, 67, 50, 0.1)',
+                        fill: true,
+                        tension: 0.3
+                    },
+                    {
+                        label: 'Ref. Local Cajamarca (S/ x QQ)',
+                        data: [640, 660, 700, 680, 720, 735],
+                        borderColor: '#8c5a2b',
+                        borderDash: [5, 5],
+                        fill: false,
+                        tension: 0.3
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { position: 'top' }
+                }
             }
-            document.getElementById('harvest-date').value = new Date().toISOString().slice(0, 10);
+        });
+
+        // Simulación de Diagnóstico por Foto de Hoja
+        function simularDiagnosticoHoja() {
+            const resultBox = document.getElementById('resultHoja');
+            const texto = document.getElementById('textoResultHoja');
+            resultBox.style.display = 'block';
+            texto.innerHTML = "<b>Alerta Detectada:</b> Indicios iniciales de <i>Roya Amarilla (Hemileia vastatrix)</i> en 15% del follaje analizado.<br><b>Recomendación Técnica:</b> Aplicar oxicloruro de cobre o fungicida sistémico bio-orientado. Revisar regulación de sombra en la parcela.";
         }
-        if (name === 'task') document.querySelector('#task-form [name="date"]').value = new Date().toISOString().slice(0, 10);
-        document.getElementById(`${name}-dialog`).showModal();
-    }
 
-    function switchView(name) {
-        document.querySelectorAll('.view').forEach(view => view.classList.toggle('active', view.dataset.view === name));
-        document.querySelectorAll('.nav-button').forEach(button => button.classList.toggle('active', button.dataset.target === name));
-        const labels = { dashboard: 'Resumen', lots: 'Lotes', harvests: 'Cosechas', tasks: 'Labores' };
-        document.getElementById('breadcrumb-view').textContent = labels[name] || 'Resumen';
-        if (name === 'lots') renderLots();
-        if (name === 'harvests') renderHarvests();
-        if (name === 'tasks') renderTasks();
-    }
+        // Simulación de Análisis de Suelo
+        function simularDiagnosticoSuelo() {
+            const resultBox = document.getElementById('resultSuelo');
+            const texto = document.getElementById('textoResultSuelo');
+            resultBox.style.display = 'block';
+            texto.innerHTML = "<b>Análisis de Laboratorio Procesado:</b> pH 5.2 (Ligeramente Ácido) | Nitrógeno: Medio | Fósforo: Bajo.<br><b>Plan Sugerido por IA:</b> Incorporar 1.5 kg de cal agrícola por planta + dosis reforzada de fertilizante rico en Fósforo (DAP) previo a la floración.";
+        }
 
-    document.addEventListener('click', event => {
-        const targetButton = event.target.closest('[data-target]');
-        const openButton = event.target.closest('[data-open]');
-        const closeButton = event.target.closest('[data-close]');
-        if (targetButton) switchView(targetButton.dataset.target);
-        if (openButton) openDialog(openButton.dataset.open);
-        if (closeButton) document.getElementById(closeButton.dataset.close).close();
-    });
+        // Agregar Gasto Dinámico
+        function agregarGasto() {
+            const tabla = document.getElementById('tablaCostos');
+            const nuevaFila = document.createElement('tr');
+            nuevaFila.innerHTML = `
+                <td>${new Date().toLocaleDateString()}</td>
+                <td>Jornales de Aplicación Foliar / Sanidad</td>
+                <td>Mano de Obra</td>
+                <td>2 Jornales</td>
+                <td>S/ 120.00</td>
+            `;
+            tabla.prepend(nuevaFila);
+        }
 
-    document.getElementById('lot-form').addEventListener('submit', event => {
-        event.preventDefault();
-        const form = new FormData(event.currentTarget);
-        const id = `LOT-${String(Date.now()).slice(-5)}`;
-        data.lots.unshift({ id, name: form.get('name').trim(), farm: form.get('farm').trim(), variety: form.get('variety'), hectares: Number(form.get('hectares')), plants: Number(form.get('plants')) || 0, stage: form.get('stage'), harvestedKg: 0, forecastKg: Math.round(Number(form.get('hectares')) * 250) });
-        event.currentTarget.reset();
-        document.getElementById('lot-dialog').close();
-        saveData('Lote agregado al inventario.');
-    });
-
-    document.getElementById('harvest-form').addEventListener('submit', event => {
-        event.preventDefault();
-        const form = new FormData(event.currentTarget);
-        const kg = Number(form.get('kg'));
-        const lot = lotById(form.get('lotId'));
-        if (!lot || kg <= 0) return;
-        data.harvests.unshift({ id: `H-${Date.now()}`, date: form.get('date'), lotId: lot.id, kg, quality: form.get('quality') });
-        lot.harvestedKg = Number(lot.harvestedKg || 0) + kg;
-        event.currentTarget.reset();
-        document.getElementById('harvest-dialog').close();
-        saveData(`${formatNumber(kg, 1)} kg agregados a ${lot.name}.`);
-    });
-
-    document.getElementById('task-form').addEventListener('submit', event => {
-        event.preventDefault();
-        const form = new FormData(event.currentTarget);
-        data.tasks.unshift({ id: `T-${Date.now()}`, name: form.get('name').trim(), lotId: form.get('lotId'), date: form.get('date'), done: false });
-        event.currentTarget.reset();
-        document.getElementById('task-dialog').close();
-        saveData('Labor agregada al plan de campo.');
-    });
-
-    document.getElementById('tasks-table').addEventListener('change', event => {
-        const id = event.target.dataset.task;
-        if (!id) return;
-        const task = data.tasks.find(item => item.id === id);
-        if (task) task.done = event.target.checked;
-        saveData(task?.done ? 'Labor marcada como completada.' : 'Labor marcada como pendiente.');
-    });
-    document.getElementById('lot-search').addEventListener('input', renderLots);
-    document.getElementById('harvest-search').addEventListener('input', renderHarvests);
-    document.getElementById('task-filter').addEventListener('change', renderTasks);
-    document.getElementById('export-harvests').addEventListener('click', () => {
-        const rows = [['Fecha', 'Lote', 'Finca', 'Calidad', 'Peso (kg)'], ...data.harvests.map(item => [item.date, lotById(item.lotId)?.name || '', lotById(item.lotId)?.farm || '', item.quality, item.kg])];
-        const csv = '\ufeff' + rows.map(row => row.map(value => `"${String(value).replaceAll('"', '""')}"`).join(',')).join('\n');
-        const link = document.createElement('a');
-        link.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
-        link.download = `AgroCafe_Cosechas_${new Date().toISOString().slice(0, 10)}.csv`;
-        link.click();
-        URL.revokeObjectURL(link.href);
-    });
-
-    document.querySelectorAll('dialog').forEach(dialog => dialog.addEventListener('click', event => {
-        if (event.target === dialog) dialog.close();
-    }));
-    document.getElementById('today-label').textContent = new Date().toLocaleDateString('es-PE', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
-    renderAll();
-})();
-</script>
+        function switchTab(tab) {
+            console.log("Cambiando a pestaña: " + tab);
+        }
+    </script>
 </body>
 </html>

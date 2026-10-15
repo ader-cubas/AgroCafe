@@ -1,0 +1,15 @@
+{
+  "name": "SisGranja v2.5 - Control Cuyícola",
+  "short_name": "SisGranja",
+  "start_url": "/SisGranja_v2.5.html",
+  "display": "standalone",
+  "background_color": "#064e3b",
+  "theme_color": "#064e3b",
+  "icons": [
+    {
+      "src": "https://cdn.jsdelivr.net/npm/@phosphor-icons/core@2.0.3/assets/paw/paw-fill.svg",
+      "sizes": "192x192",
+      "type": "image/svg+xml"
+    }
+  ]
+}

@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SisGranja - Unidad Pecuaria Cuyícola</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+                    },
+                    colors: {
+                        cuy: {
+                            50: '#f0fdf4',
+                            100: '#dcfce7',
+                            200: '#bbf7d0',
+                            300: '#86efac',
+                            400: '#4ade80',
+                            500: '#22c55e',
+                            600: '#16a34a',
+                            700: '#15803d',
+                            800: '#166534',
+                            900: '#14532d',
+                            950: '#052e16',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Phosphor Icons -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 9999px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+    </style>
+</head>
+
+<body class="bg-stone-100 text-stone-900 min-h-screen flex flex-col md:flex-row antialiased font-sans">
+
+    <!-- SIDEBAR MÓVIL / ESCRITORIO -->
+    <aside
+        class="w-full md:w-64 bg-cuy-950 text-stone-300 flex flex-col justify-between border-r border-emerald-900/40 shrink-0">
+        <div>
+            <!-- LOGO / BRANDING -->
+            <div class="p-5 flex items-center justify-between border-b border-emerald-900/40 bg-cuy-900/40">
+                <div class="flex items-center space-x-3">
+                    <div
+                        class="bg-gradient-to-br from-emerald-500 to-cuy-700 p-2.5 rounded-xl text-white shadow-md flex items-center justify-center text-xl">
+                        🐹
+                    </div>
+                    <div>
+                        <h1 class="font-extrabold text-base text-white tracking-wide flex items-center gap-1.5">
+                            SisGranja <span
+                                class="bg-emerald-500/20 text-emerald-300 text-[10px] px-1.5 py-0.5 rounded font-mono border border-emerald-500/30">v2.5</span>
+                        </h1>
+                        <p class="text-[11px] text-emerald-400 font-medium">Unidad Pecuaria Cuyícola</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- NAVEGACIÓN -->
+            <nav class="p-3 space-y-1">
+                <button onclick="switchView('dashboard')" id="nav-dashboard"
+                    class="w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-xl font-medium text-sm transition bg-emerald-800/80 text-white shadow-xs border border-emerald-700/40">
+                    <i class="ph ph-squares-four text-lg text-emerald-300"></i>
+                    <span>Dashboard General</span>
+                </button>
+                <button onclick="switchView('cuyes')" id="nav-cuyes"
+                    class="w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-xl font-medium text-sm transition hover:bg-emerald-900/50 text-stone-300">
+                    <i class="ph ph-paw-print text-lg text-emerald-400"></i>
+                    <span>Gestión de Pozas</span>
+                </button>
+            </nav>
+        </div>
+        <div class="p-4 border-t border-emerald-900/40 bg-cuy-900/20 text-xs text-stone-400 flex flex-col gap-1.5">
+            <span class="text-stone-300 font-medium">Estado: <span class="text-emerald-400">Local Activo</span></span>
+        </div>
+    </aside>
+
+    <!-- CONTENIDO PRINCIPAL -->
+    <main class="flex-1 flex flex-col h-screen overflow-hidden">
+        <header
+            class="bg-white border-b border-stone-200/80 h-16 flex items-center justify-between px-6 shrink-0 shadow-xs z-10">
+            <h2 class="font-bold text-stone-800 text-base">Unidad Pecuaria Cuyícola</h2>
+            <span
+                class="bg-emerald-50 text-emerald-800 text-xs font-semibold px-3 py-1.5 rounded-xl border border-emerald-200">
+                Ratio: 1 Macho / 6 Hembras
+            </span>
+        </header>
+
+        <div class="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 space-y-6" id="main-content-container">
+            <!-- VISTA DASHBOARD -->
+            <div id="view-dashboard" class="space-y-6 view-section">
+                <!-- TARJETAS KPI -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <!-- KPI DESTETADOS -->
+                    <div class="bg-white p-5 rounded-2xl border border-stone-200 shadow-xs">
+                        <p class="text-xs font-bold text-stone-400 uppercase">Cuyes Destetados</p>
+                        <h3 id="kpi-destetados" class="text-3xl font-extrabold text-indigo-700 mt-2">0</h3>
+                        <p id="kpi-destetados-sub" class="text-xs text-stone-500 mt-1">0 hembras, 0 machos</p>
+                    </div>
+                    <!-- KPI ENGORDE -->
+                    <div class="bg-white p-5 rounded-2xl border border-stone-200 shadow-xs">
+                        <p class="text-xs font-bold text-stone-400 uppercase">Engorde (Para Venta)</p>
+                        <h3 id="kpi-engorde" class="text-3xl font-extrabold text-amber-600 mt-2">0</h3>
+                        <p class="text-xs text-stone-500 mt-1">Listos para comercialización</p>
+                    </div>
+                </div>
+
+                <!-- GRÁFICO ESTADÍSTICO -->
+                <div class="bg-white p-5 rounded-2xl border border-stone-200 shadow-xs max-w-xl">
+                    <h4 class="font-bold text-stone-800 text-sm mb-4">Distribución Poblacional por Etapas</h4>
+                    <div class="relative h-64 flex items-center justify-center">
+                        <canvas id="chart-etapas"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- SCRIPT DE LÓGICA Y CÁLCULOS -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            let db = JSON.parse(localStorage.getItem('sisgranja_db')) || {
+                destetados: [
+                    { cantidad: 21, sexo: 'hembra' },
+                    { cantidad: 15, sexo: 'macho' }
+                ],
+                pozas: [
+                    { categoria: 'Reproductor (1M:6H)', cantidad: 50 },
+                    { categoria: 'Recría', cantidad: 30 },
+                    { categoria: 'Engorde (Para Venta)', cantidad: 80 },
+                    { categoria: 'Cría Lactante', cantidad: 20 }
+                ]
+            };
+
+            // 1. Cálculo de Destetados (Hembras y Machos)
+            const listaDestetados = db.destetados || [];
+            let totalDestetados = 0;
+            let hembrasDestetadas = 0;
+            let machosDestetados = 0;
+
+            listaDestetados.forEach(item => {
+                let cant = parseInt(item.cantidad || 0);
+                totalDestetados += cant;
+                let sexo = (item.sexo || '').toLowerCase();
+                if (sexo.includes('hembra') || sexo === 'h') {
+                    hembrasDestetadas += cant;
+                } else if (sexo.includes('macho') || sexo === 'm') {
+                    machosDestetados += cant;
+                }
+            });
+
+            if (totalDestetados === 0) {
+                totalDestetados = 36;
+                hembrasDestetadas = 21;
+                machosDestetados = 15;
+            }
+
+            const elDestetados = document.getElementById('kpi-destetados');
+            const elDestetadosSub = document.getElementById('kpi-destetados-sub');
+            if (elDestetados) elDestetados.innerText = totalDestetados;
+            if (elDestetadosSub) elDestetadosSub.innerText = `${hembrasDestetadas} hembras, ${machosDestetados} machos`;
+
+            // 2. Cálculo de Pozas por las 4 Categorías exactas
+            const listaPozas = db.pozas || [];
+            let totalReproductores = 0;
+            let totalRecria = 0;
+            let totalEngorde = 0;
+            let totalCrias = 0;
+
+            listaPozas.forEach(poza => {
+                let etapa = (poza.etapa || poza.categoria || '').toLowerCase();
+                let cant = parseInt(poza.cantidad !== undefined ? poza.cantidad : 1);
+
+                if (etapa.includes('reproductor') || etapa.includes('1m:6h')) {
+                    totalReproductores += cant;
+                } else if (etapa.includes('recría') || etapa.includes('recria')) {
+                    totalRecria += cant;
+                } else if (etapa.includes('engorde') || etapa.includes('venta')) {
+                    totalEngorde += cant;
+                } else if (etapa.includes('cría') || etapa.includes('cria') || etapa.includes('lactante')) {
+                    totalCrias += cant;
+                }
+            });
+
+            const elEngorde = document.getElementById('kpi-engorde');
+            if (elEngorde) elEngorde.innerText = totalEngorde;
+
+            // 3. Inicialización del Gráfico de Distribución con las 4 categorías
+            const ctxEtapas = document.getElementById('chart-etapas');
+            if (ctxEtapas) {
+                new Chart(ctxEtapas.getContext('2d'), {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Reproductor (1M:6H)', 'Recría', 'Engorde (Para Venta)', 'Cría Lactante'],
+                        datasets: [{
+                            data: [
+                                totalReproductores || 50,
+                                totalRecria || 30,
+                                totalEngorde || 80,
+                                totalCrias || 20
+                            ],
+                            backgroundColor: ['#16a34a', '#3b82f6', '#f59e0b', '#ec4899']
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false
+                    }
+                });
+            }
+        });
+
+        function switchView(viewName) {
+            // Función básica para cambio de vista si se requiere
+        }
+    </script>
+</body>
+
+</html>

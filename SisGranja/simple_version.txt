@@ -1,0 +1,2 @@
+<!-- Acceso directo a la versión simplificada y autónoma de SisGranja -->
+<!-- Ver archivo principal en ../SisGranja_App.html -->
