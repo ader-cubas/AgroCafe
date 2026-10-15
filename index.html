@@ -308,6 +308,12 @@
 
         th { background-color: #faf8f5; color: var(--primary); font-weight: 700; }
 
+        .table-scroll { width: 100%; overflow-x: auto; }
+        .records-table { min-width: 680px; }
+        .action-cell { white-space: nowrap; }
+        .btn-delete { background-color: #a83232; padding: 7px 11px; font-size: 0.85rem; }
+        .btn-delete:hover { background-color: #842626; }
+
         @media (max-width: 900px) {
             body { flex-direction: column; }
             aside { width: 100%; padding: 15px; gap: 15px; }
@@ -518,15 +524,14 @@
                         <button class="btn" onclick="registrarNuevoGasto()"><i data-lucide="plus-circle"></i> Agregar Gasto</button>
                     </div>
                 </div>
-                <table>
-                    <thead>
-                        <tr><th>Fecha</th><th>Descripción</th><th>Categoría</th><th>Cantidad</th><th>Costo Total (S/)</th></tr>
-                    </thead>
-                    <tbody id="tablaCostosDinamica">
-                        <tr><td>12/10/2026</td><td>Deshierbe y limpieza manual</td><td>Deshierbe y Limpieza</td><td>4 Jornales</td><td>S/ 240.00</td></tr>
-                        <tr><td>28/09/2026</td><td>Abonamiento NPK + Guano de Isla</td><td>Abonamiento / Fertilización</td><td>5 Sacos</td><td>S/ 650.00</td></tr>
-                    </tbody>
-                </table>
+                <div class="table-scroll">
+                    <table class="records-table">
+                        <thead>
+                            <tr><th>Fecha</th><th>Descripción</th><th>Categoría</th><th>Cantidad</th><th>Costo Total (S/)</th><th>Acciones</th></tr>
+                        </thead>
+                        <tbody id="tablaCostosDinamica"></tbody>
+                    </table>
+                </div>
             </div>
         </div>
 
@@ -556,14 +561,14 @@
                         <button class="btn" style="background-color: #2b7042;" onclick="registrarNuevaVenta()"><i data-lucide="check-circle"></i> Registrar Venta</button>
                     </div>
                 </div>
-                <table>
-                    <thead>
-                        <tr><th>Fecha</th><th>Comprador / Destino</th><th>Cantidad (QQ)</th><th>Precio x QQ</th><th>Ingreso Total (S/)</th></tr>
-                    </thead>
-                    <tbody id="tablaVentasDinamica">
-                        <tr><td>10/10/2026</td><td>Acopio Lonya Grande</td><td>10 QQ</td><td>S/ 740.00</td><td style="color: #2b7042; font-weight: bold;">S/ 7,400.00</td></tr>
-                    </tbody>
-                </table>
+                <div class="table-scroll">
+                    <table class="records-table">
+                        <thead>
+                            <tr><th>Fecha</th><th>Comprador / Destino</th><th>Cantidad (QQ)</th><th>Precio x QQ</th><th>Ingreso Total (S/)</th><th>Acciones</th></tr>
+                        </thead>
+                        <tbody id="tablaVentasDinamica"></tbody>
+                    </table>
+                </div>
             </div>
         </div>
 
@@ -574,13 +579,13 @@
                     <span><i data-lucide="map-pin"></i> Gestión de Parcelas y Lotes Cafetaleros</span>
                     <button class="btn btn-accent" onclick="agregarParcela()"><i data-lucide="plus"></i> Nueva Parcela</button>
                 </div>
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; margin-top: 15px;" id="contenedorParcelas">
-                    <div class="card" style="background: #faf8f5; border: 1px solid var(--border-color); padding: 18px;">
-                        <h3 style="color: var(--primary); margin-bottom: 6px;">Lote Principal: San Isidro</h3>
-                        <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 10px;">Ubicación: Lonya, Amazonas</p>
-                        <p><strong>Área:</strong> 2.5 Hectáreas</p>
-                        <p><strong>Variedad:</strong> Caturra / Catimor</p>
-                    </div>
+                <div class="table-scroll">
+                    <table class="records-table">
+                        <thead>
+                            <tr><th>Parcela / Lote</th><th>Ubicación</th><th>Área</th><th>Variedad</th><th>Acciones</th></tr>
+                        </thead>
+                        <tbody id="tablaParcelasDinamica"></tbody>
+                    </table>
                 </div>
             </div>
         </div>
@@ -589,6 +594,130 @@
 
     <script>
         lucide.createIcons();
+
+        const clavesAlmacenamiento = {
+            gastos: 'agrocafe_gastos_v1',
+            ventas: 'agrocafe_ventas_v1',
+            parcelas: 'agrocafe_parcelas_v1'
+        };
+
+        function cargarRegistros(tipo, registrosIniciales) {
+            try {
+                const guardados = localStorage.getItem(clavesAlmacenamiento[tipo]);
+                if (guardados === null) {
+                    localStorage.setItem(clavesAlmacenamiento[tipo], JSON.stringify(registrosIniciales));
+                    return registrosIniciales;
+                }
+                const registros = JSON.parse(guardados);
+                if (Array.isArray(registros)) return registros;
+            } catch (error) {
+                console.error('No se pudieron cargar los registros de ' + tipo, error);
+            }
+            return registrosIniciales;
+        }
+
+        function guardarRegistros(tipo, registros) {
+            try {
+                localStorage.setItem(clavesAlmacenamiento[tipo], JSON.stringify(registros));
+                return true;
+            } catch (error) {
+                console.error('No se pudieron guardar los registros de ' + tipo, error);
+                alert('No se pudo guardar el cambio en este dispositivo.');
+                return false;
+            }
+        }
+
+        function generarId() {
+            return window.crypto && typeof window.crypto.randomUUID === 'function'
+                ? window.crypto.randomUUID()
+                : Date.now().toString(36) + Math.random().toString(36).slice(2);
+        }
+
+        const registros = {
+            gastos: cargarRegistros('gastos', [
+                { id: 'gasto-inicial-1', fecha: '12/10/2026', descripcion: 'Deshierbe y limpieza manual', categoria: 'Deshierbe y Limpieza', cantidad: '4 Jornales', costo: 240 },
+                { id: 'gasto-inicial-2', fecha: '28/09/2026', descripcion: 'Abonamiento NPK + Guano de Isla', categoria: 'Abonamiento / Fertilización', cantidad: '5 Sacos', costo: 650 }
+            ]),
+            ventas: cargarRegistros('ventas', [
+                { id: 'venta-inicial-1', fecha: '10/10/2026', comprador: 'Acopio Lonya Grande', cantidad: 10, precio: 740 }
+            ]),
+            parcelas: cargarRegistros('parcelas', [
+                { id: 'parcela-inicial-1', nombre: 'Lote Principal: San Isidro', ubicacion: 'Lonya, Amazonas', area: '2.5 Hectáreas', variedad: 'Caturra / Catimor' }
+            ])
+        };
+
+        function agregarCelda(fila, valor) {
+            const celda = document.createElement('td');
+            celda.textContent = valor;
+            fila.appendChild(celda);
+        }
+
+        function crearCeldaAcciones(tipo, id) {
+            const celda = document.createElement('td');
+            celda.className = 'action-cell';
+            const boton = document.createElement('button');
+            boton.type = 'button';
+            boton.className = 'btn btn-delete';
+            boton.textContent = 'Eliminar';
+            boton.setAttribute('aria-label', 'Eliminar registro');
+            boton.addEventListener('click', () => eliminarRegistro(tipo, id));
+            celda.appendChild(boton);
+            return celda;
+        }
+
+        function eliminarRegistro(tipo, id) {
+            const actualizados = registros[tipo].filter(registro => registro.id !== id);
+            if (actualizados.length === registros[tipo].length) return;
+            if (!guardarRegistros(tipo, actualizados)) return;
+            registros[tipo] = actualizados;
+            renderizarRegistros();
+        }
+
+        function renderizarRegistros() {
+            const tablaGastos = document.getElementById('tablaCostosDinamica');
+            tablaGastos.replaceChildren();
+            registros.gastos.forEach(gasto => {
+                const fila = document.createElement('tr');
+                agregarCelda(fila, gasto.fecha);
+                agregarCelda(fila, gasto.descripcion);
+                agregarCelda(fila, gasto.categoria);
+                agregarCelda(fila, gasto.cantidad);
+                agregarCelda(fila, 'S/ ' + Number(gasto.costo).toFixed(2));
+                fila.appendChild(crearCeldaAcciones('gastos', gasto.id));
+                tablaGastos.appendChild(fila);
+            });
+
+            const tablaVentas = document.getElementById('tablaVentasDinamica');
+            tablaVentas.replaceChildren();
+            registros.ventas.forEach(venta => {
+                const fila = document.createElement('tr');
+                agregarCelda(fila, venta.fecha);
+                agregarCelda(fila, venta.comprador);
+                agregarCelda(fila, Number(venta.cantidad) + ' QQ');
+                agregarCelda(fila, 'S/ ' + Number(venta.precio).toFixed(2));
+                const ingreso = document.createElement('td');
+                ingreso.textContent = 'S/ ' + (Number(venta.cantidad) * Number(venta.precio)).toFixed(2);
+                ingreso.style.color = '#2b7042';
+                ingreso.style.fontWeight = 'bold';
+                fila.appendChild(ingreso);
+                fila.appendChild(crearCeldaAcciones('ventas', venta.id));
+                tablaVentas.appendChild(fila);
+            });
+
+            const tablaParcelas = document.getElementById('tablaParcelasDinamica');
+            tablaParcelas.replaceChildren();
+            registros.parcelas.forEach(parcela => {
+                const fila = document.createElement('tr');
+                agregarCelda(fila, parcela.nombre);
+                agregarCelda(fila, parcela.ubicacion);
+                agregarCelda(fila, parcela.area);
+                agregarCelda(fila, parcela.variedad);
+                fila.appendChild(crearCeldaAcciones('parcelas', parcela.id));
+                tablaParcelas.appendChild(fila);
+            });
+        }
+
+        renderizarRegistros();
 
         function switchView(viewName) {
             document.querySelectorAll('.section-view').forEach(el => el.classList.remove('active'));
@@ -618,11 +747,16 @@
                 return;
             }
 
-            const total = parseFloat(qq) * parseFloat(precio);
-            const tabla = document.getElementById('tablaVentasDinamica');
-            const nuevaFila = document.createElement('tr');
-            nuevaFila.innerHTML = `<td>${new Date().toLocaleDateString()}</td><td>${comprador}</td><td>${qq} QQ</td><td>S/ ${parseFloat(precio).toFixed(2)}</td><td style="color: #2b7042; font-weight: bold;">S/ ${total.toFixed(2)}</td>`;
-            tabla.prepend(nuevaFila);
+            const nuevasVentas = [{
+                id: generarId(),
+                fecha: new Date().toLocaleDateString(),
+                comprador,
+                cantidad: parseFloat(qq),
+                precio: parseFloat(precio)
+            }, ...registros.ventas];
+            if (!guardarRegistros('ventas', nuevasVentas)) return;
+            registros.ventas = nuevasVentas;
+            renderizarRegistros();
 
             document.getElementById('inputComprador').value = '';
             document.getElementById('inputQQ').value = '';
@@ -697,10 +831,17 @@
 
             if(!labor || !costo) { alert("Completa la descripción y el costo."); return; }
 
-            const tabla = document.getElementById('tablaCostosDinamica');
-            const nuevaFila = document.createElement('tr');
-            nuevaFila.innerHTML = `<td>${new Date().toLocaleDateString()}</td><td>${labor}</td><td>${cat}</td><td>${cant || '1'}</td><td>S/ ${parseFloat(costo).toFixed(2)}</td>`;
-            tabla.prepend(nuevaFila);
+            const nuevosGastos = [{
+                id: generarId(),
+                fecha: new Date().toLocaleDateString(),
+                descripcion: labor,
+                categoria: cat,
+                cantidad: cant || '1',
+                costo: parseFloat(costo)
+            }, ...registros.gastos];
+            if (!guardarRegistros('gastos', nuevosGastos)) return;
+            registros.gastos = nuevosGastos;
+            renderizarRegistros();
 
             document.getElementById('inputLabor').value = '';
             document.getElementById('inputCant').value = '';
@@ -714,15 +855,19 @@
             const area = prompt("Área:");
             const variedad = prompt("Variedad:");
 
-            if(nombre) {
-                const contenedor = document.getElementById('contenedorParcelas');
-                const nuevaCard = document.createElement('div');
-                nuevaCard.className = 'card';
-                nuevaCard.style.cssText = 'background: #faf8f5; border: 1px solid var(--border-color); padding: 18px;';
-                nuevaCard.innerHTML = `<h3 style="color: var(--primary); margin-bottom: 6px;">${nombre}</h3><p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 10px;">Ubicación: ${ubicacion || 'Lonya, Amazonas'}</p><p><strong>Área:</strong> ${area || '1 Hectárea'}</p><p><strong>Variedad:</strong> ${variedad || 'Catimor'}</p>`;
-                contenedor.appendChild(nuevaCard);
-                alert("¡Parcela agregada!");
-            }
+            if(!nombre) return;
+
+            const nuevasParcelas = [{
+                id: generarId(),
+                nombre,
+                ubicacion: ubicacion || 'Lonya, Amazonas',
+                area: area || '1 Hectárea',
+                variedad: variedad || 'Catimor'
+            }, ...registros.parcelas];
+            if (!guardarRegistros('parcelas', nuevasParcelas)) return;
+            registros.parcelas = nuevasParcelas;
+            renderizarRegistros();
+            alert("¡Parcela agregada!");
         }
     </script>
 </body>
