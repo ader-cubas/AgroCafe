@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AgroCafé Pro - Sistema Inteligente de Gestión Cafetalera</title>
-    <!-- Chart.js para los gráficos de precios -->
+    <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
@@ -12,19 +12,21 @@
         :root {
             --primary: #1b4332;
             --primary-light: #2d6a4f;
-            --accent: #d4a373;
+            --accent: #b08968;
+            --accent-hover: #9c7553;
             --bg-body: #f4f1ea;
             --card-bg: #ffffff;
             --text-main: #2b2b2b;
             --text-muted: #6c757d;
             --border-color: #e2dcd0;
+            --shadow: 0 4px 20px rgba(0,0,0,0.06);
         }
 
         * {
             box-sizing: border-box;
             margin: 0;
             padding: 0;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
         }
 
         body {
@@ -34,24 +36,25 @@
             min-height: 100vh;
         }
 
-        /* Sidebar Navegación */
+        /* Sidebar Profesional */
         aside {
-            width: 260px;
-            background-color: var(--primary);
+            width: 280px;
+            background: linear-gradient(180deg, var(--primary) 0%, #112920 100%);
             color: white;
-            padding: 20px 15px;
+            padding: 25px 15px;
             display: flex;
             flex-direction: column;
             gap: 25px;
-            box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+            box-shadow: 4px 0 15px rgba(0,0,0,0.15);
+            z-index: 10;
         }
 
         .brand {
             display: flex;
             align-items: center;
             gap: 12px;
-            font-size: 1.3rem;
-            font-weight: bold;
+            font-size: 1.4rem;
+            font-weight: 700;
             color: #e9f5ec;
             border-bottom: 1px solid rgba(255,255,255,0.15);
             padding-bottom: 15px;
@@ -61,32 +64,37 @@
             list-style: none;
             display: flex;
             flex-direction: column;
-            gap: 8px;
+            gap: 6px;
         }
 
         .menu-item {
             display: flex;
             align-items: center;
-            gap: 12px;
-            padding: 12px 15px;
-            border-radius: 8px;
+            gap: 14px;
+            padding: 12px 16px;
+            border-radius: 10px;
             color: #d1e7dd;
             text-decoration: none;
             font-weight: 500;
+            font-size: 0.95rem;
             cursor: pointer;
-            transition: all 0.2s ease;
+            transition: all 0.25s ease;
         }
 
         .menu-item:hover, .menu-item.active {
             background-color: var(--primary-light);
             color: white;
+            transform: translateX(4px);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.15);
         }
 
-        /* Área de Contenido Principal */
+        /* Contenido Principal */
         main {
             flex: 1;
             padding: 30px;
             overflow-y: auto;
+            max-width: 1450px;
+            margin: 0 auto;
         }
 
         header {
@@ -94,6 +102,13 @@
             justify-content: space-between;
             align-items: center;
             margin-bottom: 25px;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        header h1 {
+            font-size: 1.8rem;
+            color: var(--primary);
         }
 
         .user-profile {
@@ -101,13 +116,27 @@
             align-items: center;
             gap: 10px;
             background: white;
-            padding: 6px 15px;
-            border-radius: 20px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            padding: 8px 18px;
+            border-radius: 30px;
+            box-shadow: var(--shadow);
             font-weight: 600;
+            border: 1px solid var(--border-color);
         }
 
-        /* Cards Grid */
+        .section-view {
+            display: none;
+            animation: fadeIn 0.3s ease-in-out;
+        }
+
+        .section-view.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(6px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
         .grid-layout {
             display: grid;
             grid-template-columns: repeat(12, 1fr);
@@ -116,10 +145,10 @@
 
         .card {
             background-color: var(--card-bg);
-            border-radius: 12px;
-            padding: 20px;
+            border-radius: 16px;
+            padding: 24px;
             border: 1px solid var(--border-color);
-            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.03);
+            box-shadow: var(--shadow);
         }
 
         .col-12 { grid-column: span 12; }
@@ -131,51 +160,66 @@
             display: flex;
             align-items: center;
             gap: 10px;
-            margin-bottom: 15px;
-            font-size: 1.1rem;
+            margin-bottom: 18px;
+            font-size: 1.15rem;
             font-weight: 700;
             color: var(--primary);
             border-bottom: 2px solid var(--bg-body);
-            padding-bottom: 10px;
+            padding-bottom: 12px;
         }
 
-        /* Módulo Precios */
         .price-summary {
             display: flex;
             justify-content: space-between;
-            background: #f8f6f0;
-            padding: 15px;
-            border-radius: 8px;
-            margin-bottom: 15px;
+            background: #faf8f5;
+            padding: 16px;
+            border-radius: 12px;
+            margin-bottom: 18px;
+            border: 1px solid var(--border-color);
+            flex-wrap: wrap;
+            gap: 10px;
         }
 
         .price-badge {
-            font-size: 1.2rem;
-            font-weight: bold;
+            font-size: 1.25rem;
+            font-weight: 700;
             color: #2b7042;
         }
 
-        /* Módulo Diagnóstico IA */
-        .upload-zone {
-            border: 2px dashed #b7b0a1;
-            border-radius: 10px;
-            padding: 25px;
-            text-align: center;
-            background-color: #faf8f5;
-            cursor: pointer;
-            transition: border 0.2s;
+        /* Formularios y Botones */
+        .form-group {
+            margin-bottom: 12px;
         }
 
-        .upload-zone:hover {
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            font-size: 0.85rem;
+            color: var(--primary);
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 11px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 0.95rem;
+            background-color: #faf8f5;
+        }
+
+        .form-control:focus {
+            outline: none;
             border-color: var(--primary-light);
+            background-color: #fff;
         }
 
         .btn {
             background-color: var(--primary);
             color: white;
             border: none;
-            padding: 10px 20px;
-            border-radius: 6px;
+            padding: 11px 20px;
+            border-radius: 8px;
             font-weight: 600;
             cursor: pointer;
             display: inline-flex;
@@ -184,28 +228,71 @@
             transition: background 0.2s;
         }
 
-        .btn:hover {
-            background-color: var(--primary-light);
+        .btn:hover { background-color: var(--primary-light); }
+        .btn-accent { background-color: var(--accent); }
+        .btn-accent:hover { background-color: var(--accent-hover); }
+
+        /* Chat / IA */
+        .chat-container {
+            display: flex;
+            flex-direction: column;
+            height: 450px;
         }
 
-        .btn-accent {
-            background-color: #8c5a2b;
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            background: #faf8f5;
+            padding: 16px;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-bottom: 12px;
         }
 
-        .btn-accent:hover {
-            background-color: #6e451f;
+        .message {
+            padding: 12px 16px;
+            border-radius: 12px;
+            max-width: 82%;
+            font-size: 0.95rem;
+            line-height: 1.4;
         }
+
+        .message.bot {
+            background: #eef7f2;
+            color: var(--primary);
+            align-self: flex-start;
+            border-left: 4px solid var(--primary-light);
+        }
+
+        .message.user {
+            background: var(--primary);
+            color: white;
+            align-self: flex-end;
+        }
+
+        .upload-zone {
+            border: 2px dashed #b7b0a1;
+            border-radius: 12px;
+            padding: 25px;
+            text-align: center;
+            background-color: #faf8f5;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .upload-zone:hover { border-color: var(--primary-light); background-color: #f2efe9; }
 
         .result-box {
             margin-top: 15px;
-            padding: 15px;
-            border-radius: 8px;
+            padding: 16px;
+            border-radius: 10px;
             background-color: #eef7f2;
             border-left: 5px solid var(--primary-light);
             display: none;
         }
 
-        /* Tablas */
         table {
             width: 100%;
             border-collapse: collapse;
@@ -213,20 +300,20 @@
         }
 
         th, td {
-            padding: 10px 12px;
+            padding: 12px 14px;
             text-align: left;
             border-bottom: 1px solid var(--border-color);
             font-size: 0.95rem;
         }
 
-        th {
-            background-color: #f8f6f0;
-            color: var(--primary);
-        }
+        th { background-color: #faf8f5; color: var(--primary); font-weight: 700; }
 
         @media (max-width: 900px) {
             body { flex-direction: column; }
-            aside { width: 100%; }
+            aside { width: 100%; padding: 15px; gap: 15px; }
+            .menu { flex-direction: row; overflow-x: auto; padding-bottom: 5px; }
+            .menu-item { padding: 10px 12px; font-size: 0.85rem; white-space: nowrap; }
+            main { padding: 15px; }
             .col-8, .col-4, .col-6 { grid-column: span 12; }
         }
     </style>
@@ -239,11 +326,14 @@
             <i data-lucide="sprout"></i> AgroCafé Pro
         </div>
         <ul class="menu">
-            <li><a class="menu-item active" onclick="switchTab('dashboard')"><i data-lucide="layout-dashboard"></i> Panel Principal</a></li>
-            <li><a class="menu-item" onclick="switchTab('diagnostico')"><i data-lucide="scan-eye"></i> Diagnóstico IA</a></li>
-            <li><a class="menu-item" onclick="switchTab('precios')"><i data-lucide="line-chart"></i> Mercado & Precios</a></li>
-            <li><a class="menu-item" onclick="switchTab('costos')"><i data-lucide="receipt"></i> Registro de Costos</a></li>
-            <li><a class="menu-item" onclick="switchTab('parcelas')"><i data-lucide="map-pin"></i> Parcelas & Lotes</a></li>
+            <li><a class="menu-item active" id="menu-dashboard" onclick="switchView('dashboard')"><i data-lucide="layout-dashboard"></i> Panel Principal</a></li>
+            <li><a class="menu-item" id="menu-asistente" onclick="switchView('asistente')"><i data-lucide="bot"></i> Asistente IA (Chat)</a></li>
+            <li><a class="menu-item" id="menu-precision" onclick="switchView('precision')"><i data-lucide="satellite"></i> Agricultura de Precisión</a></li>
+            <li><a class="menu-item" id="menu-diagnostico" onclick="switchView('diagnostico')"><i data-lucide="scan-eye"></i> IA & Suelos</a></li>
+            <li><a class="menu-item" id="menu-precios" onclick="switchView('precios')"><i data-lucide="line-chart"></i> Mercado & Precios</a></li>
+            <li><a class="menu-item" id="menu-gastos" onclick="switchView('gastos')"><i data-lucide="receipt"></i> Gastos de Cultivo</a></li>
+            <li><a class="menu-item" id="menu-ventas" onclick="switchView('ventas')"><i data-lucide="dollar-sign"></i> Venta de Café</a></li>
+            <li><a class="menu-item" id="menu-parcelas" onclick="switchView('parcelas')"><i data-lucide="map-pin"></i> Parcelas & Lotes</a></li>
         </ul>
     </aside>
 
@@ -251,212 +341,388 @@
     <main>
         <header>
             <div>
-                <h1 style="color: var(--primary);">Sistema de Gestión y Diagnóstico Cafetalero</h1>
-                <p style="color: var(--text-muted); font-size: 0.9rem;">Campaña Agrícola 2026 - San Ignacio / Jaén / Cajamarca / Amazonas</p>
+                <h1>Gestión y Diagnóstico Cafetalero Avanzado</h1>
+                <p style="color: var(--text-muted); font-size: 0.95rem;">Campaña 2026 - Cajamarca & Amazonas (Lonya, Bagua, Jaén, San Ignacio)</p>
             </div>
             <div class="user-profile">
-                <i data-lucide="user"></i> Ader Cubas
+                <i data-lucide="user" style="color: var(--primary);"></i> Perfil corporativo
             </div>
         </header>
 
-        <div class="grid-layout">
+        <!-- VISTA 1: PANEL PRINCIPAL -->
+        <div id="view-dashboard" class="section-view active">
+            <div class="grid-layout">
+                <div class="card col-8">
+                    <div class="card-header"><i data-lucide="trending-up"></i> Inteligencia de Mercado - Precios Bolsa NY & Local</div>
+                    <div class="price-summary">
+                        <div>
+                            <span style="font-size: 0.85rem; color: var(--text-muted);">Bolsa Nueva York (ICE NY)</span>
+                            <div class="price-badge">US$ 215.40 / QQ</div>
+                        </div>
+                        <div>
+                            <span style="font-size: 0.85rem; color: var(--text-muted);">Referencia Local (Lonya / Caj.)</span>
+                            <div class="price-badge" style="color: #b08968;">S/ 735.00 / QQ</div>
+                        </div>
+                        <div>
+                            <span style="font-size: 0.85rem; color: var(--text-muted);">Tendencia Semanal</span>
+                            <div style="color: #2b7042; font-weight: bold;">▲ +3.2% (Alza)</div>
+                        </div>
+                    </div>
+                    <canvas id="chartPrecios" height="115"></canvas>
+                </div>
 
-            <!-- CARTA 1: INTELIGENCIA DE MERCADO -->
-            <div class="card col-8">
-                <div class="card-header">
-                    <i data-lucide="trending-up"></i> Inteligencia de Mercado - Precios Fluctuantes
-                </div>
-                <div class="price-summary">
-                    <div>
-                        <span style="font-size: 0.85rem; color: var(--text-muted);">Bolsa de Nueva York (ICE NY)</span>
-                        <div class="price-badge">US$ 215.40 / QQ</div>
+                <div class="card col-4">
+                    <div class="card-header" style="justify-content: space-between;">
+                        <span><i data-lucide="map"></i> Lote Activo</span>
+                        <button class="btn" style="padding: 5px 10px; font-size: 0.8rem;" onclick="editarLote()"><i data-lucide="edit-3"></i> Editar</button>
                     </div>
-                    <div>
-                        <span style="font-size: 0.85rem; color: var(--text-muted);">Ref. Local (Jaén / Cajamarca / Amazonas)</span>
-                        <div class="price-badge" style="color: #8c5a2b;">S/ 735.00 / QQ</div>
-                    </div>
-                    <div>
-                        <span style="font-size: 0.85rem; color: var(--text-muted);">Tendencia Semanal</span>
-                        <div style="color: #2b7042; font-weight: bold;">▲ +3.2% (Alza)</div>
-                    </div>
-                </div>
-                <canvas id="chartPrecios" height="110"></canvas>
-            </div>
-
-            <!-- CARTA 2: RESUMEN DE PARCELA ACTUAL -->
-            <div class="card col-4">
-                <div class="card-header">
-                    <i data-lucide="map"></i> Lote Activo: "San Isidro"
-                </div>
-                <div style="display: flex; flex-direction: column; gap: 12px;">
-                    <div style="display: flex; justify-content: space-between;">
-                        <span>Área Cultivada:</span>
-                        <strong>2.5 Hectáreas</strong>
-                    </div>
-                    <div style="display: flex; justify-content: space-between;">
-                        <span>Variedad:</span>
-                        <strong>Catimor / Gran Colombia</strong>
-                    </div>
-                    <div style="display: flex; justify-content: space-between;">
-                        <span>Etapa Actual:</span>
-                        <strong style="color: #8c5a2b;">Llenado de Grano / Cosecha</strong>
-                    </div>
-                    <hr style="border: none; border-top: 1px solid var(--border-color);">
-                    <div style="display: flex; justify-content: space-between; font-size: 1.1rem;">
-                        <span>Costo Est. Quintal:</span>
-                        <strong style="color: var(--primary);">S/ 350.00 / QQ</strong>
+                    <div style="display: flex; flex-direction: column; gap: 14px;">
+                        <div style="display: flex; justify-content: space-between;"><span>Nombre:</span><strong id="lblNombreLote">San Isidro</strong></div>
+                        <div style="display: flex; justify-content: space-between;"><span>Ubicación:</span><strong id="lblUbicacionLote">Lonya, Amazonas</strong></div>
+                        <div style="display: flex; justify-content: space-between;"><span>Área Cultivada:</span><strong id="lblAreaLote">2.5 Hectáreas</strong></div>
+                        <div style="display: flex; justify-content: space-between;"><span>Variedad:</span><strong id="lblVariedadLote">Caturra / Catimor</strong></div>
+                        <div style="display: flex; justify-content: space-between;"><span>Etapa:</span><strong id="lblEtapaLote" style="color: #b08968;">Cosecha de Grano</strong></div>
+                        <hr style="border: none; border-top: 1px solid var(--border-color);">
+                        <div style="display: flex; justify-content: space-between; font-size: 1.1rem;">
+                            <span>Costo Est. Quintal:</span><strong style="color: var(--primary);">S/ 350.00 / QQ</strong>
+                        </div>
                     </div>
                 </div>
             </div>
+        </div>
 
-            <!-- CARTA 3: DIAGNÓSTICO IA DE FOTOS Y SUELOS -->
-            <div class="card col-6">
-                <div class="card-header">
-                    <i data-lucide="camera"></i> Diagnóstico IA de Hojas y Frutos
-                </div>
-                <div class="upload-zone" onclick="document.getElementById('fileHoja').click()">
-                    <i data-lucide="upload-cloud" style="width: 40px; height: 40px; color: var(--primary);"></i>
-                    <p style="margin-top: 10px; font-weight: 600;">Haz clic o sube una foto de la planta</p>
-                    <p style="font-size: 0.8rem; color: var(--text-muted);">Detecta Roya, Ojo de Gallo, Broca o deficiencias foliares</p>
-                    <input type="file" id="fileHoja" accept="image/*" style="display: none;" onchange="simularDiagnosticoHoja()">
-                </div>
-                <div id="resultHoja" class="result-box">
-                    <strong>🔍 Diagnóstico Inteligente de IA:</strong>
-                    <p id="textoResultHoja" style="margin-top: 5px; font-size: 0.9rem;"></p>
-                </div>
-            </div>
-
-            <!-- CARTA 4: ESCANEO DE ANÁLISIS DE SUELO -->
-            <div class="card col-6">
-                <div class="card-header">
-                    <i data-lucide="file-text"></i> Análisis de Suelo (PDF o Foto)
-                </div>
-                <div class="upload-zone" style="background-color: #fdfaf6;" onclick="document.getElementById('fileSuelo').click()">
-                    <i data-lucide="file-check-2" style="width: 40px; height: 40px; color: #8c5a2b;"></i>
-                    <p style="margin-top: 10px; font-weight: 600;">Subir PDF o foto del laboratorio de suelo</p>
-                    <p style="font-size: 0.8rem; color: var(--text-muted);">Genera automáticamente la receta de abonamiento NPK</p>
-                    <input type="file" id="fileSuelo" accept="image/*,application/pdf" style="display: none;" onchange="simularDiagnosticoSuelo()">
-                </div>
-                <div id="resultSuelo" class="result-box" style="border-left-color: #8c5a2b; background-color: #faf5ef;">
-                    <strong>🌱 Plan de Abonamiento Personalizado:</strong>
-                    <p id="textoResultSuelo" style="margin-top: 5px; font-size: 0.9rem;"></p>
-                </div>
-            </div>
-
-            <!-- CARTA 5: REGISTRO DE COSTOS Y JORNALES -->
+        <!-- VISTA 2: ASISTENTE IA (CHAT) -->
+        <div id="view-asistente" class="section-view">
             <div class="card col-12">
-                <div class="card-header" style="justify-content: space-between;">
-                    <span><i data-lucide="dollar-sign"></i> Registro de Gastos y Mano de Obra (Labores Culturales)</span>
-                    <button class="btn" onclick="agregarGasto()"><i data-lucide="plus-circle"></i> Registrar Gasto</button>
+                <div class="card-header"><i data-lucide="bot"></i> Prompt en Diálogo - Asistente Agrónomo IA en Vivo</div>
+                <p style="margin-bottom: 15px; color: var(--text-muted);">Consulta sobre fertilización, control fitosanitario o análisis de rentabilidad para tus parcelas en Lonya y Cajamarca.</p>
+                <div class="chat-container">
+                    <div class="chat-messages" id="chatBox">
+                        <div class="message bot">
+                            ¡Hola! Estoy conectado con la base de datos de AgroCafé Pro. Pregúntame lo que necesites sobre costos, abonamiento NPK o manejo de cosecha.
+                        </div>
+                    </div>
+                    <div style="display: flex; gap: 10px;">
+                        <input type="text" id="chatInput" class="form-control" placeholder="Escribe tu consulta agronómica..." onkeypress="if(event.key === 'Enter') enviarMensajeChat()">
+                        <button class="btn" onclick="enviarMensajeChat()"><i data-lucide="send"></i> Enviar</button>
+                    </div>
                 </div>
+            </div>
+        </div>
+
+        <!-- VISTA 3: AGRICULTURA DE PRECISIÓN (NUEVO) -->
+        <div id="view-precision" class="section-view">
+            <div class="grid-layout">
+                <div class="card col-6">
+                    <div class="card-header"><i data-lucide="cloud-rain"></i> Monitoreo Climático y Humedad</div>
+                    <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 15px;">Datos en tiempo real para Lonya y San Ignacio.</p>
+                    <div style="background: #faf8f5; padding: 15px; border-radius: 10px; border: 1px solid var(--border-color); display: flex; flex-direction: column; gap: 10px;">
+                        <div style="display: flex; justify-content: space-between;"><span>Temperatura Promedio:</span><strong>22.4 °C</strong></div>
+                        <div style="display: flex; justify-content: space-between;"><span>Humedad Relativa del Suelo:</span><strong style="color: #2b7042;">82% (Óptima)</strong></div>
+                        <div style="display: flex; justify-content: space-between;"><span>Precipitación Estimada:</span><strong>12 mm (Próx. 48 hrs)</strong></div>
+                        <div style="display: flex; justify-content: space-between;"><span>Recomendación de Riego:</span><strong style="color: var(--accent);">Suspender riego (Suelo con humedad ideal)</strong></div>
+                    </div>
+                </div>
+
+                <div class="card col-6">
+                    <div class="card-header"><i data-lucide="activity"></i> Índice de Vigor Vegetativo (NDVI Satelital)</div>
+                    <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 15px;">Evaluación multispectral del follaje de tus lotes.</p>
+                    <div style="background: #eef7f2; padding: 20px; border-radius: 10px; border-left: 5px solid var(--primary-light); text-align: center;">
+                        <i data-lucide="satellite" style="width: 40px; height: 40px; color: var(--primary); margin-bottom: 8px;"></i>
+                        <h3 style="color: var(--primary); font-size: 1.1rem;">Estado del Lote San Isidro: EXCELENTE</h3>
+                        <p style="font-size: 0.9rem; color: var(--text-muted); margin-top: 5px;">El índice NDVI muestra biomasa activa densa y desarrollo uniforme de grano en el 85% de la parcela.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- VISTA 4: IA & SUELOS -->
+        <div id="view-diagnostico" class="section-view">
+            <div class="grid-layout">
+                <div class="card col-6">
+                    <div class="card-header"><i data-lucide="camera"></i> Diagnóstico IA de Hojas y Frutos</div>
+                    <div class="upload-zone" onclick="document.getElementById('fileHoja').click()">
+                        <i data-lucide="upload-cloud" style="width: 45px; height: 45px; color: var(--primary);"></i>
+                        <p style="margin-top: 10px; font-weight: 600;">Haz clic o sube una foto de la planta</p>
+                        <input type="file" id="fileHoja" accept="image/*" style="display: none;" onchange="simularDiagnosticoHoja()">
+                    </div>
+                    <div id="resultHoja" class="result-box">
+                        <strong>🔍 Diagnóstico de Inteligencia Artificial:</strong>
+                        <p id="textoResultHoja" style="margin-top: 6px; font-size: 0.95rem;"></p>
+                    </div>
+                </div>
+
+                <div class="card col-6">
+                    <div class="card-header"><i data-lucide="file-text"></i> Análisis de Suelo (PDF o Foto)</div>
+                    <div class="upload-zone" style="background-color: #fdfaf6;" onclick="document.getElementById('fileSuelo').click()">
+                        <i data-lucide="file-check-2" style="width: 45px; height: 45px; color: var(--accent);"></i>
+                        <p style="margin-top: 10px; font-weight: 600;">Subir PDF o foto del laboratorio de suelo</p>
+                        <input type="file" id="fileSuelo" accept="image/*,application/pdf" style="display: none;" onchange="simularDiagnosticoSuelo()">
+                    </div>
+                    <div id="resultSuelo" class="result-box" style="border-left-color: var(--accent); background-color: #faf5ef;">
+                        <strong>🌱 Plan de Abonamiento Sugerido:</strong>
+                        <p id="textoResultSuelo" style="margin-top: 6px; font-size: 0.95rem;"></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- VISTA 5: MERCADO Y PRECIOS -->
+        <div id="view-precios" class="section-view">
+            <div class="card col-12">
+                <div class="card-header"><i data-lucide="line-chart"></i> Cotizaciones Regionales Actualizadas (2026)</div>
                 <table>
                     <thead>
-                        <tr>
-                            <th>Fecha</th>
-                            <th>Labor / Insumo</th>
-                            <th>Categoría</th>
-                            <th>Jornales / Cant.</th>
-                            <th>Costo Total (S/)</th>
-                        </tr>
+                        <tr><th>Zona / Cooperativa</th><th>Variedad</th><th>Precio x Quintal (QQ)</th><th>Tendencia</th></tr>
                     </thead>
-                    <tbody id="tablaCostos">
-                        <tr>
-                            <td>12/10/2026</td>
-                            <td>Deshierbe y limpieza manual (Deschaleadora)</td>
-                            <td>Mano de Obra</td>
-                            <td>4 Jornales</td>
-                            <td>S/ 240.00</td>
-                        </tr>
-                        <tr>
-                            <td>28/09/2026</td>
-                            <td>Abonamiento NPK + Guano de Isla</td>
-                            <td>Fertilizante</td>
-                            <td>5 Sacos</td>
-                            <td>S/ 650.00</td>
-                        </tr>
-                        <tr>
-                            <td>15/09/2026</td>
-                            <td>Jornales de Cosecha / Recolección cereza</td>
-                            <td>Cosecha</td>
-                            <td>120 Kg</td>
-                            <td>S/ 360.00</td>
-                        </tr>
+                    <tbody>
+                        <tr><td>Lonya / Utcubamba (Amazonas)</td><td>Typica / Caturra Especial</td><td>S/ 740.00</td><td style="color:#2b7042; font-weight:bold;">▲ Alza (+3.1%)</td></tr>
+                        <tr><td>Jaén / San Ignacio (Cajamarca)</td><td>Catimor / Caturra Pergamino</td><td>S/ 735.00</td><td style="color:#2b7042; font-weight:bold;">▲ Alza (+2.5%)</td></tr>
                     </tbody>
                 </table>
             </div>
-
         </div>
+
+        <!-- VISTA 6: GASTOS DE CULTIVO (SEPARADO Y DETALLADO) -->
+        <div id="view-gastos" class="section-view">
+            <div class="card col-12">
+                <div class="card-header"><i data-lucide="receipt"></i> Registro Detallado de Gastos e Insumos</div>
+                <div style="background: #faf8f5; padding: 18px; border-radius: 12px; margin-bottom: 20px; border: 1px solid var(--border-color);">
+                    <h3 style="margin-bottom: 12px; font-size: 1.05rem; color: var(--primary);">Registrar Nueva Labor o Gasto</h3>
+                    <div style="display: grid; grid-template-columns: 2fr 2fr 1fr 1fr auto; gap: 12px; align-items: end;" class="form-grid-mobile">
+                        <div class="form-group" style="margin:0;">
+                            <label>Descripción</label>
+                            <input type="text" id="inputLabor" class="form-control" placeholder="Ej. Jornales de deshierbe">
+                        </div>
+                        <div class="form-group" style="margin:0;">
+                            <label>Categoría Especializada</label>
+                            <select id="inputCat" class="form-control">
+                                <option>Deshierbe y Limpieza</option>
+                                <option>Abonamiento / Fertilización</option>
+                                <option>Control Fitosanitario (Roya/Broca)</option>
+                                <option>Mano de Obra Cosecha</option>
+                                <option>Despulpado y Lavado</option>
+                                <option>Secado (Marquesina)</option>
+                                <option>Flete y Transporte</option>
+                                <option>Otros Gastos</option>
+                            </select>
+                        </div>
+                        <div class="form-group" style="margin:0;">
+                            <label>Cantidad / Jornales</label>
+                            <input type="text" id="inputCant" class="form-control" placeholder="4 Jornales">
+                        </div>
+                        <div class="form-group" style="margin:0;">
+                            <label>Costo Total (S/)</label>
+                            <input type="number" id="inputCosto" class="form-control" placeholder="240">
+                        </div>
+                        <button class="btn" onclick="registrarNuevoGasto()"><i data-lucide="plus-circle"></i> Agregar Gasto</button>
+                    </div>
+                </div>
+                <table>
+                    <thead>
+                        <tr><th>Fecha</th><th>Descripción</th><th>Categoría</th><th>Cantidad</th><th>Costo Total (S/)</th></tr>
+                    </thead>
+                    <tbody id="tablaCostosDinamica">
+                        <tr><td>12/10/2026</td><td>Deshierbe y limpieza manual</td><td>Deshierbe y Limpieza</td><td>4 Jornales</td><td>S/ 240.00</td></tr>
+                        <tr><td>28/09/2026</td><td>Abonamiento NPK + Guano de Isla</td><td>Abonamiento / Fertilización</td><td>5 Sacos</td><td>S/ 650.00</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- VISTA 7: VENTA DE CAFÉ (SEPARADO Y PROFESIONAL) -->
+        <div id="view-ventas" class="section-view">
+            <div class="card col-12">
+                <div class="card-header" style="color: #2b7042;"><i data-lucide="dollar-sign"></i> Registro de Ventas y Cosecha (Ingresos)</div>
+                <div style="background: #eef7f2; padding: 18px; border-radius: 12px; margin-bottom: 20px; border: 1px solid #c3e6cb;">
+                    <h3 style="margin-bottom: 12px; font-size: 1.05rem; color: #2b7042;">Registrar Venta de Café</h3>
+                    <div style="display: grid; grid-template-columns: 2fr 1fr 1fr 1fr auto; gap: 12px; align-items: end;">
+                        <div class="form-group" style="margin:0;">
+                            <label>Comprador / Cooperativa</label>
+                            <input type="text" id="inputComprador" class="form-control" placeholder="Ej. Acopio Lonya Grande">
+                        </div>
+                        <div class="form-group" style="margin:0;">
+                            <label>Quintales (QQ)</label>
+                            <input type="number" id="inputQQ" class="form-control" placeholder="15">
+                        </div>
+                        <div class="form-group" style="margin:0;">
+                            <label>Precio x QQ (S/)</label>
+                            <input type="number" id="inputPrecioQQ" class="form-control" placeholder="740">
+                        </div>
+                        <div class="form-group" style="margin:0;">
+                            <label>Total Ingreso (S/)</label>
+                            <input type="text" id="inputTotalVenta" class="form-control" readonly style="background:#fff;" placeholder="Calculado">
+                        </div>
+                        <button class="btn" style="background-color: #2b7042;" onclick="registrarNuevaVenta()"><i data-lucide="check-circle"></i> Registrar Venta</button>
+                    </div>
+                </div>
+                <table>
+                    <thead>
+                        <tr><th>Fecha</th><th>Comprador / Destino</th><th>Cantidad (QQ)</th><th>Precio x QQ</th><th>Ingreso Total (S/)</th></tr>
+                    </thead>
+                    <tbody id="tablaVentasDinamica">
+                        <tr><td>10/10/2026</td><td>Acopio Lonya Grande</td><td>10 QQ</td><td>S/ 740.00</td><td style="color: #2b7042; font-weight: bold;">S/ 7,400.00</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- VISTA 8: PARCELAS & LOTES -->
+        <div id="view-parcelas" class="section-view">
+            <div class="card col-12">
+                <div class="card-header" style="justify-content: space-between;">
+                    <span><i data-lucide="map-pin"></i> Gestión de Parcelas y Lotes Cafetaleros</span>
+                    <button class="btn btn-accent" onclick="agregarParcela()"><i data-lucide="plus"></i> Nueva Parcela</button>
+                </div>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; margin-top: 15px;" id="contenedorParcelas">
+                    <div class="card" style="background: #faf8f5; border: 1px solid var(--border-color); padding: 18px;">
+                        <h3 style="color: var(--primary); margin-bottom: 6px;">Lote Principal: San Isidro</h3>
+                        <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 10px;">Ubicación: Lonya, Amazonas</p>
+                        <p><strong>Área:</strong> 2.5 Hectáreas</p>
+                        <p><strong>Variedad:</strong> Caturra / Catimor</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
     </main>
 
     <script>
-        // Inicializar Iconos
         lucide.createIcons();
 
-        // Gráfico de Precios Fluctuantes
+        function switchView(viewName) {
+            document.querySelectorAll('.section-view').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.menu-item').forEach(el => el.classList.remove('active'));
+
+            document.getElementById('view-' + viewName).classList.add('active');
+            document.getElementById('menu-' + viewName).classList.add('active');
+        }
+
+        // Cálculo automático de ventas
+        document.getElementById('inputQQ').addEventListener('input', calcularTotalVenta);
+        document.getElementById('inputPrecioQQ').addEventListener('input', calcularTotalVenta);
+
+        function calcularTotalVenta() {
+            const qq = parseFloat(document.getElementById('inputQQ').value) || 0;
+            const precio = parseFloat(document.getElementById('inputPrecioQQ').value) || 0;
+            document.getElementById('inputTotalVenta').value = "S/ " + (qq * precio).toFixed(2);
+        }
+
+        function registrarNuevaVenta() {
+            const comprador = document.getElementById('inputComprador').value;
+            const qq = document.getElementById('inputQQ').value;
+            const precio = document.getElementById('inputPrecioQQ').value;
+
+            if(!comprador || !qq || !precio) {
+                alert("Por favor completa todos los campos de la venta.");
+                return;
+            }
+
+            const total = parseFloat(qq) * parseFloat(precio);
+            const tabla = document.getElementById('tablaVentasDinamica');
+            const nuevaFila = document.createElement('tr');
+            nuevaFila.innerHTML = `<td>${new Date().toLocaleDateString()}</td><td>${comprador}</td><td>${qq} QQ</td><td>S/ ${parseFloat(precio).toFixed(2)}</td><td style="color: #2b7042; font-weight: bold;">S/ ${total.toFixed(2)}</td>`;
+            tabla.prepend(nuevaFila);
+
+            document.getElementById('inputComprador').value = '';
+            document.getElementById('inputQQ').value = '';
+            document.getElementById('inputPrecioQQ').value = '';
+            document.getElementById('inputTotalVenta').value = '';
+            alert("¡Venta de café registrada con éxito!");
+        }
+
+        function enviarMensajeChat() {
+            const input = document.getElementById('chatInput');
+            const chatBox = document.getElementById('chatBox');
+            const texto = input.value.trim();
+            if(!texto) return;
+
+            const msgUser = document.createElement('div');
+            msgUser.className = 'message user';
+            msgUser.innerText = texto;
+            chatBox.appendChild(msgUser);
+            input.value = '';
+            chatBox.scrollTop = chatBox.scrollHeight;
+
+            setTimeout(() => {
+                const msgBot = document.createElement('div');
+                msgBot.className = 'message bot';
+                msgBot.innerText = "Revisando tus datos para Lonya y Cajamarca: Te sugiero controlar estrictamente los costos de transporte y flete frente al precio de venta actual en cooperativa para asegurar un margen neto superior al 35%.";
+                chatBox.appendChild(msgBot);
+                chatBox.scrollTop = chatBox.scrollHeight;
+            }, 700);
+        }
+
+        function editarLote() {
+            const nuevoNombre = prompt("Nombre del lote:", document.getElementById('lblNombreLote').innerText);
+            const nuevaUbicacion = prompt("Ubicación:", document.getElementById('lblUbicacionLote').innerText);
+            const nuevaArea = prompt("Área cultivada:", document.getElementById('lblAreaLote').innerText);
+            const nuevaVariedad = prompt("Variedad:", document.getElementById('lblVariedadLote').innerText);
+
+            if(nuevoNombre) document.getElementById('lblNombreLote').innerText = nuevoNombre;
+            if(nuevaUbicacion) document.getElementById('lblUbicacionLote').innerText = nuevaUbicacion;
+            if(nuevaArea) document.getElementById('lblAreaLote').innerText = nuevaArea;
+            if(nuevaVariedad) document.getElementById('lblVariedadLote').innerText = nuevaVariedad;
+            alert("¡Lote actualizado con éxito!");
+        }
+
         const ctx = document.getElementById('chartPrecios').getContext('2d');
         new Chart(ctx, {
             type: 'line',
             data: {
                 labels: ['May', 'Jun', 'Jul', 'Ago', 'Set', 'Oct (Actual)'],
                 datasets: [
-                    {
-                        label: 'Bolsa NY (US$/QQ)',
-                        data: [185, 192, 205, 198, 210, 215.4],
-                        borderColor: '#1b4332',
-                        backgroundColor: 'rgba(27, 67, 50, 0.1)',
-                        fill: true,
-                        tension: 0.3
-                    },
-                    {
-                        label: 'Ref. Local Jaén / Cajamarca / Amazonas (S/ x QQ)',
-                        data: [640, 660, 700, 680, 720, 735],
-                        borderColor: '#8c5a2b',
-                        borderDash: [5, 5],
-                        fill: false,
-                        tension: 0.3
-                    }
+                    { label: 'Bolsa NY (US$/QQ)', data: [185, 192, 205, 198, 210, 215.4], borderColor: '#1b4332', backgroundColor: 'rgba(27, 67, 50, 0.1)', fill: true, tension: 0.3 },
+                    { label: 'Ref. Local (Caj. & Lonya)', data: [640, 660, 700, 680, 720, 735], borderColor: '#b08968', borderDash: [5, 5], fill: false, tension: 0.3 }
                 ]
             },
-            options: {
-                responsive: true,
-                plugins: {
-                    legend: { position: 'top' }
-                }
-            }
+            options: { responsive: true, plugins: { legend: { position: 'top' } } }
         });
 
-        // Simulación de Diagnóstico por Foto de Hoja
         function simularDiagnosticoHoja() {
-            const resultBox = document.getElementById('resultHoja');
-            const texto = document.getElementById('textoResultHoja');
-            resultBox.style.display = 'block';
-            texto.innerHTML = "<b>Alerta Detectada:</b> Indicios iniciales de <i>Roya Amarilla (Hemileia vastatrix)</i> en 15% del follaje analizado.<br><b>Recomendación Técnica:</b> Aplicar oxicloruro de cobre o fungicida sistémico bio-orientado. Revisar regulación de sombra en la parcela.";
+            document.getElementById('resultHoja').style.display = 'block';
+            document.getElementById('textoResultHoja').innerHTML = "<b>Alerta Detectada:</b> Roya Amarilla en 12% del follaje (Lonya).<br><b>Recomendación:</b> Aplicar cobre sistémico.";
         }
 
-        // Simulación de Análisis de Suelo
         function simularDiagnosticoSuelo() {
-            const resultBox = document.getElementById('resultSuelo');
-            const texto = document.getElementById('textoResultSuelo');
-            resultBox.style.display = 'block';
-            texto.innerHTML = "<b>Análisis de Laboratorio Procesado:</b> pH 5.2 (Ligeramente Ácido) | Nitrógeno: Medio | Fósforo: Bajo.<br><b>Plan Sugerido por IA:</b> Incorporar 1.5 kg de cal agrícola por planta + dosis reforzada de fertilizante rico en Fósforo (DAP) previo a la floración.";
+            document.getElementById('resultSuelo').style.display = 'block';
+            document.getElementById('textoResultSuelo').innerHTML = "<b>Análisis:</b> pH 5.4. Aplicar 1.2 kg de cal agrícola por planta y refuerzo NPK.";
         }
 
-        // Agregar Gasto Dinámico
-        function agregarGasto() {
-            const tabla = document.getElementById('tablaCostos');
+        function registrarNuevoGasto() {
+            const labor = document.getElementById('inputLabor').value;
+            const cat = document.getElementById('inputCat').value;
+            const cant = document.getElementById('inputCant').value;
+            const costo = document.getElementById('inputCosto').value;
+
+            if(!labor || !costo) { alert("Completa la descripción y el costo."); return; }
+
+            const tabla = document.getElementById('tablaCostosDinamica');
             const nuevaFila = document.createElement('tr');
-            nuevaFila.innerHTML = `
-                <td>${new Date().toLocaleDateString()}</td>
-                <td>Jornales de Aplicación Foliar / Sanidad</td>
-                <td>Mano de Obra</td>
-                <td>2 Jornales</td>
-                <td>S/ 120.00</td>
-            `;
+            nuevaFila.innerHTML = `<td>${new Date().toLocaleDateString()}</td><td>${labor}</td><td>${cat}</td><td>${cant || '1'}</td><td>S/ ${parseFloat(costo).toFixed(2)}</td>`;
             tabla.prepend(nuevaFila);
+
+            document.getElementById('inputLabor').value = '';
+            document.getElementById('inputCant').value = '';
+            document.getElementById('inputCosto').value = '';
+            alert("¡Gasto registrado con éxito!");
         }
 
-        function switchTab(tab) {
-            console.log("Cambiando a pestaña: " + tab);
+        function agregarParcela() {
+            const nombre = prompt("Nombre de la parcela:");
+            const ubicacion = prompt("Ubicación (ej. Lonya, Amazonas):");
+            const area = prompt("Área:");
+            const variedad = prompt("Variedad:");
+
+            if(nombre) {
+                const contenedor = document.getElementById('contenedorParcelas');
+                const nuevaCard = document.createElement('div');
+                nuevaCard.className = 'card';
+                nuevaCard.style.cssText = 'background: #faf8f5; border: 1px solid var(--border-color); padding: 18px;';
+                nuevaCard.innerHTML = `<h3 style="color: var(--primary); margin-bottom: 6px;">${nombre}</h3><p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 10px;">Ubicación: ${ubicacion || 'Lonya, Amazonas'}</p><p><strong>Área:</strong> ${area || '1 Hectárea'}</p><p><strong>Variedad:</strong> ${variedad || 'Catimor'}</p>`;
+                contenedor.appendChild(nuevaCard);
+                alert("¡Parcela agregada!");
+            }
         }
     </script>
 </body>
