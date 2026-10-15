@@ -29,17 +29,6 @@
         .surface { border-radius: 14px !important; box-shadow: 0 2px 8px rgb(24 53 43 / 5%); }
         .bg-white.rounded-2xl { border-color: #e0e8e1; border-radius: 14px; box-shadow: 0 2px 8px rgb(24 53 43 / 5%); }
         .app-topbar button, .app-topbar label { min-height: 40px; }
-        .pit-map { display: grid; grid-template-columns: repeat(10, minmax(0, 1fr)); gap: 8px; }
-        .pit-cell { min-height: 50px; border: 1px solid transparent; border-radius: 10px; font-size: 12px; font-weight: 800; transition: transform 120ms ease, box-shadow 120ms ease; }
-        .pit-cell:hover { transform: translateY(-2px); box-shadow: 0 4px 10px rgb(24 53 43 / 12%); }
-        .pit-cell.pit-selected { outline: 3px solid #176b4b; outline-offset: 2px; }
-        .pit-empty { background: #edf1ee; color: #77827b; border-color: #dfe6e0; }
-        .pit-reproductor { background: #d9f2e4; color: #176b4b; border-color: #b9e4ca; }
-        .pit-recria { background: #dceefa; color: #22628c; border-color: #bfdff2; }
-        .pit-engorde { background: #fff0d6; color: #92530c; border-color: #f5dfb8; }
-        .pit-cria { background: #fce2df; color: #9e433c; border-color: #f2cbc6; }
-        .pit-cuarentena { background: #fce8d5; color: #8f4814; border-color: #f2d0ae; }
-        .pit-otro { background: #e9e7f7; color: #514891; border-color: #d8d4ef; }
         .temperature-ok { background: #e0f3e7; color: #176b4b; border-color: #b8dfc5; }
         .temperature-alert { background: #fff0d6; color: #92530c; border-color: #f1d5a4; }
         .temperature-danger { background: #fce2df; color: #9e433c; border-color: #f2cbc6; }
@@ -67,11 +56,8 @@
             .app-topbar > div:last-child { flex-wrap: nowrap; overflow-x: auto; max-width: 58%; }
             .app-topbar > div:last-child > span { display: none; }
             .app-content { padding: 16px; }
-            .pit-map { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; }
-            .pit-cell { min-height: 48px; font-size: 11px; }
         }
         @media (min-width: 768px) and (max-width: 1023px) {
-            .pit-map { grid-template-columns: repeat(8, minmax(0, 1fr)); }
         }
     </style>
 </head>
@@ -239,34 +225,6 @@
                     </div>
                 </div>
 
-                <section class="surface bg-white p-5 sm:p-6 border border-stone-200" aria-labelledby="pit-map-title">
-                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5">
-                        <div>
-                            <h3 id="pit-map-title" class="text-lg font-bold text-stone-800">Estado de las pozas</h3>
-                            <p id="pit-map-summary" class="text-sm text-stone-500 mt-1">0 ocupadas de 100 pozas</p>
-                        </div>
-                        <div class="flex flex-wrap gap-x-4 gap-y-2 text-xs font-semibold text-stone-600">
-                            <span class="flex items-center gap-2"><i class="w-3 h-3 rounded bg-emerald-200"></i>Reproductor</span>
-                            <span class="flex items-center gap-2"><i class="w-3 h-3 rounded bg-sky-200"></i>Recría</span>
-                            <span class="flex items-center gap-2"><i class="w-3 h-3 rounded bg-amber-200"></i>Engorde</span>
-                            <span class="flex items-center gap-2"><i class="w-3 h-3 rounded bg-rose-200"></i>Cría</span>
-                            <span class="flex items-center gap-2"><i class="w-3 h-3 rounded" style="background:#fce8d5"></i>Cuarentena</span>
-                            <span class="flex items-center gap-2"><i class="w-3 h-3 rounded bg-stone-200"></i>Vacía</span>
-                        </div>
-                    </div>
-                    <div id="pit-map" class="pit-map" aria-label="Mapa de estado de las primeras 100 pozas"></div>
-                    <div class="mt-5 grid grid-cols-1 sm:grid-cols-[minmax(0,1fr)_repeat(5,auto)] gap-2 items-end no-print">
-                        <label class="text-xs font-bold text-stone-600">Acceso rápido por poza
-                            <select id="quick-poza" class="mt-1 w-full px-3 py-2 border rounded-xl text-sm"><option value="">Toca una casilla o selecciona una poza</option></select>
-                        </label>
-                        <button type="button" onclick="abrirRegistroRapido('partos')" class="rounded-xl bg-emerald-700 px-4 text-sm font-bold text-white">Parto</button>
-                        <button type="button" onclick="abrirRegistroRapido('destetados')" class="rounded-xl bg-sky-700 px-4 text-sm font-bold text-white">Destete</button>
-                        <button type="button" onclick="abrirRegistroRapido('bajas')" class="rounded-xl bg-rose-700 px-4 text-sm font-bold text-white">Baja</button>
-                        <button type="button" onclick="abrirRegistroRapido('salud')" class="rounded-xl bg-amber-700 px-4 text-sm font-bold text-white">Sanidad</button>
-                        <button type="button" onclick="mostrarCodigoQR(document.getElementById('quick-poza').value)" class="rounded-xl border border-stone-300 px-4 text-sm font-bold text-stone-800">QR</button>
-                    </div>
-                </section>
-
                 <section class="surface bg-white p-5 sm:p-6 border border-stone-200" aria-label="Proyecciones">
                     <div>
                         <div class="flex items-start justify-between gap-4">
@@ -358,6 +316,20 @@
                         </div>
                     </div>
                 </div>
+
+                <section class="bg-white p-5 sm:p-6 rounded-2xl border border-stone-200 shadow-xs no-print" aria-labelledby="quick-actions-title">
+                    <h3 id="quick-actions-title" class="text-base font-bold text-stone-800 mb-3">Acceso rápido por poza</h3>
+                    <div class="grid grid-cols-1 sm:grid-cols-[minmax(0,1fr)_repeat(5,auto)] gap-2 items-end">
+                        <label class="text-xs font-bold text-stone-600">Poza
+                            <select id="quick-poza" class="mt-1 w-full px-3 py-2 border rounded-xl text-sm"><option value="">Selecciona una poza</option></select>
+                        </label>
+                        <button type="button" onclick="abrirRegistroRapido('partos')" class="rounded-xl bg-emerald-700 px-4 text-sm font-bold text-white">Parto</button>
+                        <button type="button" onclick="abrirRegistroRapido('destetados')" class="rounded-xl bg-sky-700 px-4 text-sm font-bold text-white">Destete</button>
+                        <button type="button" onclick="abrirRegistroRapido('bajas')" class="rounded-xl bg-rose-700 px-4 text-sm font-bold text-white">Baja</button>
+                        <button type="button" onclick="abrirRegistroRapido('salud')" class="rounded-xl bg-amber-700 px-4 text-sm font-bold text-white">Sanidad</button>
+                        <button type="button" onclick="mostrarCodigoQR(document.getElementById('quick-poza').value)" class="rounded-xl border border-stone-300 px-4 text-sm font-bold text-stone-800">QR</button>
+                    </div>
+                </section>
             </div>
 
             <!-- 2. GESTIÓN DE POZAS Y ETAPAS -->
@@ -898,7 +870,7 @@
             const codigos = obtenerCodigosPozas();
             document.querySelectorAll('#cuy-codigo, #parto-poza, #destete-poza, #destete-poza-machos, #destete-poza-hembras, #baja-identificador, #empadre-poza, #quick-poza, #necro-poza').forEach(selector => {
                 const valorActual = selector.value;
-                const textoInicial = selector.id === 'quick-poza' ? 'Toca una casilla o selecciona una poza' : 'Selecciona una poza';
+                const textoInicial = 'Selecciona una poza';
                 const opciones = [new Option(textoInicial, ''), ...codigos.map(codigo => new Option(codigo, codigo))];
                 selector.replaceChildren(...opciones);
                 if (codigos.includes(valorActual)) selector.value = valorActual;
@@ -945,62 +917,6 @@
             return stockInicial + nacimientos - destetadosOrigen + destetadosDestino - bajas;
         }
 
-        function renderizarMapaPozas() {
-            const mapa = document.getElementById('pit-map');
-            const resumen = document.getElementById('pit-map-summary');
-            const inventario = new Map();
-
-            db.cuyes.forEach(poza => {
-                const codigo = String(poza.codigo || poza.id || '').trim().toUpperCase();
-                const coincidencia = codigo.match(/^(?:PZ[-\s]?|POZA\s*)0*(\d+)$/);
-                if (!coincidencia) return;
-                const numero = Number(coincidencia[1]);
-                if (numero >= 1 && numero <= 100 && !inventario.has(numero)) inventario.set(numero, poza);
-            });
-
-            const estados = {
-                reproductor: { clase: 'pit-reproductor', etiqueta: 'Reproductor' },
-                recria: { clase: 'pit-recria', etiqueta: 'Recría' },
-                engorde: { clase: 'pit-engorde', etiqueta: 'Engorde' },
-                cria: { clase: 'pit-cria', etiqueta: 'Cría' },
-                otro: { clase: 'pit-otro', etiqueta: 'Ocupada' }
-            };
-            let ocupadas = 0;
-            const celdas = [];
-
-            for (let numero = 1; numero <= 100; numero++) {
-                const poza = inventario.get(numero);
-                const codigo = 'PZ-' + String(numero).padStart(3, '0');
-                const etapa = poza ? String(poza.etapa || '').toLowerCase() : '';
-                let estado = { clase: 'pit-empty', etiqueta: 'Vacía' };
-                if (poza) {
-                    ocupadas++;
-                    if (etapa.includes('cuarentena')) estado = { clase: 'pit-cuarentena', etiqueta: 'Cuarentena' };
-                    else if (etapa.includes('reproductor')) estado = estados.reproductor;
-                    else if (etapa.includes('recr')) estado = estados.recria;
-                    else if (etapa.includes('engord')) estado = estados.engorde;
-                    else if (etapa.includes('cría') || etapa.includes('cria')) estado = estados.cria;
-                    else estado = estados.otro;
-                }
-
-                const celda = document.createElement('button');
-                celda.type = 'button';
-                celda.className = `pit-cell ${estado.clase}`;
-                celda.textContent = codigo.slice(-3);
-                celda.title = `${codigo} · ${estado.etiqueta}${poza && poza.etapa ? ` · ${poza.etapa}` : ''}`;
-                celda.setAttribute('aria-label', celda.title);
-                celda.addEventListener('click', () => {
-                    document.getElementById('quick-poza').value = codigo;
-                    mapa.querySelectorAll('.pit-selected').forEach(seleccionada => seleccionada.classList.remove('pit-selected'));
-                    celda.classList.add('pit-selected');
-                });
-                celdas.push(celda);
-            }
-
-            mapa.replaceChildren(...celdas);
-            resumen.textContent = `${ocupadas} ocupadas de 100 pozas · toca una casilla para seleccionar y registrar`;
-        }
-
         function calcularTotalVentas() {
             return db.ventas.reduce((total, v) => total + Number(v.monto) * Number(v.cantidad || 0), 0);
         }
@@ -1008,7 +924,7 @@
         function abrirRegistroRapido(vista) {
             const codigo = document.getElementById('quick-poza').value;
             if (!codigo) {
-                mostrarToast('Selecciona una poza en el mapa o la lista', 'error');
+                mostrarToast('Selecciona una poza de la lista', 'error');
                 return;
             }
             const selectores = { partos: 'parto-poza', destetados: 'destete-poza', bajas: 'baja-identificador' };
@@ -1960,7 +1876,6 @@
             document.getElementById('badge-salud').innerText = db.tratamientos.length;
 
             actualizarSelectoresPozas();
-            renderizarMapaPozas();
             actualizarTemperatura();
             actualizarProyecciones();
             if (!document.getElementById('empadre-fecha').value) document.getElementById('empadre-fecha').value = fechaHoy();
