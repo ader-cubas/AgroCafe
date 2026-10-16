@@ -893,11 +893,29 @@
                 <div class="table-scroll">
                     <table class="records-table">
                         <thead>
-                            <tr><th>Parcela / Lote</th><th>Ubicación</th><th>Área</th><th>Variedad</th><th>Acciones</th></tr>
+                            <tr><th>Parcela / Lote</th><th>Ubicación</th><th>Área</th><th>Variedad</th><th>Geometría UTM</th><th>Acciones</th></tr>
                         </thead>
                         <tbody id="tablaParcelasDinamica"></tbody>
                     </table>
                 </div>
+                <section style="margin-top: 22px; padding: 18px; background: #faf8f5; border: 1px solid var(--border-color); border-radius: 10px;" aria-labelledby="tituloCoordenadasUTM">
+                    <h3 id="tituloCoordenadasUTM" style="margin-bottom: 8px; color: var(--primary);">Perímetro y puntos UTM</h3>
+                    <p class="form-note" style="margin-bottom: 14px;">Selecciona una parcela e ingresa un punto por línea en formato <strong>Zona, Este (m), Norte (m)</strong>. Ejemplo: <code>17M, 740000, 9320000</code>. Tres o más puntos definen un perímetro; con uno o dos se guardan puntos de referencia.</p>
+                    <form id="formCoordenadasUTM">
+                        <div class="ndvi-controls">
+                            <div class="form-group">
+                                <label for="selectParcelaUTM">Parcela</label>
+                                <select id="selectParcelaUTM" class="form-control"></select>
+                            </div>
+                            <div class="form-group" style="grid-column: span 2;">
+                                <label for="inputCoordenadasUTM">Vértices UTM</label>
+                                <textarea id="inputCoordenadasUTM" class="form-control" rows="5" placeholder="17M, 740000, 9320000&#10;17M, 740120, 9320000&#10;17M, 740120, 9320120"></textarea>
+                            </div>
+                        </div>
+                        <p id="estadoCoordenadasUTM" class="form-note" role="status" aria-live="polite" style="margin-bottom: 12px;"></p>
+                        <button class="btn" type="submit"><i data-lucide="save"></i> Guardar coordenadas</button>
+                    </form>
+                </section>
             </div>
         </div>
 
@@ -1069,12 +1087,122 @@
                 agregarCelda(fila, parcela.ubicacion);
                 agregarCelda(fila, parcela.area);
                 agregarCelda(fila, parcela.variedad);
+                const coordenadas = Array.isArray(parcela.coordenadasUTM) ? parcela.coordenadasUTM : [];
+                agregarCelda(fila, coordenadas.length >= 3
+                    ? coordenadas.length + ' vértices · perímetro'
+                    : coordenadas.length === 1 ? '1 punto de referencia' : coordenadas.length + ' puntos de referencia');
                 fila.appendChild(crearCeldaAcciones('parcelas', parcela.id));
                 tablaParcelas.appendChild(fila);
             });
             renderizarLoteActivo();
             actualizarResumenDashboard();
             renderizarSelectorNDVI();
+            renderizarSelectorParcelaUTM();
+        }
+
+        function formatearCoordenadasUTM(coordenadas) {
+            return coordenadas.map(punto => punto.zona + ', ' + punto.este + ', ' + punto.norte).join('\n');
+        }
+
+        function renderizarSelectorParcelaUTM() {
+            const selector = document.getElementById('selectParcelaUTM');
+            const seleccionAnterior = selector.value;
+            selector.replaceChildren();
+
+            if (!registros.parcelas.length) {
+                const opcion = document.createElement('option');
+                opcion.value = '';
+                opcion.textContent = 'Sin parcelas registradas';
+                selector.appendChild(opcion);
+                selector.disabled = true;
+                document.getElementById('inputCoordenadasUTM').disabled = true;
+                document.querySelector('#formCoordenadasUTM button[type="submit"]').disabled = true;
+                document.getElementById('estadoCoordenadasUTM').textContent = 'Agrega una parcela para registrar coordenadas.';
+                return;
+            }
+
+            selector.disabled = false;
+            document.getElementById('inputCoordenadasUTM').disabled = false;
+            document.querySelector('#formCoordenadasUTM button[type="submit"]').disabled = false;
+            registros.parcelas.forEach(parcela => {
+                const opcion = document.createElement('option');
+                opcion.value = parcela.id;
+                opcion.textContent = parcela.nombre;
+                selector.appendChild(opcion);
+            });
+            selector.value = registros.parcelas.some(parcela => parcela.id === seleccionAnterior)
+                ? seleccionAnterior
+                : registros.parcelas[0].id;
+            cargarCoordenadasParcelaSeleccionada();
+        }
+
+        function cargarCoordenadasParcelaSeleccionada() {
+            const parcela = registros.parcelas.find(item => item.id === document.getElementById('selectParcelaUTM').value);
+            const coordenadas = parcela && Array.isArray(parcela.coordenadasUTM) ? parcela.coordenadasUTM : [];
+            document.getElementById('inputCoordenadasUTM').value = formatearCoordenadasUTM(coordenadas);
+            document.getElementById('estadoCoordenadasUTM').textContent = coordenadas.length >= 3
+                ? 'Perímetro definido con ' + coordenadas.length + ' vértices UTM.'
+                : coordenadas.length
+                    ? coordenadas.length + ' punto(s) guardado(s); agrega al menos 3 vértices para definir el perímetro.'
+                    : 'No hay puntos UTM registrados para esta parcela.';
+        }
+
+        function analizarCoordenadasUTM(texto) {
+            const lineas = texto.split(/\r?\n/).map(linea => linea.trim()).filter(Boolean);
+            const coordenadas = [];
+            let zonaComun = '';
+
+            for (let indice = 0; indice < lineas.length; indice += 1) {
+                const partes = lineas[indice].split(/[;,\s]+/);
+                if (partes.length !== 3) {
+                    return { error: 'Línea ' + (indice + 1) + ': usa Zona, Este, Norte.' };
+                }
+
+                const zona = partes[0].toUpperCase();
+                const este = Number(partes[1]);
+                const norte = Number(partes[2]);
+                if (!/^(?:[1-9]|[1-5]\d|60)[C-HJ-NP-X]$/.test(zona)) {
+                    return { error: 'Línea ' + (indice + 1) + ': la zona UTM debe tener formato como 17M.' };
+                }
+                if (!Number.isFinite(este) || este < 100000 || este > 900000
+                    || !Number.isFinite(norte) || norte < 0 || norte > 10000000) {
+                    return { error: 'Línea ' + (indice + 1) + ': Este debe estar entre 100000 y 900000 m, y Norte entre 0 y 10000000 m.' };
+                }
+                if (zonaComun && zona !== zonaComun) {
+                    return { error: 'Todos los vértices de un mismo perímetro deben usar la misma zona UTM.' };
+                }
+
+                zonaComun = zona;
+                coordenadas.push({ zona, este, norte });
+            }
+
+            return { coordenadas };
+        }
+
+        function guardarCoordenadasUTM(event) {
+            event.preventDefault();
+            const idParcela = document.getElementById('selectParcelaUTM').value;
+            const parcela = registros.parcelas.find(item => item.id === idParcela);
+            if (!parcela) return;
+
+            const resultado = analizarCoordenadasUTM(document.getElementById('inputCoordenadasUTM').value);
+            if (resultado.error) {
+                document.getElementById('estadoCoordenadasUTM').textContent = resultado.error;
+                document.getElementById('inputCoordenadasUTM').focus();
+                return;
+            }
+
+            const parcelasActualizadas = registros.parcelas.map(item => item.id === idParcela
+                ? { ...item, coordenadasUTM: resultado.coordenadas }
+                : item);
+            if (!guardarRegistros('parcelas', parcelasActualizadas)) return;
+            registros.parcelas = parcelasActualizadas;
+            renderizarRegistros();
+            document.getElementById('estadoCoordenadasUTM').textContent = resultado.coordenadas.length >= 3
+                ? 'Perímetro guardado con ' + resultado.coordenadas.length + ' vértices UTM.'
+                : resultado.coordenadas.length
+                    ? resultado.coordenadas.length + ' punto(s) de referencia guardado(s); faltan vértices para cerrar el perímetro.'
+                    : 'Se quitaron las coordenadas UTM de esta parcela.';
         }
 
         function renderizarLoteActivo() {
@@ -1095,6 +1223,8 @@
 
         renderizarRegistros();
 
+        document.getElementById('selectParcelaUTM').addEventListener('change', cargarCoordenadasParcelaSeleccionada);
+        document.getElementById('formCoordenadasUTM').addEventListener('submit', guardarCoordenadasUTM);
         document.getElementById('selectParcelaNDVI').addEventListener('change', renderizarLecturaNDVI);
         document.getElementById('formNDVI').addEventListener('submit', guardarLecturaNDVI);
         document.getElementById('ndviParcelCards').addEventListener('click', event => {
@@ -1379,12 +1509,18 @@
                     ubicacion: typeof lectura.ubicacion === 'string' && lectura.ubicacion.trim()
                         ? lectura.ubicacion
                         : parcela.ubicacion || '',
+                    coordenadasUTM: Array.isArray(parcela.coordenadasUTM) ? parcela.coordenadasUTM : [],
                     fecha: lectura.fecha || '',
                     estimado: false
                 };
             }
 
-            return { ndvi: 0.68, sana: 68, estres: 22, riesgo: 10, zonas: '', ubicacion: parcela.ubicacion || '', fecha: '', estimado: true };
+            return {
+                ndvi: 0.68, sana: 68, estres: 22, riesgo: 10, zonas: '',
+                ubicacion: parcela.ubicacion || '',
+                coordenadasUTM: Array.isArray(parcela.coordenadasUTM) ? parcela.coordenadasUTM : [],
+                fecha: '', estimado: true
+            };
         }
 
         function diagnosticarNDVI(ndvi) {
@@ -1458,6 +1594,30 @@
                 tituloValor.textContent = lectura.estimado ? 'NDVI estimado' : 'NDVI registrado';
                 lecturaResumen.append(valor, tituloValor);
 
+                const vertices = Array.isArray(lectura.coordenadasUTM) ? lectura.coordenadasUTM : [];
+                const geometria = document.createElement('details');
+                geometria.className = 'ndvi-estimate-note';
+                const resumenGeometria = document.createElement('summary');
+                resumenGeometria.textContent = vertices.length >= 3
+                    ? 'Perímetro UTM definido · ' + vertices.length + ' vértices'
+                    : vertices.length
+                        ? vertices.length + ' punto(s) UTM · perímetro incompleto'
+                        : 'Sin perímetro UTM definido';
+                geometria.appendChild(resumenGeometria);
+                if (vertices.length) {
+                    const listaVertices = document.createElement('ol');
+                    vertices.forEach((punto, indice) => {
+                        const item = document.createElement('li');
+                        item.textContent = (indice + 1) + '. ' + punto.zona + ', ' + punto.este + ' E, ' + punto.norte + ' N';
+                        listaVertices.appendChild(item);
+                    });
+                    geometria.appendChild(listaVertices);
+                } else {
+                    const avisoGeometria = document.createElement('p');
+                    avisoGeometria.textContent = 'Agrega al menos 3 vértices desde Gestión de Parcelas para definir el perímetro.';
+                    geometria.appendChild(avisoGeometria);
+                }
+
                 const escala = document.createElement('div');
                 escala.className = 'ndvi-status-bar';
                 escala.setAttribute('role', 'img');
@@ -1508,7 +1668,7 @@
                 editar.dataset.editarNdvi = parcela.id;
                 editar.textContent = lectura.estimado ? 'Registrar lectura' : 'Editar lectura';
 
-                tarjeta.append(encabezado, lecturaResumen, escala, escalaLabels, cobertura, coberturaTexto, diagnosticoBox, nota, editar);
+                tarjeta.append(encabezado, lecturaResumen, geometria, escala, escalaLabels, cobertura, coberturaTexto, diagnosticoBox, nota, editar);
                 contenedor.appendChild(tarjeta);
             });
         }
@@ -1657,6 +1817,17 @@
                 ? 'Parcela: ' + parcela.nombre + ' · Ubicación: ' + ((lectura && lectura.ubicacion) || parcela.ubicacion || 'Sin ubicación registrada') + ' · Área: ' + parcela.area + ' · Variedad: ' + parcela.variedad
                 : 'Parcela: sin parcela seleccionada.';
             informe.append(titulo, meta, datosParcela);
+
+            if (parcela) {
+                const puntosUTM = Array.isArray(parcela.coordenadasUTM) ? parcela.coordenadasUTM : [];
+                const geometria = document.createElement('p');
+                geometria.textContent = puntosUTM.length >= 3
+                    ? 'Perímetro UTM (' + puntosUTM.length + ' vértices): ' + puntosUTM.map((punto, indice) => (indice + 1) + ') ' + punto.zona + ', ' + punto.este + ' E, ' + punto.norte + ' N').join(' · ')
+                    : puntosUTM.length
+                        ? 'Puntos UTM de referencia (' + puntosUTM.length + '): ' + puntosUTM.map(punto => punto.zona + ', ' + punto.este + ' E, ' + punto.norte + ' N').join(' · ') + '. Faltan vértices para definir el perímetro.'
+                        : 'Sin coordenadas UTM; no se ha definido el perímetro de la parcela.';
+                informe.appendChild(geometria);
+            }
 
             const tituloNDVI = document.createElement('h2');
             tituloNDVI.textContent = 'Monitoreo de salud (NDVI)';
