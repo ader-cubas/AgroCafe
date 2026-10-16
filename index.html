@@ -687,6 +687,21 @@
                         </div>
                     </div>
                     <div id="ndviParcelCards" class="ndvi-parcel-grid" aria-live="polite"></div>
+                    <section class="ndvi-table-section" aria-labelledby="ndviTableTitle">
+                        <div class="card-header" id="ndviTableTitle" style="justify-content: space-between;">
+                            <span><i data-lucide="list-checks"></i> Resumen general de parcelas</span>
+                            <span id="ndviParcelCount" class="form-note">0 parcelas</span>
+                        </div>
+                        <div class="table-scroll">
+                            <table class="records-table" aria-label="Resumen NDVI de todas las parcelas">
+                                <thead>
+                                    <tr><th>Parcela</th><th>NDVI actual</th><th>Estado de salud</th><th>Área verde</th></tr>
+                                </thead>
+                                <tbody id="ndviSummaryRows"></tbody>
+                            </table>
+                        </div>
+                        <p class="form-note" style="margin-top: 10px;">Las lecturas de demostración se identifican como estimadas; registra una lectura real para reemplazarlas.</p>
+                    </section>
                 </div>
             </div>
         </div>
@@ -1394,6 +1409,7 @@
         function renderizarTarjetasNDVI() {
             const contenedor = document.getElementById('ndviParcelCards');
             contenedor.replaceChildren();
+            renderizarTablaResumenNDVI();
 
             if (!registros.parcelas.length) {
                 const vacio = document.createElement('p');
@@ -1483,6 +1499,46 @@
 
                 tarjeta.append(encabezado, lecturaResumen, escala, escalaLabels, cobertura, coberturaTexto, diagnosticoBox, nota, editar);
                 contenedor.appendChild(tarjeta);
+            });
+        }
+
+        function renderizarTablaResumenNDVI() {
+            const filas = document.getElementById('ndviSummaryRows');
+            const contador = document.getElementById('ndviParcelCount');
+            filas.replaceChildren();
+            contador.textContent = registros.parcelas.length + (registros.parcelas.length === 1 ? ' parcela' : ' parcelas');
+
+            if (!registros.parcelas.length) {
+                const fila = document.createElement('tr');
+                const celda = document.createElement('td');
+                celda.colSpan = 4;
+                celda.textContent = 'No hay parcelas registradas.';
+                fila.appendChild(celda);
+                filas.appendChild(fila);
+                return;
+            }
+
+            registros.parcelas.forEach(parcela => {
+                const lectura = obtenerLecturaNDVI(parcela);
+                const diagnostico = diagnosticarNDVI(lectura.ndvi);
+                const fila = document.createElement('tr');
+                const nombre = document.createElement('td');
+                nombre.textContent = parcela.nombre;
+
+                const valorNDVI = document.createElement('td');
+                valorNDVI.textContent = lectura.ndvi.toFixed(2) + (lectura.estimado ? ' *' : '');
+
+                const estadoCelda = document.createElement('td');
+                const estado = document.createElement('span');
+                estado.className = 'ndvi-state-badge ndvi-state-' + diagnostico.estado;
+                estado.textContent = diagnostico.etiqueta;
+                estadoCelda.appendChild(estado);
+
+                const areaVerde = document.createElement('td');
+                areaVerde.textContent = lectura.sana + '%' + (lectura.estimado ? ' *' : '');
+
+                fila.append(nombre, valorNDVI, estadoCelda, areaVerde);
+                filas.appendChild(fila);
             });
         }
 
