@@ -484,6 +484,20 @@
         .action-cell { white-space: nowrap; }
         .btn-delete { background-color: #a83232; padding: 7px 11px; font-size: 0.85rem; }
         .btn-delete:hover { background-color: #842626; }
+        .photo-manager { margin-top: 22px; padding: 18px; background: #faf8f5; border: 1px solid var(--border-color); border-radius: 10px; }
+        .photo-gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 14px; margin-top: 16px; }
+        .photo-item { min-width: 0; overflow: hidden; background: #fff; border: 1px solid var(--border-color); border-radius: 8px; }
+        .photo-item > a { display: block; background: #e8e8e2; }
+        .photo-item img { display: block; width: 100%; aspect-ratio: 4 / 3; object-fit: cover; }
+        .photo-details { padding: 12px; }
+        .photo-details h4 { overflow-wrap: anywhere; color: var(--primary); font-size: .92rem; }
+        .photo-details p { margin: 5px 0 10px; color: var(--text-muted); font-size: .8rem; }
+        .photo-coordinate-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 7px; }
+        .photo-coordinate-grid .form-control { min-width: 0; padding: 8px 6px; font-size: .82rem; }
+        .photo-actions { display: flex; gap: 8px; margin-top: 10px; }
+        .photo-actions .btn { padding: 8px 10px; font-size: .82rem; }
+        .storage-usage { margin-top: 8px; color: var(--text-muted); font-size: .82rem; }
+        .vertex-inputs { display: grid; grid-template-columns: repeat(auto-fit, minmax(145px, 1fr)); gap: 10px; align-items: end; }
 
         @media (max-width: 900px) {
             body { flex-direction: column; }
@@ -517,6 +531,7 @@
             <li><a class="menu-item" id="menu-gastos" onclick="switchView('gastos')"><i data-lucide="receipt"></i> Gastos de Cultivo</a></li>
             <li><a class="menu-item" id="menu-ventas" onclick="switchView('ventas')"><i data-lucide="dollar-sign"></i> Venta de Café</a></li>
             <li><a class="menu-item" id="menu-parcelas" onclick="switchView('parcelas')"><i data-lucide="map-pin"></i> Parcelas & Lotes</a></li>
+            <li><a class="menu-item" id="menu-poscosecha" onclick="switchView('poscosecha')"><i data-lucide="sun"></i> Secado y Poscosecha</a></li>
         </ul>
     </aside>
 
@@ -888,8 +903,18 @@
             <div class="card col-12">
                 <div class="card-header" style="justify-content: space-between;">
                     <span><i data-lucide="map-pin"></i> Gestión de Parcelas y Lotes Cafetaleros</span>
-                    <button class="btn btn-accent" onclick="agregarParcela()"><i data-lucide="plus"></i> Nueva Parcela</button>
                 </div>
+                <form id="formNuevaParcela" style="margin-bottom: 22px; padding: 18px; background: #faf8f5; border: 1px solid var(--border-color); border-radius: 10px;">
+                    <h3 style="margin-bottom: 14px; color: var(--primary);">Registrar parcela</h3>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px;">
+                        <div class="form-group"><label for="nombreNuevaParcela">Nombre de la Parcela</label><input id="nombreNuevaParcela" name="nombre" class="form-control" required maxlength="100" placeholder="Ej. Lote El Mirador"></div>
+                        <div class="form-group"><label for="ubicacionNuevaParcela">Ubicación</label><input id="ubicacionNuevaParcela" name="ubicacion" class="form-control" required maxlength="120" placeholder="Lonya, Bagua, Jaén, San Ignacio"></div>
+                        <div class="form-group"><label for="areaNuevaParcela">Área (hectáreas)</label><input id="areaNuevaParcela" name="area" class="form-control" type="number" min="0.01" step="0.01" required placeholder="Ej. 2.5"></div>
+                        <div class="form-group"><label for="variedadNuevaParcela">Variedad de Café</label><input id="variedadNuevaParcela" name="variedad" class="form-control" required list="variedadesCafe" maxlength="80" placeholder="Caturra, Catimor, Typica"><datalist id="variedadesCafe"><option value="Caturra"><option value="Catimor"><option value="Typica"></datalist></div>
+                    </div>
+                    <p id="estadoNuevaParcela" class="form-note" role="status" aria-live="polite"></p>
+                    <button class="btn btn-accent" type="submit"><i data-lucide="save"></i> Guardar Parcela</button>
+                </form>
                 <div class="table-scroll">
                     <table class="records-table">
                         <thead>
@@ -900,22 +925,51 @@
                 </div>
                 <section style="margin-top: 22px; padding: 18px; background: #faf8f5; border: 1px solid var(--border-color); border-radius: 10px;" aria-labelledby="tituloCoordenadasUTM">
                     <h3 id="tituloCoordenadasUTM" style="margin-bottom: 8px; color: var(--primary);">Perímetro y puntos UTM</h3>
-                    <p class="form-note" style="margin-bottom: 14px;">Selecciona una parcela e ingresa un punto por línea en formato <strong>Zona, Este (m), Norte (m)</strong>. Ejemplo: <code>17M, 740000, 9320000</code>. Tres o más puntos definen un perímetro; con uno o dos se guardan puntos de referencia.</p>
-                    <form id="formCoordenadasUTM">
-                        <div class="ndvi-controls">
-                            <div class="form-group">
-                                <label for="selectParcelaUTM">Parcela</label>
-                                <select id="selectParcelaUTM" class="form-control"></select>
-                            </div>
-                            <div class="form-group" style="grid-column: span 2;">
-                                <label for="inputCoordenadasUTM">Vértices UTM</label>
-                                <textarea id="inputCoordenadasUTM" class="form-control" rows="5" placeholder="17M, 740000, 9320000&#10;17M, 740120, 9320000&#10;17M, 740120, 9320120"></textarea>
-                            </div>
-                        </div>
-                        <p id="estadoCoordenadasUTM" class="form-note" role="status" aria-live="polite" style="margin-bottom: 12px;"></p>
-                        <button class="btn" type="submit"><i data-lucide="save"></i> Guardar coordenadas</button>
-                    </form>
+                    <p class="form-note" style="margin-bottom: 14px;">Agrega cada vértice con su zona, Este y Norte. Todos los puntos del perímetro deben usar la misma zona UTM.</p>
+                    <div id="editorCoordenadasUTM"></div>
                 </section>
+                <section class="photo-manager" aria-labelledby="tituloFotosParcela">
+                    <h3 id="tituloFotosParcela" style="margin-bottom: 8px; color: var(--primary);">Evidencias fotográficas por parcela</h3>
+                    <p class="form-note" style="margin-bottom: 14px;">JPEG optimizado en este dispositivo · máximo 1,5 MB por foto · límite local de 120 MB.</p>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; align-items: end;">
+                        <div class="form-group"><label for="selectorParcelaFotos">Parcela</label><select id="selectorParcelaFotos" class="form-control"></select></div>
+                        <div class="form-group"><label for="entradaFotosParcela">Tomar o subir fotos</label><input id="entradaFotosParcela" class="form-control" type="file" accept="image/*" capture="environment" multiple></div>
+                    </div>
+                    <p id="estadoFotosParcela" class="form-note" role="status" aria-live="polite"></p>
+                    <p id="usoFotosParcela" class="storage-usage" aria-live="polite"></p>
+                    <div id="galeriaFotosParcela" class="photo-gallery"></div>
+                </section>
+            </div>
+        </div>
+
+        <!-- VISTA 9: SECADO Y POSCOSECHA -->
+        <div id="view-poscosecha" class="section-view">
+            <div class="grid-layout">
+                <div class="card col-6">
+                    <div class="card-header"><i data-lucide="clipboard-list"></i> Registro de poscosecha</div>
+                    <form id="formRegistroPoscosecha">
+                        <div class="form-group"><label for="selectorParcelaPoscosecha">Parcela o lote</label><select id="selectorParcelaPoscosecha" class="form-control" required></select></div>
+                        <div class="form-group"><label for="metodoPoscosecha">Método de proceso</label><select id="metodoPoscosecha" class="form-control" required><option value="Lavado">Lavado</option><option value="Natural">Natural</option><option value="Honey">Honey</option></select></div>
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px;">
+                            <div class="form-group"><label for="fechaCosechaPoscosecha">Fecha de cosecha</label><input id="fechaCosechaPoscosecha" class="form-control" type="date" required></div>
+                            <div class="form-group"><label for="humedadGranoPoscosecha">Humedad del grano (%)</label><input id="humedadGranoPoscosecha" class="form-control" type="number" min="0" max="30" step="0.1" required placeholder="Ej. 11.2"></div>
+                        </div>
+                        <p id="estadoRegistroPoscosecha" class="form-note" role="status" aria-live="polite"></p>
+                        <button class="btn" type="submit"><i data-lucide="save"></i> Guardar registro</button>
+                    </form>
+                </div>
+                <div class="card col-6"><div class="card-header"><i data-lucide="thermometer-sun"></i> Recomendación de almacenamiento</div><div id="recomendacionAlmacenamiento" aria-live="polite"></div></div>
+                <div class="card col-12">
+                    <div class="card-header"><i data-lucide="list"></i> Historial del lote</div>
+                    <div class="table-scroll"><table class="records-table"><thead><tr><th>Fecha de cosecha</th><th>Método</th><th>Humedad</th><th>Recomendación</th><th>Acción</th></tr></thead><tbody id="tablaHistorialPoscosecha"></tbody></table></div>
+                </div>
+                <div class="card col-12">
+                    <div class="card-header"><i data-lucide="camera"></i> Evidencias del secado</div>
+                    <p class="form-note" style="margin-bottom: 14px;">Las fotos comprimidas se guardan en el mismo almacenamiento local y se asocian al lote seleccionado.</p>
+                    <div class="form-group" style="max-width: 420px;"><label for="entradaFotosSecado">Tomar o subir fotos del grano</label><input id="entradaFotosSecado" class="form-control" type="file" accept="image/*" capture="environment" multiple></div>
+                    <p id="estadoFotosSecado" class="form-note" role="status" aria-live="polite"></p>
+                    <div id="galeriaFotosSecado" class="photo-gallery"></div>
+                </div>
             </div>
         </div>
 
@@ -1003,6 +1057,15 @@
                 { id: 'parcela-inicial-1', nombre: 'Lote Principal: San Isidro', ubicacion: 'Lonya, Amazonas', area: '2.5 Hectáreas', variedad: 'Caturra / Catimor' }
             ])
         };
+        let idParcelaSeleccionadaUTM = '';
+        let verticesUTMEditables = [];
+        let idParcelaPoscosechaSeleccionada = '';
+        let baseFotosParcela;
+        let errorBaseFotosParcela = '';
+        const urlsFotosParcela = new Set();
+        const urlsFotosSecado = new Set();
+        const maxBytesFoto = 1.5 * 1024 * 1024;
+        const maxBytesEvidencias = 120 * 1024 * 1024;
 
         const claveLecturasNDVI = 'agrocafe_ndvi_v1';
 
@@ -1039,12 +1102,20 @@
             return celda;
         }
 
-        function eliminarRegistro(tipo, id) {
+        async function eliminarRegistro(tipo, id) {
             const actualizados = registros[tipo].filter(registro => registro.id !== id);
             if (actualizados.length === registros[tipo].length) return;
             if (!guardarRegistros(tipo, actualizados)) return;
             registros[tipo] = actualizados;
             renderizarRegistros();
+            if (tipo === 'parcelas' && baseFotosParcela) {
+                try {
+                    await eliminarFotosDeParcelaDeBase(id);
+                    actualizarUsoFotosParcela();
+                } catch (error) {
+                    console.error('No se pudieron eliminar todas las evidencias de la parcela.', error);
+                }
+            }
         }
 
         function renderizarRegistros() {
@@ -1098,111 +1169,723 @@
             actualizarResumenDashboard();
             renderizarSelectorNDVI();
             renderizarSelectorParcelaUTM();
-        }
-
-        function formatearCoordenadasUTM(coordenadas) {
-            return coordenadas.map(punto => punto.zona + ', ' + punto.este + ', ' + punto.norte).join('\n');
+            renderizarSelectorFotosParcela();
+            renderizarVistaPoscosecha();
         }
 
         function renderizarSelectorParcelaUTM() {
-            const selector = document.getElementById('selectParcelaUTM');
-            const seleccionAnterior = selector.value;
-            selector.replaceChildren();
-
-            if (!registros.parcelas.length) {
-                const opcion = document.createElement('option');
-                opcion.value = '';
-                opcion.textContent = 'Sin parcelas registradas';
-                selector.appendChild(opcion);
-                selector.disabled = true;
-                document.getElementById('inputCoordenadasUTM').disabled = true;
-                document.querySelector('#formCoordenadasUTM button[type="submit"]').disabled = true;
-                document.getElementById('estadoCoordenadasUTM').textContent = 'Agrega una parcela para registrar coordenadas.';
-                return;
+            const editor = document.getElementById('editorCoordenadasUTM');
+            if (!editor.querySelector('#formCoordenadasUTM')) {
+                editor.innerHTML = '<form id="formCoordenadasUTM">' +
+                    '<div class="form-group"><label for="selectParcelaUTM">Parcela</label><select id="selectParcelaUTM" class="form-control"></select></div>' +
+                    '<div class="vertex-inputs">' +
+                    '<div class="form-group"><label for="zonaVerticeUTM">Zona UTM</label><input id="zonaVerticeUTM" class="form-control" maxlength="3" placeholder="17S"></div>' +
+                    '<div class="form-group"><label for="esteVerticeUTM">Coordenada Este (m)</label><input id="esteVerticeUTM" class="form-control" type="number" min="100000" max="900000" step="any" placeholder="740000"></div>' +
+                    '<div class="form-group"><label for="norteVerticeUTM">Coordenada Norte (m)</label><input id="norteVerticeUTM" class="form-control" type="number" min="0" max="10000000" step="any" placeholder="9320000"></div>' +
+                    '<div class="form-group"><button class="btn btn-accent" data-accion-utm="agregar" type="button"><i data-lucide="plus"></i> Agregar Vértice</button></div></div>' +
+                    '<div class="table-scroll"><table class="records-table"><thead><tr><th>Vértice</th><th>Zona UTM</th><th>Este (m)</th><th>Norte (m)</th><th>Acción</th></tr></thead><tbody id="tablaVerticesUTM"></tbody></table></div>' +
+                    '<p id="estadoCoordenadasUTM" class="form-note" role="status" aria-live="polite"></p>' +
+                    '<p id="resultadoPoligonoUTM" class="form-note" role="status" aria-live="polite"></p>' +
+                    '<div style="display:flex;gap:10px;flex-wrap:wrap"><button class="btn" data-accion-utm="calcular" type="button"><i data-lucide="pentagon"></i> Calcular polígono</button><button class="btn" type="submit"><i data-lucide="save"></i> Guardar coordenadas</button></div>' +
+                    '</form>';
+                const formulario = editor.querySelector('#formCoordenadasUTM');
+                formulario.addEventListener('submit', guardarCoordenadasUTM);
+                formulario.addEventListener('click', manejarAccionUTM);
+                formulario.querySelector('#selectParcelaUTM').addEventListener('change', event => {
+                    idParcelaSeleccionadaUTM = event.target.value;
+                    cargarVerticesUTMSeleccionados();
+                    renderizarSelectorParcelaUTM();
+                });
+                lucide.createIcons();
             }
-
-            selector.disabled = false;
-            document.getElementById('inputCoordenadasUTM').disabled = false;
-            document.querySelector('#formCoordenadasUTM button[type="submit"]').disabled = false;
+            const selector = editor.querySelector('#selectParcelaUTM');
+            const seleccionAnterior = registros.parcelas.some(parcela => parcela.id === idParcelaSeleccionadaUTM)
+                ? idParcelaSeleccionadaUTM
+                : selector.value;
+            selector.replaceChildren();
             registros.parcelas.forEach(parcela => {
                 const opcion = document.createElement('option');
                 opcion.value = parcela.id;
                 opcion.textContent = parcela.nombre;
                 selector.appendChild(opcion);
             });
-            selector.value = registros.parcelas.some(parcela => parcela.id === seleccionAnterior)
+            idParcelaSeleccionadaUTM = registros.parcelas.some(parcela => parcela.id === seleccionAnterior)
                 ? seleccionAnterior
-                : registros.parcelas[0].id;
-            cargarCoordenadasParcelaSeleccionada();
-        }
-
-        function cargarCoordenadasParcelaSeleccionada() {
-            const parcela = registros.parcelas.find(item => item.id === document.getElementById('selectParcelaUTM').value);
-            const coordenadas = parcela && Array.isArray(parcela.coordenadasUTM) ? parcela.coordenadasUTM : [];
-            document.getElementById('inputCoordenadasUTM').value = formatearCoordenadasUTM(coordenadas);
-            document.getElementById('estadoCoordenadasUTM').textContent = coordenadas.length >= 3
-                ? 'Perímetro definido con ' + coordenadas.length + ' vértices UTM.'
-                : coordenadas.length
-                    ? coordenadas.length + ' punto(s) guardado(s); agrega al menos 3 vértices para definir el perímetro.'
-                    : 'No hay puntos UTM registrados para esta parcela.';
-        }
-
-        function analizarCoordenadasUTM(texto) {
-            const lineas = texto.split(/\r?\n/).map(linea => linea.trim()).filter(Boolean);
-            const coordenadas = [];
-            let zonaComun = '';
-
-            for (let indice = 0; indice < lineas.length; indice += 1) {
-                const partes = lineas[indice].split(/[;,\s]+/);
-                if (partes.length !== 3) {
-                    return { error: 'Línea ' + (indice + 1) + ': usa Zona, Este, Norte.' };
-                }
-
-                const zona = partes[0].toUpperCase();
-                const este = Number(partes[1]);
-                const norte = Number(partes[2]);
-                if (!/^(?:[1-9]|[1-5]\d|60)[C-HJ-NP-X]$/.test(zona)) {
-                    return { error: 'Línea ' + (indice + 1) + ': la zona UTM debe tener formato como 17M.' };
-                }
-                if (!Number.isFinite(este) || este < 100000 || este > 900000
-                    || !Number.isFinite(norte) || norte < 0 || norte > 10000000) {
-                    return { error: 'Línea ' + (indice + 1) + ': Este debe estar entre 100000 y 900000 m, y Norte entre 0 y 10000000 m.' };
-                }
-                if (zonaComun && zona !== zonaComun) {
-                    return { error: 'Todos los vértices de un mismo perímetro deben usar la misma zona UTM.' };
-                }
-
-                zonaComun = zona;
-                coordenadas.push({ zona, este, norte });
+                : registros.parcelas[0]?.id || '';
+            selector.value = idParcelaSeleccionadaUTM;
+            const habilitado = Boolean(idParcelaSeleccionadaUTM);
+            editor.querySelectorAll('#zonaVerticeUTM, #esteVerticeUTM, #norteVerticeUTM, [data-accion-utm], #formCoordenadasUTM button[type="submit"]').forEach(control => {
+                control.disabled = !habilitado;
+            });
+            if (!habilitado) {
+                verticesUTMEditables = [];
+                document.getElementById('estadoCoordenadasUTM').textContent = 'Agrega una parcela para registrar coordenadas.';
+                renderizarVerticesUTM();
+                return;
             }
+            if (idParcelaSeleccionadaUTM !== seleccionAnterior) cargarVerticesUTMSeleccionados();
+            renderizarVerticesUTM();
+        }
 
-            return { coordenadas };
+        function cargarVerticesUTMSeleccionados() {
+            const parcela = registros.parcelas.find(item => item.id === idParcelaSeleccionadaUTM);
+            verticesUTMEditables = parcela && Array.isArray(parcela.coordenadasUTM)
+                ? parcela.coordenadasUTM.map(punto => ({ ...punto }))
+                : [];
+        }
+
+        function renderizarVerticesUTM() {
+            const tabla = document.getElementById('tablaVerticesUTM');
+            tabla.replaceChildren();
+            verticesUTMEditables.forEach((punto, indice) => {
+                const fila = document.createElement('tr');
+                agregarCelda(fila, indice + 1);
+                agregarCelda(fila, punto.zona);
+                agregarCelda(fila, Number(punto.este).toLocaleString('es-PE'));
+                agregarCelda(fila, Number(punto.norte).toLocaleString('es-PE'));
+                const accion = document.createElement('td');
+                const boton = document.createElement('button');
+                boton.type = 'button';
+                boton.className = 'btn btn-delete';
+                boton.dataset.eliminarVertice = String(indice);
+                boton.textContent = 'Eliminar';
+                accion.appendChild(boton);
+                fila.appendChild(accion);
+                tabla.appendChild(fila);
+            });
+            document.getElementById('estadoCoordenadasUTM').textContent = verticesUTMEditables.length >= 3
+                ? verticesUTMEditables.length + ' vértices UTM agregados; calcula y guarda el perímetro.'
+                : verticesUTMEditables.length
+                    ? verticesUTMEditables.length + ' punto(s) de referencia; agrega al menos 3 para formar un perímetro.'
+                    : 'No hay puntos UTM registrados para esta parcela.';
+            document.getElementById('resultadoPoligonoUTM').textContent = '';
+        }
+
+        function manejarAccionUTM(event) {
+            const boton = event.target.closest('[data-accion-utm], [data-eliminar-vertice]');
+            if (!boton) return;
+            if (boton.dataset.eliminarVertice !== undefined) {
+                verticesUTMEditables.splice(Number(boton.dataset.eliminarVertice), 1);
+                renderizarVerticesUTM();
+                return;
+            }
+            if (boton.dataset.accionUtm === 'agregar') {
+                const zona = document.getElementById('zonaVerticeUTM').value.trim().toUpperCase();
+                const esteCampo = document.getElementById('esteVerticeUTM').value;
+                const norteCampo = document.getElementById('norteVerticeUTM').value;
+                const este = Number(esteCampo);
+                const norte = Number(norteCampo);
+                const estado = document.getElementById('estadoCoordenadasUTM');
+                if (!/^(?:[1-9]|[1-5]\d|60)[C-HJ-NP-X]$/.test(zona)) {
+                    estado.textContent = 'La zona debe tener formato como 17S.';
+                    return;
+                }
+                if (!esteCampo || !norteCampo || !Number.isFinite(este) || este < 100000 || este > 900000
+                    || !Number.isFinite(norte) || norte < 0 || norte > 10000000) {
+                    estado.textContent = 'Este debe estar entre 100000 y 900000 m, y Norte entre 0 y 10000000 m.';
+                    return;
+                }
+                if (verticesUTMEditables.length && verticesUTMEditables[0].zona !== zona) {
+                    estado.textContent = 'Todos los vértices deben pertenecer a la misma zona UTM (' + verticesUTMEditables[0].zona + ').';
+                    return;
+                }
+                verticesUTMEditables.push({ zona, este, norte });
+                document.getElementById('zonaVerticeUTM').value = zona;
+                document.getElementById('esteVerticeUTM').value = '';
+                document.getElementById('norteVerticeUTM').value = '';
+                renderizarVerticesUTM();
+                return;
+            }
+            const coordenadas = verticesUTMEditables;
+            const calculo = calcularPoligonoUTM(coordenadas);
+            document.getElementById('resultadoPoligonoUTM').textContent = calculo.error ||
+                'Área: ' + calculo.areaM2.toLocaleString('es-PE', { maximumFractionDigits: 2 }) + ' m² (' +
+                (calculo.areaM2 / 10000).toLocaleString('es-PE', { maximumFractionDigits: 4 }) + ' ha) · Perímetro: ' +
+                calculo.perimetroM.toLocaleString('es-PE', { maximumFractionDigits: 2 }) + ' m.';
+        }
+
+        function calcularPoligonoUTM(coordenadas) {
+            if (coordenadas.length < 3) return { error: 'Agrega al menos 3 vértices para calcular el polígono.' };
+            let sumaArea = 0;
+            let perimetroM = 0;
+            coordenadas.forEach((punto, indice) => {
+                const siguiente = coordenadas[(indice + 1) % coordenadas.length];
+                sumaArea += punto.este * siguiente.norte - siguiente.este * punto.norte;
+                perimetroM += Math.hypot(siguiente.este - punto.este, siguiente.norte - punto.norte);
+            });
+            const areaM2 = Math.abs(sumaArea) / 2;
+            return areaM2 > 0 ? { areaM2, perimetroM } : { error: 'Los vértices no forman un polígono con área.' };
         }
 
         function guardarCoordenadasUTM(event) {
             event.preventDefault();
-            const idParcela = document.getElementById('selectParcelaUTM').value;
+            const idParcela = idParcelaSeleccionadaUTM;
             const parcela = registros.parcelas.find(item => item.id === idParcela);
             if (!parcela) return;
-
-            const resultado = analizarCoordenadasUTM(document.getElementById('inputCoordenadasUTM').value);
-            if (resultado.error) {
-                document.getElementById('estadoCoordenadasUTM').textContent = resultado.error;
-                document.getElementById('inputCoordenadasUTM').focus();
+            if (verticesUTMEditables.some(punto => punto.zona !== verticesUTMEditables[0]?.zona)) {
+                document.getElementById('estadoCoordenadasUTM').textContent = 'Todos los vértices deben usar la misma zona UTM.';
                 return;
             }
-
+            const coordenadas = verticesUTMEditables.map(punto => ({ ...punto }));
             const parcelasActualizadas = registros.parcelas.map(item => item.id === idParcela
-                ? { ...item, coordenadasUTM: resultado.coordenadas }
+                ? { ...item, coordenadasUTM: coordenadas }
                 : item);
             if (!guardarRegistros('parcelas', parcelasActualizadas)) return;
             registros.parcelas = parcelasActualizadas;
             renderizarRegistros();
-            document.getElementById('estadoCoordenadasUTM').textContent = resultado.coordenadas.length >= 3
-                ? 'Perímetro guardado con ' + resultado.coordenadas.length + ' vértices UTM.'
-                : resultado.coordenadas.length
-                    ? resultado.coordenadas.length + ' punto(s) de referencia guardado(s); faltan vértices para cerrar el perímetro.'
+            document.getElementById('estadoCoordenadasUTM').textContent = coordenadas.length >= 3
+                ? 'Perímetro guardado con ' + coordenadas.length + ' vértices UTM.'
+                : coordenadas.length
+                    ? coordenadas.length + ' punto(s) de referencia guardado(s); faltan vértices para cerrar el perímetro.'
                     : 'Se quitaron las coordenadas UTM de esta parcela.';
+        }
+
+        function inicializarBaseFotosParcela() {
+            if (!window.indexedDB) {
+                errorBaseFotosParcela = 'Este navegador no permite almacenamiento local de fotos.';
+                renderizarSelectorFotosParcela();
+                renderizarGaleriaFotosSecado();
+                return;
+            }
+            const solicitud = indexedDB.open('agrocafe_evidencias_v1', 1);
+            solicitud.onupgradeneeded = () => {
+                const base = solicitud.result;
+                if (!base.objectStoreNames.contains('fotos')) {
+                    const almacen = base.createObjectStore('fotos', { keyPath: 'id' });
+                    almacen.createIndex('parcelaId', 'parcelaId', { unique: false });
+                }
+            };
+            solicitud.onsuccess = () => {
+                baseFotosParcela = solicitud.result;
+                baseFotosParcela.onversionchange = () => baseFotosParcela.close();
+                errorBaseFotosParcela = '';
+                renderizarSelectorFotosParcela();
+                renderizarGaleriaFotosSecado();
+                actualizarUsoFotosParcela();
+                limpiarFotosHuerfanas().then(actualizarUsoFotosParcela).catch(error => {
+                    console.error('No se pudieron limpiar fotos de parcelas eliminadas.', error);
+                });
+            };
+            solicitud.onerror = () => {
+                errorBaseFotosParcela = 'No se pudo abrir el almacenamiento local de fotos.';
+                renderizarSelectorFotosParcela();
+                renderizarGaleriaFotosSecado();
+            };
+        }
+
+        function renderizarSelectorFotosParcela() {
+            const selector = document.getElementById('selectorParcelaFotos');
+            const anterior = selector.dataset.seleccion || selector.value || '';
+            selector.replaceChildren();
+            registros.parcelas.forEach(parcela => {
+                const opcion = document.createElement('option');
+                opcion.value = parcela.id;
+                opcion.textContent = parcela.nombre;
+                selector.appendChild(opcion);
+            });
+            const idParcela = registros.parcelas.some(parcela => parcela.id === anterior)
+                ? anterior
+                : registros.parcelas[0]?.id || '';
+            selector.value = idParcela;
+            selector.dataset.seleccion = idParcela;
+            selector.disabled = !idParcela;
+            document.getElementById('entradaFotosParcela').disabled = !idParcela || !baseFotosParcela;
+            if (!idParcela) {
+                urlsFotosParcela.forEach(url => URL.revokeObjectURL(url));
+                urlsFotosParcela.clear();
+                document.getElementById('galeriaFotosParcela').replaceChildren();
+                document.getElementById('estadoFotosParcela').textContent = 'Registra una parcela para agregar evidencias.';
+                return;
+            }
+            renderizarGaleriaFotosParcela();
+        }
+
+        function obtenerFotosDeParcela(idParcela) {
+            return new Promise((resolve, reject) => {
+                const solicitud = baseFotosParcela.transaction('fotos', 'readonly').objectStore('fotos').index('parcelaId').getAll(idParcela);
+                solicitud.onsuccess = () => resolve(solicitud.result);
+                solicitud.onerror = () => reject(solicitud.error);
+            });
+        }
+
+        function obtenerBytesEvidencias(idFotoIgnorada) {
+            return new Promise((resolve, reject) => {
+                const transaccion = baseFotosParcela.transaction('fotos', 'readonly');
+                const solicitud = transaccion.objectStore('fotos').openCursor();
+                let bytes = 0;
+                solicitud.onsuccess = () => {
+                    const cursor = solicitud.result;
+                    if (!cursor) return resolve(bytes);
+                    if (cursor.value.id !== idFotoIgnorada) bytes += Number(cursor.value.blob?.size) || 0;
+                    cursor.continue();
+                };
+                solicitud.onerror = () => reject(solicitud.error);
+            });
+        }
+
+        async function guardarFotoEnBase(foto, actualizaExistente = false) {
+            if (foto.blob.size > maxBytesFoto) throw new Error('La foto supera 1,5 MB después de comprimirla.');
+            const bytesActuales = await obtenerBytesEvidencias(foto.id);
+            if (bytesActuales + foto.blob.size > maxBytesEvidencias) {
+                throw new Error('Se alcanzó el límite de 120 MB. Elimina evidencias antiguas antes de continuar.');
+            }
+            if (!actualizaExistente && navigator.storage && navigator.storage.estimate) {
+                try {
+                    const estimacion = await navigator.storage.estimate();
+                    if (Number.isFinite(estimacion.quota) && Number.isFinite(estimacion.usage)
+                        && estimacion.quota - estimacion.usage < foto.blob.size + 5 * 1024 * 1024) {
+                        throw new Error('Hay poco espacio disponible en el dispositivo. Libera almacenamiento antes de guardar.');
+                    }
+                } catch (error) {
+                    if (error.message.startsWith('Hay poco espacio')) throw error;
+                }
+            }
+            await new Promise((resolve, reject) => {
+                const transaccion = baseFotosParcela.transaction('fotos', 'readwrite');
+                transaccion.objectStore('fotos').put(foto);
+                transaccion.oncomplete = resolve;
+                transaccion.onerror = () => reject(transaccion.error);
+                transaccion.onabort = () => reject(transaccion.error || new Error('Transacción cancelada.'));
+            });
+            actualizarUsoFotosParcela();
+        }
+
+        function eliminarFotoDeBase(idFoto) {
+            return new Promise((resolve, reject) => {
+                const transaccion = baseFotosParcela.transaction('fotos', 'readwrite');
+                transaccion.objectStore('fotos').delete(idFoto);
+                transaccion.oncomplete = resolve;
+                transaccion.onerror = () => reject(transaccion.error);
+                transaccion.onabort = () => reject(transaccion.error || new Error('Transacción cancelada.'));
+            });
+        }
+
+        function eliminarFotosDeParcelaDeBase(idParcela) {
+            return new Promise((resolve, reject) => {
+                const transaccion = baseFotosParcela.transaction('fotos', 'readwrite');
+                const solicitud = transaccion.objectStore('fotos').index('parcelaId').openCursor(IDBKeyRange.only(idParcela));
+                solicitud.onsuccess = () => {
+                    const cursor = solicitud.result;
+                    if (!cursor) return;
+                    cursor.delete();
+                    cursor.continue();
+                };
+                transaccion.oncomplete = resolve;
+                transaccion.onerror = () => reject(transaccion.error);
+                transaccion.onabort = () => reject(transaccion.error || new Error('No se pudieron eliminar las fotos.'));
+            });
+        }
+
+        function limpiarFotosHuerfanas() {
+            return new Promise((resolve, reject) => {
+                const parcelasActivas = new Set(registros.parcelas.map(parcela => parcela.id));
+                const transaccion = baseFotosParcela.transaction('fotos', 'readwrite');
+                const solicitud = transaccion.objectStore('fotos').openCursor();
+                solicitud.onsuccess = () => {
+                    const cursor = solicitud.result;
+                    if (!cursor) return;
+                    if (!parcelasActivas.has(cursor.value.parcelaId)) cursor.delete();
+                    cursor.continue();
+                };
+                transaccion.oncomplete = () => resolve();
+                transaccion.onerror = () => reject(transaccion.error);
+            });
+        }
+
+        async function actualizarUsoFotosParcela() {
+            const indicador = document.getElementById('usoFotosParcela');
+            if (!indicador || !baseFotosParcela) return;
+            try {
+                const bytes = await obtenerBytesEvidencias();
+                indicador.textContent = 'Uso de evidencias: ' + (bytes / (1024 * 1024)).toLocaleString('es-PE', { maximumFractionDigits: 1 }) + ' MB de 120 MB.';
+            } catch (error) {
+                indicador.textContent = 'No se pudo consultar el uso de almacenamiento.';
+            }
+        }
+
+        async function comprimirFoto(archivo) {
+            if (!archivo.type.startsWith('image/')) throw new Error('El archivo seleccionado no es una imagen.');
+            if (archivo.size > 20 * 1024 * 1024) throw new Error('La imagen original supera 20 MB.');
+            const url = URL.createObjectURL(archivo);
+            const imagen = new Image();
+            let canvas;
+            try {
+                await new Promise((resolve, reject) => {
+                    imagen.onload = resolve;
+                    imagen.onerror = () => reject(new Error('No se pudo leer la imagen.'));
+                    imagen.src = url;
+                });
+                const ladoMayor = Math.max(imagen.naturalWidth, imagen.naturalHeight);
+                if (!ladoMayor) throw new Error('La imagen no tiene dimensiones válidas.');
+                canvas = document.createElement('canvas');
+                const contexto = canvas.getContext('2d');
+                for (const maximo of [1600, 1200, 900]) {
+                    const escala = Math.min(1, maximo / ladoMayor);
+                    canvas.width = Math.max(1, Math.round(imagen.naturalWidth * escala));
+                    canvas.height = Math.max(1, Math.round(imagen.naturalHeight * escala));
+                    contexto.fillStyle = '#ffffff';
+                    contexto.fillRect(0, 0, canvas.width, canvas.height);
+                    contexto.drawImage(imagen, 0, 0, canvas.width, canvas.height);
+                    for (const calidad of [0.76, 0.64, 0.52, 0.44]) {
+                        const blob = await new Promise((resolve, reject) => canvas.toBlob(
+                            resultado => resultado ? resolve(resultado) : reject(new Error('Falló la compresión JPEG.')),
+                            'image/jpeg', calidad
+                        ));
+                        if (blob.type === 'image/jpeg' && blob.size <= maxBytesFoto) return blob;
+                    }
+                }
+                throw new Error('No se pudo comprimir la imagen por debajo de 1,5 MB.');
+            } finally {
+                if (canvas) {
+                    canvas.width = 0;
+                    canvas.height = 0;
+                }
+                URL.revokeObjectURL(url);
+                imagen.src = '';
+            }
+        }
+
+        async function procesarFotos(event, categoria) {
+            const entrada = event.currentTarget;
+            const idParcela = categoria === 'secado'
+                ? document.getElementById('selectorParcelaPoscosecha').value
+                : document.getElementById('selectorParcelaFotos').value;
+            const estado = document.getElementById(categoria === 'secado' ? 'estadoFotosSecado' : 'estadoFotosParcela');
+            const archivos = Array.from(entrada.files || []);
+            if (!idParcela || !baseFotosParcela || !archivos.length) return;
+            entrada.disabled = true;
+            let guardadas = 0;
+            let fallidas = 0;
+            for (let indice = 0; indice < archivos.length; indice += 1) {
+                const archivo = archivos[indice];
+                estado.textContent = 'Comprimiendo ' + (indice + 1) + ' de ' + archivos.length + ': ' + archivo.name;
+                try {
+                    const blob = await comprimirFoto(archivo);
+                    const parcela = registros.parcelas.find(item => item.id === idParcela);
+                    const ultimoRegistro = parcela && Array.isArray(parcela.registrosPoscosecha)
+                        ? parcela.registrosPoscosecha[0]
+                        : null;
+                    await guardarFotoEnBase({
+                        id: generarId(),
+                        parcelaId: idParcela,
+                        categoria,
+                        poscosechaId: categoria === 'secado' && ultimoRegistro ? ultimoRegistro.id : '',
+                        nombre: archivo.name,
+                        blob,
+                        bytesOriginales: archivo.size,
+                        creadaEn: new Date().toISOString(),
+                        zona: '',
+                        este: '',
+                        norte: ''
+                    });
+                    guardadas += 1;
+                } catch (error) {
+                    fallidas += 1;
+                    console.error('No se pudo guardar la foto ' + archivo.name, error);
+                }
+            }
+            entrada.value = '';
+            entrada.disabled = !baseFotosParcela;
+            estado.textContent = guardadas + ' foto(s) guardada(s)' + (fallidas ? '; ' + fallidas + ' no se pudieron procesar.' : '.');
+            if (categoria === 'secado') await renderizarGaleriaFotos('secado');
+            else await renderizarGaleriaFotos('parcela');
+            actualizarUsoFotosParcela();
+        }
+
+        async function renderizarGaleriaFotos(categoria) {
+            const esSecado = categoria === 'secado';
+            const galeria = document.getElementById(esSecado ? 'galeriaFotosSecado' : 'galeriaFotosParcela');
+            const estado = document.getElementById(esSecado ? 'estadoFotosSecado' : 'estadoFotosParcela');
+            const idParcela = document.getElementById(esSecado ? 'selectorParcelaPoscosecha' : 'selectorParcelaFotos').value;
+            const urls = esSecado ? urlsFotosSecado : urlsFotosParcela;
+            urls.forEach(url => URL.revokeObjectURL(url));
+            urls.clear();
+            galeria.replaceChildren();
+            if (!idParcela) {
+                estado.textContent = 'Registra una parcela para agregar evidencias.';
+                return;
+            }
+            if (errorBaseFotosParcela) {
+                estado.textContent = errorBaseFotosParcela;
+                return;
+            }
+            if (!baseFotosParcela) {
+                estado.textContent = 'Preparando almacenamiento local…';
+                return;
+            }
+            estado.textContent = 'Cargando evidencias…';
+            try {
+                const fotos = (await obtenerFotosDeParcela(idParcela))
+                    .filter(foto => esSecado ? foto.categoria === 'secado' : foto.categoria !== 'secado')
+                    .sort((a, b) => b.creadaEn.localeCompare(a.creadaEn));
+                if (document.getElementById(esSecado ? 'selectorParcelaPoscosecha' : 'selectorParcelaFotos').value !== idParcela) return;
+                if (!fotos.length) {
+                    const vacio = document.createElement('p');
+                    vacio.className = 'form-note';
+                    vacio.textContent = esSecado ? 'Aún no hay fotos de secado para este lote.' : 'Aún no hay fotos de evidencia para esta parcela.';
+                    galeria.appendChild(vacio);
+                    estado.textContent = 'Sin fotos registradas.';
+                    return;
+                }
+                fotos.forEach(foto => galeria.appendChild(crearTarjetaFoto(foto, esSecado, urls)));
+                estado.textContent = fotos.length + ' foto(s), ordenadas de la más reciente a la más antigua.';
+            } catch (error) {
+                console.error('No se pudo cargar la galería.', error);
+                estado.textContent = 'No se pudo cargar la galería.';
+            }
+        }
+
+        function crearTarjetaFoto(foto, esSecado, urls) {
+            const tarjeta = document.createElement('article');
+            tarjeta.className = 'photo-item';
+            const url = URL.createObjectURL(foto.blob);
+            urls.add(url);
+            const enlace = document.createElement('a');
+            enlace.href = url;
+            enlace.target = '_blank';
+            enlace.rel = 'noopener';
+            const imagen = document.createElement('img');
+            imagen.src = url;
+            imagen.alt = (esSecado ? 'Secado' : 'Evidencia') + ': ' + foto.nombre;
+            imagen.loading = 'lazy';
+            enlace.appendChild(imagen);
+            const detalles = document.createElement('div');
+            detalles.className = 'photo-details';
+            const nombre = document.createElement('h4');
+            nombre.textContent = foto.nombre;
+            const fecha = document.createElement('p');
+            fecha.textContent = new Date(foto.creadaEn).toLocaleString('es-PE') + ' · ' +
+                (foto.blob.size / 1024).toLocaleString('es-PE', { maximumFractionDigits: 0 }) + ' KB';
+            detalles.append(nombre, fecha);
+            if (!esSecado) {
+                const coordenadas = document.createElement('div');
+                coordenadas.className = 'photo-coordinate-grid';
+                const zona = document.createElement('input');
+                zona.className = 'form-control';
+                zona.maxLength = 3;
+                zona.placeholder = 'Zona';
+                zona.setAttribute('aria-label', 'Zona UTM de la foto');
+                zona.value = foto.zona || '';
+                const este = document.createElement('input');
+                este.className = 'form-control';
+                este.type = 'number';
+                este.min = '100000';
+                este.max = '900000';
+                este.step = 'any';
+                este.placeholder = 'Este (m)';
+                este.setAttribute('aria-label', 'Coordenada Este UTM de la foto');
+                este.value = foto.este ?? '';
+                const norte = document.createElement('input');
+                norte.className = 'form-control';
+                norte.type = 'number';
+                norte.min = '0';
+                norte.max = '10000000';
+                norte.step = 'any';
+                norte.placeholder = 'Norte (m)';
+                norte.setAttribute('aria-label', 'Coordenada Norte UTM de la foto');
+                norte.value = foto.norte ?? '';
+                coordenadas.append(zona, este, norte);
+                const guardarUTM = document.createElement('button');
+                guardarUTM.type = 'button';
+                guardarUTM.className = 'btn';
+                guardarUTM.textContent = 'Guardar UTM';
+                guardarUTM.addEventListener('click', async () => {
+                    const valores = [zona.value.trim().toUpperCase(), este.value, norte.value];
+                    if (valores.some(Boolean) && (!/^(?:[1-9]|[1-5]\d|60)[C-HJ-NP-X]$/.test(valores[0])
+                        || !valores[1] || !valores[2] || Number(valores[1]) < 100000 || Number(valores[1]) > 900000
+                        || Number(valores[2]) < 0 || Number(valores[2]) > 10000000)) {
+                        document.getElementById('estadoFotosParcela').textContent = 'Completa zona, Este y Norte con coordenadas UTM válidas.';
+                        return;
+                    }
+                    foto.zona = valores.some(Boolean) ? valores[0] : '';
+                    foto.este = valores.some(Boolean) ? Number(valores[1]) : '';
+                    foto.norte = valores.some(Boolean) ? Number(valores[2]) : '';
+                    try {
+                        await guardarFotoEnBase(foto, true);
+                        document.getElementById('estadoFotosParcela').textContent = 'Coordenadas UTM guardadas para ' + foto.nombre + '.';
+                    } catch (error) {
+                        document.getElementById('estadoFotosParcela').textContent = error.message;
+                    }
+                });
+                detalles.append(coordenadas, guardarUTM);
+            }
+            const eliminar = document.createElement('button');
+            eliminar.type = 'button';
+            eliminar.className = 'btn btn-delete';
+            eliminar.textContent = 'Eliminar';
+            eliminar.addEventListener('click', async () => {
+                if (!confirm('¿Eliminar esta foto de evidencia?')) return;
+                try {
+                    await eliminarFotoDeBase(foto.id);
+                    actualizarUsoFotosParcela();
+                    await renderizarGaleriaFotos(esSecado ? 'secado' : 'parcela');
+                } catch (error) {
+                    document.getElementById(esSecado ? 'estadoFotosSecado' : 'estadoFotosParcela').textContent = 'No se pudo eliminar la foto.';
+                }
+            });
+            detalles.appendChild(eliminar);
+            tarjeta.append(enlace, detalles);
+            return tarjeta;
+        }
+
+        function renderizarGaleriaFotosParcela() {
+            return renderizarGaleriaFotos('parcela');
+        }
+
+        function renderizarGaleriaFotosSecado() {
+            return renderizarGaleriaFotos('secado');
+        }
+
+        function procesarFotosParcela(event) {
+            return procesarFotos(event, 'parcela');
+        }
+
+        function procesarFotosSecado(event) {
+            return procesarFotos(event, 'secado');
+        }
+
+        function obtenerRegistrosPoscosecha(parcela) {
+            return parcela && Array.isArray(parcela.registrosPoscosecha) ? parcela.registrosPoscosecha : [];
+        }
+
+        function renderizarVistaPoscosecha() {
+            const selector = document.getElementById('selectorParcelaPoscosecha');
+            const anterior = registros.parcelas.some(parcela => parcela.id === idParcelaPoscosechaSeleccionada)
+                ? idParcelaPoscosechaSeleccionada
+                : selector.value;
+            selector.replaceChildren();
+            registros.parcelas.forEach(parcela => {
+                const opcion = document.createElement('option');
+                opcion.value = parcela.id;
+                opcion.textContent = parcela.nombre;
+                selector.appendChild(opcion);
+            });
+            idParcelaPoscosechaSeleccionada = registros.parcelas.some(parcela => parcela.id === anterior)
+                ? anterior
+                : registros.parcelas[0]?.id || '';
+            selector.value = idParcelaPoscosechaSeleccionada;
+            selector.disabled = !idParcelaPoscosechaSeleccionada;
+            const parcela = registros.parcelas.find(item => item.id === idParcelaPoscosechaSeleccionada);
+            document.getElementById('formRegistroPoscosecha').querySelectorAll('input, select, button').forEach(control => {
+                control.disabled = !parcela;
+            });
+            const registrosParcela = obtenerRegistrosPoscosecha(parcela);
+            renderizarHistorialPoscosecha(parcela);
+            const humedad = document.getElementById('humedadGranoPoscosecha').value;
+            const ultimo = [...registrosParcela].sort((a, b) => String(b.registradoEn).localeCompare(String(a.registradoEn)))[0];
+            actualizarRecomendacionPoscosecha(humedad === '' ? ultimo?.humedad : Number(humedad), humedad === '' ? ultimo?.metodo : document.getElementById('metodoPoscosecha').value);
+            renderizarGaleriaFotosSecado();
+        }
+
+        function renderizarHistorialPoscosecha(parcela) {
+            const tabla = document.getElementById('tablaHistorialPoscosecha');
+            tabla.replaceChildren();
+            const historial = [...obtenerRegistrosPoscosecha(parcela)].sort((a, b) =>
+                b.fechaCosecha.localeCompare(a.fechaCosecha) || String(b.registradoEn).localeCompare(String(a.registradoEn)));
+            if (!historial.length) {
+                const fila = document.createElement('tr');
+                const celda = document.createElement('td');
+                celda.colSpan = 5;
+                celda.textContent = parcela ? 'Aún no hay registros de poscosecha para este lote.' : 'Registra una parcela para iniciar el historial.';
+                fila.appendChild(celda);
+                tabla.appendChild(fila);
+                return;
+            }
+            historial.forEach(registro => {
+                const fila = document.createElement('tr');
+                agregarCelda(fila, new Date(registro.fechaCosecha + 'T00:00:00').toLocaleDateString('es-PE'));
+                agregarCelda(fila, registro.metodo);
+                agregarCelda(fila, Number(registro.humedad).toLocaleString('es-PE', { maximumFractionDigits: 1 }) + '%');
+                agregarCelda(fila, obtenerDiagnosticoHumedad(Number(registro.humedad), registro.metodo).titulo);
+                const accion = document.createElement('td');
+                const boton = document.createElement('button');
+                boton.type = 'button';
+                boton.className = 'btn btn-delete';
+                boton.textContent = 'Eliminar';
+                boton.addEventListener('click', () => eliminarRegistroPoscosecha(parcela.id, registro.id));
+                accion.appendChild(boton);
+                fila.appendChild(accion);
+                tabla.appendChild(fila);
+            });
+        }
+
+        function obtenerDiagnosticoHumedad(humedad, metodo) {
+            let titulo;
+            let indicaciones;
+            if (humedad > 12) {
+                titulo = 'Continuar secado; no almacenar';
+                indicaciones = ['Extiende el secado en capas uniformes, protegidas de lluvia y rocío; voltea el grano y vuelve a medir varios puntos con un medidor calibrado.', 'Repite la medición hasta alcanzar 10.5–11.5% y confirmar uniformidad antes de ensacar.'];
+            } else if (humedad > 11.5) {
+                titulo = 'Secado final y nueva medición';
+                indicaciones = ['Completa el secado hacia 10.5–11.5%, deja enfriar y estabilizar el grano, y confirma la lectura en varios puntos antes de guardar.'];
+            } else if (humedad >= 10.5) {
+                titulo = 'Rango objetivo de almacenamiento';
+                indicaciones = ['El 10.5–11.5% es un objetivo operativo dentro del rango usual de 10–12%; confirma humedad uniforme y grano frío antes de ensacar.', 'Almacena en sacos limpios sobre parihuelas, separado del piso y paredes, en un lugar seco y ventilado, sin olores ni filtraciones.'];
+            } else {
+                titulo = 'Humedad baja; revisar sobresecado';
+                indicaciones = ['Verifica el medidor y evalúa una muestra de taza; no rehumedezcas el café. Protégelo de cambios bruscos de humedad, contaminación y olores.'];
+            }
+            indicaciones.push(metodo === 'Natural'
+                ? 'Proceso natural: usa capas delgadas, volteos frecuentes y mediciones en distintas capas, pues el secado puede ser más lento.'
+                : metodo === 'Honey'
+                    ? 'Proceso honey: revisa varios puntos y evita capas gruesas porque el mucílago puede hacer menos uniforme el secado.'
+                    : 'Proceso lavado: comprueba escurrido suficiente y humedad uniforme del pergamino antes de ensacar.');
+            return { titulo, indicaciones };
+        }
+
+        function actualizarRecomendacionPoscosecha(humedad, metodo) {
+            const panel = document.getElementById('recomendacionAlmacenamiento');
+            panel.replaceChildren();
+            const valido = Number.isFinite(humedad) && humedad >= 0 && humedad <= 30;
+            const diagnostico = valido ? obtenerDiagnosticoHumedad(humedad, metodo || 'Lavado') : null;
+            const titulo = document.createElement('h3');
+            titulo.style.cssText = 'color:var(--primary);margin-bottom:8px';
+            titulo.textContent = diagnostico ? diagnostico.titulo : 'Objetivo operativo: 10.5–11.5%';
+            const resumen = document.createElement('p');
+            resumen.textContent = diagnostico
+                ? 'Humedad: ' + humedad.toLocaleString('es-PE', { maximumFractionDigits: 1 }) + '%. ' + (humedad > 12 ? 'No almacenar todavía.' : 'Verifica la lectura con una muestra representativa.')
+                : 'El almacenamiento suele considerar 10–12%; se recomienda apuntar a 10.5–11.5% y confirmar una lectura uniforme.';
+            const lista = document.createElement('ul');
+            lista.style.cssText = 'padding-left:20px;line-height:1.55;margin-top:10px';
+            (diagnostico ? diagnostico.indicaciones : ['En Amazonas y Cajamarca, las condiciones dependen de localidad, altitud y temporada: protege el secado de lluvia y rocío.', 'Guarda café frío y seco en empaque limpio, sobre parihuelas, separado de paredes, químicos y productos con olores.']).forEach(texto => {
+                const item = document.createElement('li');
+                item.textContent = texto;
+                item.style.marginBottom = '6px';
+                lista.appendChild(item);
+            });
+            const nota = document.createElement('p');
+            nota.className = 'form-note';
+            nota.textContent = 'Guía general, no sustituye el protocolo de calidad ni una medición calibrada. Revisa el lote periódicamente.';
+            panel.append(titulo, resumen, lista, nota);
+        }
+
+        function guardarRegistroPoscosecha(event) {
+            event.preventDefault();
+            const idParcela = document.getElementById('selectorParcelaPoscosecha').value;
+            const parcela = registros.parcelas.find(item => item.id === idParcela);
+            const humedad = Number(document.getElementById('humedadGranoPoscosecha').value);
+            const fechaCosecha = document.getElementById('fechaCosechaPoscosecha').value;
+            const metodo = document.getElementById('metodoPoscosecha').value;
+            if (!parcela || !fechaCosecha || !Number.isFinite(humedad) || humedad < 0 || humedad > 30) return;
+            const nuevo = { id: generarId(), metodo, fechaCosecha, humedad, registradoEn: new Date().toISOString() };
+            const parcelasActualizadas = registros.parcelas.map(item => item.id === idParcela
+                ? { ...item, registrosPoscosecha: [nuevo, ...obtenerRegistrosPoscosecha(item)] }
+                : item);
+            if (!guardarRegistros('parcelas', parcelasActualizadas)) return;
+            registros.parcelas = parcelasActualizadas;
+            document.getElementById('humedadGranoPoscosecha').value = '';
+            document.getElementById('fechaCosechaPoscosecha').value = '';
+            renderizarRegistros();
+            document.getElementById('estadoRegistroPoscosecha').textContent = 'Registro guardado para ' + parcela.nombre + '.';
+        }
+
+        function eliminarRegistroPoscosecha(idParcela, idRegistro) {
+            const parcelasActualizadas = registros.parcelas.map(parcela => parcela.id === idParcela
+                ? { ...parcela, registrosPoscosecha: obtenerRegistrosPoscosecha(parcela).filter(registro => registro.id !== idRegistro) }
+                : parcela);
+            if (!guardarRegistros('parcelas', parcelasActualizadas)) return;
+            registros.parcelas = parcelasActualizadas;
+            renderizarRegistros();
         }
 
         function renderizarLoteActivo() {
@@ -1223,10 +1906,34 @@
 
         renderizarRegistros();
 
-        document.getElementById('selectParcelaUTM').addEventListener('change', cargarCoordenadasParcelaSeleccionada);
-        document.getElementById('formCoordenadasUTM').addEventListener('submit', guardarCoordenadasUTM);
+        document.getElementById('formNuevaParcela').addEventListener('submit', agregarParcela);
         document.getElementById('selectParcelaNDVI').addEventListener('change', renderizarLecturaNDVI);
         document.getElementById('formNDVI').addEventListener('submit', guardarLecturaNDVI);
+        document.getElementById('formRegistroPoscosecha').addEventListener('submit', guardarRegistroPoscosecha);
+        document.getElementById('selectorParcelaPoscosecha').addEventListener('change', () => {
+            idParcelaPoscosechaSeleccionada = document.getElementById('selectorParcelaPoscosecha').value;
+            document.getElementById('humedadGranoPoscosecha').value = '';
+            document.getElementById('fechaCosechaPoscosecha').value = '';
+            renderizarVistaPoscosecha();
+        });
+        document.getElementById('humedadGranoPoscosecha').addEventListener('input', event => {
+            if (event.target.value !== '') {
+                actualizarRecomendacionPoscosecha(Number(event.target.value), document.getElementById('metodoPoscosecha').value);
+            } else {
+                renderizarVistaPoscosecha();
+            }
+        });
+        document.getElementById('metodoPoscosecha').addEventListener('change', () => {
+            const humedad = document.getElementById('humedadGranoPoscosecha').value;
+            if (humedad !== '') actualizarRecomendacionPoscosecha(Number(humedad), document.getElementById('metodoPoscosecha').value);
+        });
+        document.getElementById('selectorParcelaFotos').addEventListener('change', event => {
+            event.currentTarget.dataset.seleccion = event.currentTarget.value;
+            renderizarGaleriaFotosParcela();
+        });
+        document.getElementById('entradaFotosParcela').addEventListener('change', procesarFotosParcela);
+        document.getElementById('entradaFotosSecado').addEventListener('change', procesarFotosSecado);
+        inicializarBaseFotosParcela();
         document.getElementById('ndviParcelCards').addEventListener('click', event => {
             const boton = event.target.closest('[data-editar-ndvi]');
             if (!boton) return;
@@ -1895,25 +2602,36 @@
             alert("¡Gasto registrado con éxito!");
         }
 
-        function agregarParcela() {
-            const nombre = prompt("Nombre de la parcela:");
-            const ubicacion = prompt("Ubicación (ej. Lonya, Amazonas):");
-            const area = prompt("Área:");
-            const variedad = prompt("Variedad:");
-
-            if(!nombre) return;
-
-            const nuevasParcelas = [{
+        function agregarParcela(event) {
+            event.preventDefault();
+            const formulario = event.currentTarget;
+            const nombre = formulario.elements.nombre.value.trim();
+            const ubicacion = formulario.elements.ubicacion.value.trim();
+            const area = Number(formulario.elements.area.value);
+            const variedad = formulario.elements.variedad.value.trim();
+            const estado = document.getElementById('estadoNuevaParcela');
+            if (!nombre || !ubicacion || !variedad || !Number.isFinite(area) || area <= 0) {
+                estado.textContent = 'Completa todos los campos con valores válidos.';
+                return;
+            }
+            const parcela = {
                 id: generarId(),
                 nombre,
-                ubicacion: ubicacion || 'Lonya, Amazonas',
-                area: area || '1 Hectárea',
-                variedad: variedad || 'Catimor'
-            }, ...registros.parcelas];
+                ubicacion,
+                area: area + ' ha',
+                variedad,
+                coordenadasUTM: [],
+                registrosPoscosecha: []
+            };
+            const nuevasParcelas = [parcela, ...registros.parcelas];
             if (!guardarRegistros('parcelas', nuevasParcelas)) return;
             registros.parcelas = nuevasParcelas;
+            idParcelaSeleccionadaUTM = parcela.id;
+            idParcelaPoscosechaSeleccionada = parcela.id;
+            document.getElementById('selectorParcelaFotos').dataset.seleccion = parcela.id;
             renderizarRegistros();
-            alert("¡Parcela agregada!");
+            formulario.reset();
+            estado.textContent = 'Parcela guardada y disponible en UTM, evidencias y poscosecha.';
         }
 
         renderizarDiagnosticoNutricional();
