@@ -317,6 +317,20 @@
         .btn-delete { background-color: #a83232; padding: 7px 11px; font-size: 0.85rem; }
         .btn-delete:hover { background-color: #842626; }
 
+        .photo-manager { margin-top: 22px; padding: 18px; background: #faf8f5; border: 1px solid var(--border-color); border-radius: 10px; }
+        .photo-gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 14px; margin-top: 16px; }
+        .photo-item { min-width: 0; overflow: hidden; background: #fff; border: 1px solid var(--border-color); border-radius: 8px; }
+        .photo-item > a { display: block; background: #e8e8e2; }
+        .photo-item img { display: block; width: 100%; aspect-ratio: 4 / 3; object-fit: cover; }
+        .photo-details { padding: 12px; }
+        .photo-details h4 { overflow-wrap: anywhere; color: var(--primary); font-size: .92rem; }
+        .photo-details p { margin: 5px 0 10px; color: var(--text-muted); font-size: .8rem; }
+        .photo-coordinate-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 7px; }
+        .photo-coordinate-grid .form-control { min-width: 0; padding: 8px 6px; font-size: .82rem; }
+        .photo-actions { display: flex; gap: 8px; margin-top: 10px; }
+        .photo-actions .btn { padding: 8px 10px; font-size: .82rem; }
+        .storage-usage { margin-top: 8px; color: var(--text-muted); font-size: .82rem; }
+
         @media (max-width: 900px) {
             body { flex-direction: column; }
             aside { width: 100%; padding: 15px; gap: 15px; }
@@ -347,6 +361,7 @@
             <li><a class="menu-item" id="menu-gastos" onclick="switchView('gastos')"><i data-lucide="receipt"></i> Gastos de Cultivo</a></li>
             <li><a class="menu-item" id="menu-ventas" onclick="switchView('ventas')"><i data-lucide="dollar-sign"></i> Venta de Café</a></li>
             <li><a class="menu-item" id="menu-parcelas" onclick="switchView('parcelas')"><i data-lucide="map-pin"></i> Parcelas & Lotes</a></li>
+            <li><a class="menu-item" id="menu-poscosecha" onclick="switchView('poscosecha')"><i data-lucide="sun"></i> Secado y Poscosecha</a></li>
         </ul>
     </aside>
 
@@ -666,6 +681,81 @@
                     <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 14px;">Registra cada punto con su zona, Este y Norte. Usa la misma zona en todos los vértices.</p>
                     <div class="editorCoordenadasUTM"></div>
                 </section>
+                <section class="photo-manager" aria-labelledby="tituloFotosParcela">
+                    <h3 id="tituloFotosParcela" style="margin-bottom: 8px; color: var(--primary);">Evidencias fotográficas por parcela</h3>
+                    <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 14px;">JPEG optimizado en el dispositivo · máximo 1,5 MB por foto · límite de 120 MB para evidencias de AgroCafé Pro.</p>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; align-items: end;">
+                        <div class="form-group">
+                            <label for="selectorParcelaFotos">Parcela</label>
+                            <select id="selectorParcelaFotos" class="form-control"></select>
+                        </div>
+                        <div class="form-group">
+                            <label for="entradaFotosParcela">Tomar o subir fotos</label>
+                            <input id="entradaFotosParcela" class="form-control" type="file" accept="image/*" capture="environment" multiple>
+                        </div>
+                    </div>
+                    <p id="estadoFotosParcela" style="color: var(--text-muted); font-size: 0.85rem; margin: 4px 0 10px;" role="status" aria-live="polite"></p>
+                    <p id="usoFotosParcela" class="storage-usage" aria-live="polite"></p>
+                    <div id="galeriaFotosParcela" class="photo-gallery"></div>
+                </section>
+            </div>
+        </div>
+
+        <!-- VISTA 9: SECADO Y POSCOSECHA -->
+        <div id="view-poscosecha" class="section-view">
+            <div class="grid-layout">
+                <div class="card col-6">
+                    <div class="card-header"><i data-lucide="clipboard-list"></i> Registro de poscosecha</div>
+                    <form id="formRegistroPoscosecha">
+                        <div class="form-group">
+                            <label for="selectorParcelaPoscosecha">Parcela o lote</label>
+                            <select id="selectorParcelaPoscosecha" class="form-control" required></select>
+                        </div>
+                        <div class="form-group">
+                            <label for="metodoPoscosecha">Método de proceso</label>
+                            <select id="metodoPoscosecha" class="form-control" required>
+                                <option value="Lavado">Lavado</option>
+                                <option value="Natural">Natural</option>
+                                <option value="Honey">Honey</option>
+                            </select>
+                        </div>
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px;">
+                            <div class="form-group">
+                                <label for="fechaCosechaPoscosecha">Fecha de cosecha</label>
+                                <input id="fechaCosechaPoscosecha" class="form-control" type="date" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="humedadGranoPoscosecha">Humedad del grano (%)</label>
+                                <input id="humedadGranoPoscosecha" class="form-control" type="number" min="0" max="30" step="0.1" required placeholder="Ej. 11.2">
+                            </div>
+                        </div>
+                        <p id="estadoRegistroPoscosecha" style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 12px;" role="status" aria-live="polite"></p>
+                        <button class="btn" type="submit"><i data-lucide="save"></i> Guardar registro</button>
+                    </form>
+                </div>
+                <div class="card col-6">
+                    <div class="card-header"><i data-lucide="thermometer-sun"></i> Recomendación de almacenamiento</div>
+                    <div id="recomendacionAlmacenamiento" aria-live="polite"></div>
+                </div>
+                <div class="card col-12">
+                    <div class="card-header"><i data-lucide="list"></i> Historial del lote</div>
+                    <div class="table-scroll">
+                        <table class="records-table">
+                            <thead><tr><th>Fecha de cosecha</th><th>Método</th><th>Humedad</th><th>Acciones recomendadas</th><th>Acción</th></tr></thead>
+                            <tbody id="tablaHistorialPoscosecha"></tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="card col-12">
+                    <div class="card-header"><i data-lucide="camera"></i> Evidencias del secado</div>
+                    <p style="color: var(--text-muted); font-size: 0.88rem; margin: -6px 0 14px;">Las fotos se comprimen en el dispositivo y quedan asociadas a la parcela seleccionada.</p>
+                    <div class="form-group" style="max-width: 420px;">
+                        <label for="entradaFotosSecado">Tomar o subir fotos del grano</label>
+                        <input id="entradaFotosSecado" class="form-control" type="file" accept="image/*" capture="environment" multiple>
+                    </div>
+                    <p id="estadoFotosSecado" style="color: var(--text-muted); font-size: 0.85rem; margin: 4px 0 10px;" role="status" aria-live="polite"></p>
+                    <div id="galeriaFotosSecado" class="photo-gallery"></div>
+                </div>
             </div>
         </div>
 
@@ -754,6 +844,13 @@
             ])
         };
         let idParcelaSeleccionadaUTM = '';
+        let idParcelaPoscosechaSeleccionada = '';
+        let baseFotosParcela;
+        let errorBaseFotosParcela = '';
+        const urlsFotosParcela = new Set();
+        const urlsFotosSecado = new Set();
+        const maxBytesFoto = 1.5 * 1024 * 1024;
+        const maxBytesEvidencias = 120 * 1024 * 1024;
 
         function agregarCelda(fila, valor) {
             const celda = document.createElement('td');
@@ -774,12 +871,22 @@
             return celda;
         }
 
-        function eliminarRegistro(tipo, id) {
+        async function eliminarRegistro(tipo, id) {
             const actualizados = registros[tipo].filter(registro => registro.id !== id);
             if (actualizados.length === registros[tipo].length) return;
             if (!guardarRegistros(tipo, actualizados)) return;
             registros[tipo] = actualizados;
             renderizarRegistros();
+            if (tipo === 'parcelas' && baseFotosParcela) {
+                try {
+                    await eliminarFotosDeParcelaDeBase(id);
+                    document.getElementById('estadoFotosParcela').textContent = 'Parcela y sus evidencias eliminadas.';
+                    actualizarUsoFotosParcela();
+                } catch (error) {
+                    console.error('No se pudieron eliminar todas las evidencias de la parcela.', error);
+                    document.getElementById('estadoFotosParcela').textContent = 'Parcela eliminada; algunas evidencias locales no pudieron borrarse.';
+                }
+            }
         }
 
         function renderizarRegistros() {
@@ -834,6 +941,8 @@
             renderizarEditoresCoordenadasUTM();
             renderizarResumenNDVIUTM();
             renderizarSelectorInformeNDVI();
+            renderizarSelectorGaleriaFotos();
+            renderizarVistaPoscosecha();
         }
 
         function validarPuntoUTM(zonaIngresada, esteIngresado, norteIngresado, numeroVertice) {
@@ -1038,6 +1147,725 @@
             });
         }
 
+        function inicializarBaseFotosParcela() {
+            if (!window.indexedDB) {
+                errorBaseFotosParcela = 'Este navegador no permite almacenamiento local de fotos.';
+                renderizarSelectorGaleriaFotos();
+                renderizarGaleriaFotosSecado();
+                return;
+            }
+            const solicitud = window.indexedDB.open('agrocafe_evidencias_v1', 1);
+            solicitud.onupgradeneeded = () => {
+                const base = solicitud.result;
+                if (!base.objectStoreNames.contains('fotos')) {
+                    const almacen = base.createObjectStore('fotos', { keyPath: 'id' });
+                    almacen.createIndex('parcelaId', 'parcelaId', { unique: false });
+                    almacen.createIndex('creadaEn', 'creadaEn', { unique: false });
+                }
+            };
+            solicitud.onsuccess = () => {
+                baseFotosParcela = solicitud.result;
+                baseFotosParcela.onversionchange = () => baseFotosParcela.close();
+                errorBaseFotosParcela = '';
+                renderizarSelectorGaleriaFotos();
+                renderizarGaleriaFotosSecado();
+                actualizarUsoFotosParcela();
+                limpiarFotosHuerfanas().then(actualizarUsoFotosParcela).catch(error => {
+                    console.error('No se pudieron limpiar fotos de parcelas eliminadas.', error);
+                });
+            };
+            solicitud.onerror = () => {
+                errorBaseFotosParcela = 'No se pudo abrir el almacenamiento local de fotos.';
+                renderizarSelectorGaleriaFotos();
+                renderizarGaleriaFotosSecado();
+            };
+        }
+
+        function renderizarSelectorGaleriaFotos() {
+            const selector = document.getElementById('selectorParcelaFotos');
+            const idAnterior = selector.value || selector.dataset.seleccion || '';
+            selector.replaceChildren();
+            registros.parcelas.forEach(parcela => {
+                const opcion = document.createElement('option');
+                opcion.value = parcela.id;
+                opcion.textContent = parcela.nombre;
+                selector.appendChild(opcion);
+            });
+            const idSeleccionado = registros.parcelas.some(parcela => parcela.id === idAnterior)
+                ? idAnterior
+                : registros.parcelas[0]?.id || '';
+            selector.value = idSeleccionado;
+            selector.dataset.seleccion = idSeleccionado;
+            selector.disabled = !idSeleccionado;
+            const entrada = document.getElementById('entradaFotosParcela');
+            entrada.disabled = !idSeleccionado || !baseFotosParcela;
+            if (!idSeleccionado) {
+                urlsFotosParcela.forEach(url => URL.revokeObjectURL(url));
+                urlsFotosParcela.clear();
+                document.getElementById('estadoFotosParcela').textContent = 'Registra una parcela para agregar evidencias.';
+                document.getElementById('galeriaFotosParcela').replaceChildren();
+                return;
+            }
+            if (errorBaseFotosParcela) {
+                document.getElementById('estadoFotosParcela').textContent = errorBaseFotosParcela;
+                return;
+            }
+            if (!baseFotosParcela) {
+                document.getElementById('estadoFotosParcela').textContent = 'Preparando almacenamiento local…';
+                return;
+            }
+            renderizarGaleriaFotosParcela();
+        }
+
+        function obtenerFotosDeParcela(idParcela) {
+            return new Promise((resolve, reject) => {
+                const transaccion = baseFotosParcela.transaction('fotos', 'readonly');
+                const solicitud = transaccion.objectStore('fotos').index('parcelaId').getAll(idParcela);
+                solicitud.onsuccess = () => resolve(solicitud.result);
+                solicitud.onerror = () => reject(solicitud.error);
+            });
+        }
+
+        async function guardarFotoEnBase(foto) {
+            await validarEspacioEvidencias(foto.blob.size, foto.id);
+            await new Promise((resolve, reject) => {
+                const transaccion = baseFotosParcela.transaction('fotos', 'readwrite');
+                transaccion.objectStore('fotos').put(foto);
+                transaccion.oncomplete = resolve;
+                transaccion.onerror = () => reject(transaccion.error);
+                transaccion.onabort = () => reject(transaccion.error || new Error('Transacción cancelada.'));
+            });
+            actualizarUsoFotosParcela();
+        }
+
+        function eliminarFotoDeBase(idFoto) {
+            return new Promise((resolve, reject) => {
+                const transaccion = baseFotosParcela.transaction('fotos', 'readwrite');
+                transaccion.objectStore('fotos').delete(idFoto);
+                transaccion.oncomplete = resolve;
+                transaccion.onerror = () => reject(transaccion.error);
+                transaccion.onabort = () => reject(transaccion.error || new Error('Transacción cancelada.'));
+            });
+        }
+
+        function obtenerBytesEvidencias(idFotoIgnorada) {
+            return new Promise((resolve, reject) => {
+                const transaccion = baseFotosParcela.transaction('fotos', 'readonly');
+                const solicitud = transaccion.objectStore('fotos').openCursor();
+                let bytes = 0;
+                solicitud.onsuccess = () => {
+                    const cursor = solicitud.result;
+                    if (!cursor) {
+                        resolve(bytes);
+                        return;
+                    }
+                    if (cursor.value.id !== idFotoIgnorada) bytes += Number(cursor.value.blob?.size) || 0;
+                    cursor.continue();
+                };
+                solicitud.onerror = () => reject(solicitud.error);
+                transaccion.onabort = () => reject(transaccion.error || new Error('No se pudo revisar el almacenamiento.'));
+            });
+        }
+
+        async function validarEspacioEvidencias(bytesNuevos, idFoto) {
+            if (bytesNuevos > maxBytesFoto) {
+                throw new Error('La foto comprimida supera 1,5 MB. Usa una imagen de menor resolución.');
+            }
+            const bytesActuales = await obtenerBytesEvidencias(idFoto);
+            if (bytesActuales + bytesNuevos > maxBytesEvidencias) {
+                throw new Error('Se alcanzó el límite local de 120 MB. Elimina evidencias antiguas antes de continuar.');
+            }
+            if (!idFoto && navigator.storage && typeof navigator.storage.estimate === 'function') {
+                try {
+                    const estimacion = await navigator.storage.estimate();
+                    if (Number.isFinite(estimacion.quota) && Number.isFinite(estimacion.usage)) {
+                        const espacioDisponible = estimacion.quota - estimacion.usage;
+                        if (espacioDisponible < bytesNuevos + 5 * 1024 * 1024) {
+                            throw new Error('El dispositivo tiene poco espacio disponible. Libera almacenamiento antes de guardar más fotos.');
+                        }
+                    }
+                } catch (error) {
+                    if (error instanceof Error && error.message.startsWith('El dispositivo')) throw error;
+                }
+            }
+        }
+
+        async function actualizarUsoFotosParcela() {
+            const indicador = document.getElementById('usoFotosParcela');
+            if (!indicador || !baseFotosParcela) return;
+            try {
+                const bytesActuales = await obtenerBytesEvidencias();
+                indicador.textContent = 'Uso de evidencias de AgroCafé Pro: ' +
+                    (bytesActuales / (1024 * 1024)).toLocaleString('es-PE', { maximumFractionDigits: 1 }) +
+                    ' MB de 120 MB.';
+            } catch (error) {
+                indicador.textContent = 'No se pudo consultar el uso de almacenamiento.';
+            }
+        }
+
+        function eliminarFotosDeParcelaDeBase(idParcela) {
+            return new Promise((resolve, reject) => {
+                const transaccion = baseFotosParcela.transaction('fotos', 'readwrite');
+                const almacen = transaccion.objectStore('fotos');
+                const solicitud = almacen.index('parcelaId').openCursor(IDBKeyRange.only(idParcela));
+                solicitud.onsuccess = () => {
+                    const cursor = solicitud.result;
+                    if (!cursor) return;
+                    cursor.delete();
+                    cursor.continue();
+                };
+                transaccion.oncomplete = resolve;
+                transaccion.onerror = () => reject(transaccion.error);
+                transaccion.onabort = () => reject(transaccion.error || new Error('No se pudieron eliminar las fotos de la parcela.'));
+            });
+        }
+
+        function limpiarFotosHuerfanas() {
+            return new Promise((resolve, reject) => {
+                const parcelasActivas = new Set(registros.parcelas.map(parcela => parcela.id));
+                const transaccion = baseFotosParcela.transaction('fotos', 'readwrite');
+                const solicitud = transaccion.objectStore('fotos').openCursor();
+                let eliminadas = 0;
+                solicitud.onsuccess = () => {
+                    const cursor = solicitud.result;
+                    if (!cursor) return;
+                    if (!parcelasActivas.has(cursor.value.parcelaId)) {
+                        cursor.delete();
+                        eliminadas += 1;
+                    }
+                    cursor.continue();
+                };
+                transaccion.oncomplete = () => resolve(eliminadas);
+                transaccion.onerror = () => reject(transaccion.error);
+                transaccion.onabort = () => reject(transaccion.error || new Error('No se pudieron limpiar fotos huérfanas.'));
+            });
+        }
+
+        async function comprimirFotoParcela(archivo) {
+            if (!archivo.type.startsWith('image/')) throw new Error('El archivo no es una imagen.');
+            if (archivo.size > 20 * 1024 * 1024) throw new Error('La foto original supera 20 MB. Reduce su tamaño antes de subirla.');
+            const urlTemporal = URL.createObjectURL(archivo);
+            const imagen = new Image();
+            imagen.decoding = 'async';
+            let lienzo;
+            try {
+                await new Promise((resolve, reject) => {
+                    imagen.onload = resolve;
+                    imagen.onerror = () => reject(new Error('No se pudo leer la imagen.'));
+                    imagen.src = urlTemporal;
+                });
+                const ladoMayor = Math.max(imagen.naturalWidth, imagen.naturalHeight);
+                if (!ladoMayor) throw new Error('La imagen no tiene dimensiones válidas.');
+                lienzo = document.createElement('canvas');
+                const contexto = lienzo.getContext('2d');
+                if (!contexto) throw new Error('No se pudo preparar la imagen para compresión.');
+                contexto.fillStyle = '#ffffff';
+                for (const escalaMaxima of [1600, 1200, 900]) {
+                    const escala = Math.min(1, escalaMaxima / ladoMayor);
+                    lienzo.width = Math.max(1, Math.round(imagen.naturalWidth * escala));
+                    lienzo.height = Math.max(1, Math.round(imagen.naturalHeight * escala));
+                    contexto.fillStyle = '#ffffff';
+                    contexto.fillRect(0, 0, lienzo.width, lienzo.height);
+                    contexto.drawImage(imagen, 0, 0, lienzo.width, lienzo.height);
+                    for (const calidad of [0.76, 0.64, 0.52, 0.44]) {
+                        const blob = await new Promise((resolve, reject) => {
+                            lienzo.toBlob(resultado => resultado
+                                ? resolve(resultado)
+                                : reject(new Error('No se pudo comprimir la imagen.')), 'image/jpeg', calidad);
+                        });
+                        if (blob.type === 'image/jpeg' && blob.size <= maxBytesFoto) return blob;
+                    }
+                }
+                throw new Error('No se pudo reducir la foto a 1,5 MB; prueba con una imagen menos detallada.');
+            } finally {
+                if (lienzo) {
+                    lienzo.width = 0;
+                    lienzo.height = 0;
+                }
+                URL.revokeObjectURL(urlTemporal);
+                imagen.src = '';
+            }
+        }
+
+        async function procesarFotosParcela(event) {
+            const entrada = event.currentTarget;
+            const idParcela = document.getElementById('selectorParcelaFotos').value;
+            const archivos = Array.from(entrada.files || []);
+            if (!idParcela || !archivos.length || !baseFotosParcela) return;
+            entrada.disabled = true;
+            let guardadas = 0;
+            let fallidas = 0;
+            for (let indice = 0; indice < archivos.length; indice += 1) {
+                const archivo = archivos[indice];
+                document.getElementById('estadoFotosParcela').textContent = 'Comprimiendo y guardando ' +
+                    (indice + 1) + ' de ' + archivos.length + ': ' + archivo.name;
+                try {
+                    const blob = await comprimirFotoParcela(archivo);
+                    await guardarFotoEnBase({
+                        id: generarId(),
+                        parcelaId: idParcela,
+                        categoria: 'parcela',
+                        nombre: archivo.name,
+                        blob,
+                        bytesOriginales: archivo.size,
+                        creadaEn: new Date().toISOString(),
+                        zona: '',
+                        este: '',
+                        norte: ''
+                    });
+                    guardadas += 1;
+                } catch (error) {
+                    fallidas += 1;
+                    console.error('No se pudo guardar la foto ' + archivo.name, error);
+                    document.getElementById('estadoFotosParcela').textContent = 'No se pudo procesar ' + archivo.name + ': ' + error.message;
+                }
+            }
+            entrada.value = '';
+            entrada.disabled = !baseFotosParcela || !document.getElementById('selectorParcelaFotos').value;
+            if (guardadas) {
+                await renderizarGaleriaFotosParcela();
+                document.getElementById('estadoFotosParcela').textContent = guardadas + ' foto(s) comprimida(s) y guardada(s)' +
+                    (fallidas ? '; ' + fallidas + ' no se pudieron guardar.' : '.');
+            } else if (fallidas) {
+                document.getElementById('estadoFotosParcela').textContent = fallidas + ' foto(s) no se pudieron guardar. Revisa el formato, tamaño y espacio disponible.';
+            }
+            actualizarUsoFotosParcela();
+        }
+
+        async function renderizarGaleriaFotosParcela() {
+            const galeria = document.getElementById('galeriaFotosParcela');
+            const estado = document.getElementById('estadoFotosParcela');
+            urlsFotosParcela.forEach(url => URL.revokeObjectURL(url));
+            urlsFotosParcela.clear();
+            galeria.replaceChildren();
+            const idParcela = document.getElementById('selectorParcelaFotos').value;
+            if (!baseFotosParcela || !idParcela) return;
+            estado.textContent = 'Cargando evidencias…';
+            try {
+                const fotos = (await obtenerFotosDeParcela(idParcela)).filter(foto => foto.categoria !== 'secado');
+                if (document.getElementById('selectorParcelaFotos').value !== idParcela) return;
+                fotos.sort((a, b) => b.creadaEn.localeCompare(a.creadaEn));
+                if (!fotos.length) {
+                    const vacio = document.createElement('p');
+                    vacio.style.color = 'var(--text-muted)';
+                    vacio.textContent = 'Aún no hay fotos de evidencia para esta parcela.';
+                    galeria.appendChild(vacio);
+                    estado.textContent = 'Sin evidencias registradas para esta parcela.';
+                    return;
+                }
+                fotos.forEach(foto => galeria.appendChild(crearTarjetaFotoParcela(foto)));
+                estado.textContent = fotos.length + ' evidencia(s), ordenadas de la más reciente a la más antigua.';
+            } catch (error) {
+                console.error('No se pudo cargar la galería de fotos.', error);
+                estado.textContent = 'No se pudo cargar la galería de esta parcela.';
+            }
+        }
+
+        function crearTarjetaFotoParcela(foto) {
+            const tarjeta = document.createElement('article');
+            tarjeta.className = 'photo-item';
+            const urlFoto = URL.createObjectURL(foto.blob);
+            urlsFotosParcela.add(urlFoto);
+            const enlace = document.createElement('a');
+            enlace.href = urlFoto;
+            enlace.target = '_blank';
+            enlace.rel = 'noopener';
+            enlace.setAttribute('aria-label', 'Abrir foto ' + foto.nombre);
+            const imagen = document.createElement('img');
+            imagen.src = urlFoto;
+            imagen.alt = 'Evidencia: ' + foto.nombre;
+            imagen.loading = 'lazy';
+            enlace.appendChild(imagen);
+
+            const detalles = document.createElement('div');
+            detalles.className = 'photo-details';
+            const nombre = document.createElement('h4');
+            nombre.textContent = foto.nombre;
+            const fecha = document.createElement('p');
+            fecha.textContent = new Date(foto.creadaEn).toLocaleString('es-PE') + ' · ' +
+                (foto.blob.size / 1024).toLocaleString('es-PE', { maximumFractionDigits: 0 }) + ' KB';
+            const coordenadas = document.createElement('div');
+            coordenadas.className = 'photo-coordinate-grid';
+            const zona = document.createElement('input');
+            zona.className = 'form-control';
+            zona.type = 'text';
+            zona.maxLength = 3;
+            zona.placeholder = 'Zona';
+            zona.setAttribute('aria-label', 'Zona UTM de la foto');
+            zona.value = foto.zona || '';
+            const este = document.createElement('input');
+            este.className = 'form-control';
+            este.type = 'number';
+            este.min = '100000';
+            este.max = '900000';
+            este.step = 'any';
+            este.placeholder = 'Este (m)';
+            este.setAttribute('aria-label', 'Coordenada Este UTM de la foto');
+            este.value = foto.este ?? '';
+            const norte = document.createElement('input');
+            norte.className = 'form-control';
+            norte.type = 'number';
+            norte.min = '0';
+            norte.max = '10000000';
+            norte.step = 'any';
+            norte.placeholder = 'Norte (m)';
+            norte.setAttribute('aria-label', 'Coordenada Norte UTM de la foto');
+            norte.value = foto.norte ?? '';
+            coordenadas.append(zona, este, norte);
+
+            const acciones = document.createElement('div');
+            acciones.className = 'photo-actions';
+            const guardar = document.createElement('button');
+            guardar.type = 'button';
+            guardar.className = 'btn';
+            guardar.textContent = 'Guardar UTM';
+            guardar.addEventListener('click', async () => {
+                const valores = [zona.value.trim().toUpperCase(), este.value.trim(), norte.value.trim()];
+                const vacios = valores.every(valor => !valor);
+                if (!vacios) {
+                    const esteNumero = Number(valores[1]);
+                    const norteNumero = Number(valores[2]);
+                    if (!/^(?:[1-9]|[1-5]\d|60)[C-HJ-NP-X]$/.test(valores[0])
+                        || !valores[1] || !valores[2]
+                        || esteNumero < 100000 || esteNumero > 900000
+                        || norteNumero < 0 || norteNumero > 10000000) {
+                        document.getElementById('estadoFotosParcela').textContent = 'Completa una zona UTM válida y coordenadas Este/Norte dentro de sus rangos.';
+                        return;
+                    }
+                }
+                foto.zona = vacios ? '' : valores[0];
+                foto.este = vacios ? '' : Number(valores[1]);
+                foto.norte = vacios ? '' : Number(valores[2]);
+                try {
+                    await guardarFotoEnBase(foto);
+                    document.getElementById('estadoFotosParcela').textContent = 'Coordenadas UTM guardadas para ' + foto.nombre + '.';
+                } catch (error) {
+                    document.getElementById('estadoFotosParcela').textContent = 'No se pudieron guardar las coordenadas UTM.';
+                }
+            });
+            const eliminar = document.createElement('button');
+            eliminar.type = 'button';
+            eliminar.className = 'btn btn-delete';
+            eliminar.textContent = 'Eliminar';
+            eliminar.setAttribute('aria-label', 'Eliminar foto ' + foto.nombre);
+            eliminar.addEventListener('click', async () => {
+                if (!confirm('¿Eliminar esta foto de evidencia?')) return;
+                try {
+                    await eliminarFotoDeBase(foto.id);
+                    actualizarUsoFotosParcela();
+                    renderizarGaleriaFotosParcela();
+                } catch (error) {
+                    document.getElementById('estadoFotosParcela').textContent = 'No se pudo eliminar la foto.';
+                }
+            });
+            acciones.append(guardar, eliminar);
+            detalles.append(nombre, fecha, coordenadas, acciones);
+            tarjeta.append(enlace, detalles);
+            return tarjeta;
+        }
+
+        function obtenerRegistrosPoscosecha(parcela) {
+            return parcela && Array.isArray(parcela.registrosPoscosecha) ? parcela.registrosPoscosecha : [];
+        }
+
+        function renderizarVistaPoscosecha() {
+            const selector = document.getElementById('selectorParcelaPoscosecha');
+            const seleccionAnterior = selector.value || idParcelaPoscosechaSeleccionada;
+            selector.replaceChildren();
+            registros.parcelas.forEach(parcela => {
+                const opcion = document.createElement('option');
+                opcion.value = parcela.id;
+                opcion.textContent = parcela.nombre;
+                selector.appendChild(opcion);
+            });
+            if (!registros.parcelas.length) {
+                const opcion = document.createElement('option');
+                opcion.value = '';
+                opcion.textContent = 'Registra una parcela primero';
+                selector.appendChild(opcion);
+            }
+            idParcelaPoscosechaSeleccionada = registros.parcelas.some(parcela => parcela.id === seleccionAnterior)
+                ? seleccionAnterior
+                : registros.parcelas[0]?.id || '';
+            selector.value = idParcelaPoscosechaSeleccionada;
+            selector.disabled = !idParcelaPoscosechaSeleccionada;
+            const parcela = registros.parcelas.find(item => item.id === idParcelaPoscosechaSeleccionada);
+            document.getElementById('formRegistroPoscosecha').querySelectorAll('input, select, button').forEach(control => {
+                control.disabled = !parcela;
+            });
+            renderizarHistorialPoscosecha(parcela);
+            const humedadIngresada = document.getElementById('humedadGranoPoscosecha').value;
+            const registrosParcela = obtenerRegistrosPoscosecha(parcela);
+            const ultimoRegistro = [...registrosParcela].sort((a, b) => b.registradoEn.localeCompare(a.registradoEn))[0];
+            const metodoActual = humedadIngresada === ''
+                ? ultimoRegistro?.metodo || document.getElementById('metodoPoscosecha').value
+                : document.getElementById('metodoPoscosecha').value;
+            actualizarRecomendacionPoscosecha(
+                humedadIngresada === '' ? ultimoRegistro?.humedad : Number(humedadIngresada),
+                metodoActual
+            );
+            renderizarGaleriaFotosSecado();
+        }
+
+        function renderizarHistorialPoscosecha(parcela) {
+            const tabla = document.getElementById('tablaHistorialPoscosecha');
+            tabla.replaceChildren();
+            const historial = [...obtenerRegistrosPoscosecha(parcela)].sort((a, b) =>
+                b.fechaCosecha.localeCompare(a.fechaCosecha) || b.registradoEn.localeCompare(a.registradoEn));
+            if (!historial.length) {
+                const fila = document.createElement('tr');
+                const celda = document.createElement('td');
+                celda.colSpan = 5;
+                celda.textContent = parcela ? 'Aún no hay registros de secado para este lote.' : 'Registra una parcela para iniciar el historial.';
+                fila.appendChild(celda);
+                tabla.appendChild(fila);
+                return;
+            }
+            historial.forEach(registro => {
+                const fila = document.createElement('tr');
+                agregarCelda(fila, new Date(registro.fechaCosecha + 'T00:00:00').toLocaleDateString('es-PE'));
+                agregarCelda(fila, registro.metodo);
+                agregarCelda(fila, Number(registro.humedad).toLocaleString('es-PE', { maximumFractionDigits: 1 }) + '%');
+                agregarCelda(fila, obtenerDiagnosticoHumedad(Number(registro.humedad), registro.metodo).titulo);
+                const accion = document.createElement('td');
+                const boton = document.createElement('button');
+                boton.type = 'button';
+                boton.className = 'btn btn-delete';
+                boton.textContent = 'Eliminar';
+                boton.setAttribute('aria-label', 'Eliminar registro de poscosecha');
+                boton.addEventListener('click', () => eliminarRegistroPoscosecha(parcela.id, registro.id));
+                accion.appendChild(boton);
+                fila.appendChild(accion);
+                tabla.appendChild(fila);
+            });
+        }
+
+        function obtenerDiagnosticoHumedad(humedad, metodo) {
+            let titulo;
+            let indicaciones;
+            if (humedad > 12) {
+                titulo = 'Continuar secado; no almacenar';
+                indicaciones = [
+                    'No ensacar ni almacenar todavía. Continúa el secado en capas uniformes sobre marquesina o patio limpio, protegido de lluvia y rocío.',
+                    'Voltea el grano y mide varios puntos del lote con un medidor calibrado para café pergamino. Repite la medición hasta alcanzar 10.5–11.5% y confirmar uniformidad.'
+                ];
+            } else if (humedad > 11.5) {
+                titulo = 'Secado final y nueva medición';
+                indicaciones = [
+                    'Está cerca del rango objetivo, pero conviene completar el secado hacia 10.5–11.5% antes del almacenamiento, especialmente si el ambiente está húmedo.',
+                    'Deja enfriar y estabilizar el grano, toma muestras de distintos puntos y confirma que la humedad sea uniforme antes de ensacar.'
+                ];
+            } else if (humedad >= 10.5) {
+                titulo = 'Rango objetivo para acondicionar y almacenar';
+                indicaciones = [
+                    'El rango recomendado de referencia es 10.5–11.5% de humedad, dentro del intervalo usual de almacenamiento de 10–12%. Verifica una lectura uniforme luego de enfriar y estabilizar el lote.',
+                    'Guarda en sacos limpios sobre parihuelas, separados del piso y paredes, en un ambiente seco y ventilado, sin olores ni filtraciones. Usa barrera hermética solo con grano frío y seco.'
+                ];
+            } else {
+                titulo = 'Humedad baja; revisar posible sobresecado';
+                indicaciones = [
+                    'El valor está por debajo del objetivo. No rehumedezcas el café: separa el lote, verifica el medidor y evalúa una muestra de taza para vigilar el impacto en calidad.',
+                    'Protégelo de cambios bruscos de humedad, olores y contaminación. Registra esta condición antes de definir el tipo de empaque.'
+                ];
+            }
+            const indicacionMetodo = metodo === 'Natural'
+                ? 'Proceso natural: el secado suele ser más lento; trabaja en capas delgadas, voltea con frecuencia y revisa humedad en distintas capas.'
+                : metodo === 'Honey'
+                    ? 'Proceso honey: el mucílago puede volver irregular el secado; evita capas gruesas, aumenta el volteo y revisa varios puntos.'
+                    : 'Proceso lavado: verifica que el grano haya escurrido bien y que el pergamino alcance humedad uniforme antes de ensacar.';
+            return { titulo, indicaciones: [...indicaciones, indicacionMetodo] };
+        }
+
+        function actualizarRecomendacionPoscosecha(humedad, metodo) {
+            const panel = document.getElementById('recomendacionAlmacenamiento');
+            panel.replaceChildren();
+            const valido = Number.isFinite(humedad) && humedad >= 0 && humedad <= 30;
+            const diagnostico = valido
+                ? obtenerDiagnosticoHumedad(humedad, metodo || 'Lavado')
+                : null;
+            const titulo = document.createElement('h3');
+            titulo.style.cssText = 'color:var(--primary);margin-bottom:8px';
+            titulo.textContent = diagnostico ? diagnostico.titulo : 'Rango objetivo: 10.5–11.5% de humedad';
+            const resumen = document.createElement('p');
+            resumen.style.cssText = 'line-height:1.5;margin-bottom:10px';
+            resumen.textContent = diagnostico
+                ? 'Lectura evaluada: ' + humedad.toLocaleString('es-PE', { maximumFractionDigits: 1 }) + '%. ' +
+                    (humedad > 12 ? 'No almacenar hasta completar el secado.' : 'Confirma la lectura en una muestra representativa con medidor calibrado para pergamino.')
+                : 'Ingresa una medición para recibir una recomendación específica. El almacenamiento suele ser adecuado entre 10 y 12%; se propone 10.5–11.5% como objetivo operativo.';
+            const lista = document.createElement('ul');
+            lista.style.cssText = 'padding-left:20px;line-height:1.55';
+            (diagnostico ? diagnostico.indicaciones : [
+                'En zonas de Amazonas y Cajamarca, la humedad ambiental y la temporada de lluvias varían por localidad y altitud: protege el secado de lluvia/rocío y vuelve a medir después de estabilizar el grano.',
+                'Almacena solo café pergamino frío, en empaque limpio, sobre parihuelas y separado de paredes, químicos y productos con olores fuertes.'
+            ]).forEach(texto => {
+                const item = document.createElement('li');
+                item.textContent = texto;
+                item.style.marginBottom = '6px';
+                lista.appendChild(item);
+            });
+            const nota = document.createElement('p');
+            nota.style.cssText = 'margin-top:10px;color:var(--text-muted);font-size:.82rem';
+            nota.textContent = 'Guía general: el resultado depende de una medición correcta y de las condiciones del almacén. Revisa el lote periódicamente y consulta el protocolo de calidad de tu organización.';
+            panel.append(titulo, resumen, lista, nota);
+        }
+
+        function guardarRegistroPoscosecha(event) {
+            event.preventDefault();
+            const selector = document.getElementById('selectorParcelaPoscosecha');
+            const idParcela = selector.value;
+            const parcela = registros.parcelas.find(item => item.id === idParcela);
+            const humedad = Number(document.getElementById('humedadGranoPoscosecha').value);
+            const fechaCosecha = document.getElementById('fechaCosechaPoscosecha').value;
+            const metodo = document.getElementById('metodoPoscosecha').value;
+            if (!parcela || !fechaCosecha || !Number.isFinite(humedad) || humedad < 0 || humedad > 30) return;
+            const registro = { id: generarId(), metodo, fechaCosecha, humedad, registradoEn: new Date().toISOString() };
+            const parcelasActualizadas = registros.parcelas.map(item => item.id === idParcela
+                ? { ...item, registrosPoscosecha: [registro, ...obtenerRegistrosPoscosecha(item)] }
+                : item);
+            if (!guardarRegistros('parcelas', parcelasActualizadas)) return;
+            registros.parcelas = parcelasActualizadas;
+            document.getElementById('humedadGranoPoscosecha').value = '';
+            document.getElementById('fechaCosechaPoscosecha').value = '';
+            renderizarRegistros();
+            document.getElementById('estadoRegistroPoscosecha').textContent = 'Registro de poscosecha guardado para ' + parcela.nombre + '.';
+        }
+
+        function eliminarRegistroPoscosecha(idParcela, idRegistro) {
+            const parcelasActualizadas = registros.parcelas.map(parcela => parcela.id === idParcela
+                ? { ...parcela, registrosPoscosecha: obtenerRegistrosPoscosecha(parcela).filter(registro => registro.id !== idRegistro) }
+                : parcela);
+            if (!guardarRegistros('parcelas', parcelasActualizadas)) return;
+            registros.parcelas = parcelasActualizadas;
+            renderizarRegistros();
+        }
+
+        async function procesarFotosSecado(event) {
+            const entrada = event.currentTarget;
+            const idParcela = document.getElementById('selectorParcelaPoscosecha').value;
+            const archivos = Array.from(entrada.files || []);
+            if (!idParcela || !archivos.length || !baseFotosParcela) return;
+            const parcela = registros.parcelas.find(item => item.id === idParcela);
+            const ultimoRegistro = [...obtenerRegistrosPoscosecha(parcela)].sort((a, b) => b.registradoEn.localeCompare(a.registradoEn))[0];
+            entrada.disabled = true;
+            let guardadas = 0;
+            let fallidas = 0;
+            for (let indice = 0; indice < archivos.length; indice += 1) {
+                const archivo = archivos[indice];
+                document.getElementById('estadoFotosSecado').textContent = 'Comprimiendo ' + (indice + 1) + ' de ' + archivos.length + ': ' + archivo.name;
+                try {
+                    const blob = await comprimirFotoParcela(archivo);
+                    await guardarFotoEnBase({
+                        id: generarId(),
+                        parcelaId: idParcela,
+                        categoria: 'secado',
+                        poscosechaId: ultimoRegistro?.id || '',
+                        nombre: archivo.name,
+                        blob,
+                        bytesOriginales: archivo.size,
+                        creadaEn: new Date().toISOString()
+                    });
+                    guardadas += 1;
+                } catch (error) {
+                    fallidas += 1;
+                    console.error('No se pudo guardar la foto de secado ' + archivo.name, error);
+                }
+            }
+            entrada.value = '';
+            entrada.disabled = !baseFotosParcela || !idParcela;
+            document.getElementById('estadoFotosSecado').textContent = guardadas + ' foto(s) de secado guardada(s)' +
+                (fallidas ? '; ' + fallidas + ' no se pudieron procesar.' : '.');
+            renderizarGaleriaFotosSecado();
+            actualizarUsoFotosParcela();
+        }
+
+        async function renderizarGaleriaFotosSecado() {
+            const galeria = document.getElementById('galeriaFotosSecado');
+            if (!galeria) return;
+            const estado = document.getElementById('estadoFotosSecado');
+            const idParcela = document.getElementById('selectorParcelaPoscosecha').value;
+            const entrada = document.getElementById('entradaFotosSecado');
+            entrada.disabled = !idParcela || !baseFotosParcela;
+            urlsFotosSecado.forEach(url => URL.revokeObjectURL(url));
+            urlsFotosSecado.clear();
+            galeria.replaceChildren();
+            if (!idParcela) {
+                estado.textContent = 'Registra una parcela para agregar evidencias del secado.';
+                return;
+            }
+            if (errorBaseFotosParcela) {
+                estado.textContent = errorBaseFotosParcela;
+                return;
+            }
+            if (!baseFotosParcela) {
+                estado.textContent = 'Preparando almacenamiento local…';
+                return;
+            }
+            estado.textContent = 'Cargando evidencias del secado…';
+            try {
+                const fotos = (await obtenerFotosDeParcela(idParcela))
+                    .filter(foto => foto.categoria === 'secado')
+                    .sort((a, b) => b.creadaEn.localeCompare(a.creadaEn));
+                if (document.getElementById('selectorParcelaPoscosecha').value !== idParcela) return;
+                if (!fotos.length) {
+                    const vacio = document.createElement('p');
+                    vacio.style.color = 'var(--text-muted)';
+                    vacio.textContent = 'Aún no hay fotos del proceso de secado para este lote.';
+                    galeria.appendChild(vacio);
+                    estado.textContent = 'Sin fotos de secado registradas.';
+                    return;
+                }
+                fotos.forEach(foto => galeria.appendChild(crearTarjetaFotoSecado(foto)));
+                estado.textContent = fotos.length + ' foto(s) de secado, de la más reciente a la más antigua.';
+            } catch (error) {
+                console.error('No se pudieron cargar las fotos de secado.', error);
+                estado.textContent = 'No se pudo cargar la galería de secado.';
+            }
+        }
+
+        function crearTarjetaFotoSecado(foto) {
+            const tarjeta = document.createElement('article');
+            tarjeta.className = 'photo-item';
+            const urlFoto = URL.createObjectURL(foto.blob);
+            urlsFotosSecado.add(urlFoto);
+            const enlace = document.createElement('a');
+            enlace.href = urlFoto;
+            enlace.target = '_blank';
+            enlace.rel = 'noopener';
+            const imagen = document.createElement('img');
+            imagen.src = urlFoto;
+            imagen.alt = 'Foto del secado: ' + foto.nombre;
+            imagen.loading = 'lazy';
+            enlace.appendChild(imagen);
+            const detalles = document.createElement('div');
+            detalles.className = 'photo-details';
+            const nombre = document.createElement('h4');
+            nombre.textContent = foto.nombre;
+            const fecha = document.createElement('p');
+            const reduccion = foto.bytesOriginales > 0
+                ? Math.max(0, Math.round((1 - foto.blob.size / foto.bytesOriginales) * 100))
+                : 0;
+            fecha.textContent = new Date(foto.creadaEn).toLocaleString('es-PE') + ' · ' +
+                (foto.blob.size / 1024).toLocaleString('es-PE', { maximumFractionDigits: 0 }) + ' KB · ' + reduccion + '% menos';
+            const eliminar = document.createElement('button');
+            eliminar.type = 'button';
+            eliminar.className = 'btn btn-delete';
+            eliminar.textContent = 'Eliminar';
+            eliminar.setAttribute('aria-label', 'Eliminar foto de secado ' + foto.nombre);
+            eliminar.addEventListener('click', async () => {
+                if (!confirm('¿Eliminar esta foto del secado?')) return;
+                try {
+                    await eliminarFotoDeBase(foto.id);
+                    actualizarUsoFotosParcela();
+                    renderizarGaleriaFotosSecado();
+                } catch (error) {
+                    document.getElementById('estadoFotosSecado').textContent = 'No se pudo eliminar la foto.';
+                }
+            });
+            detalles.append(nombre, fecha, eliminar);
+            tarjeta.append(enlace, detalles);
+            return tarjeta;
+        }
+
         function renderizarSelectorInformeNDVI() {
             const selector = document.getElementById('parcelaInformeNDVI');
             const seleccionAnterior = selector.value || selector.dataset.seleccion || '';
@@ -1173,6 +2001,30 @@
 
         document.getElementById('formInformeNDVI').addEventListener('submit', generarInformeTecnicoNDVI);
         document.getElementById('parcelaInformeNDVI').addEventListener('change', cargarAnalisisNDVISeleccionado);
+        document.getElementById('selectorParcelaFotos').addEventListener('change', renderizarGaleriaFotosParcela);
+        document.getElementById('entradaFotosParcela').addEventListener('change', procesarFotosParcela);
+        document.getElementById('formRegistroPoscosecha').addEventListener('submit', guardarRegistroPoscosecha);
+        document.getElementById('selectorParcelaPoscosecha').addEventListener('change', event => {
+            idParcelaPoscosechaSeleccionada = event.target.value;
+            document.getElementById('humedadGranoPoscosecha').value = '';
+            document.getElementById('fechaCosechaPoscosecha').value = '';
+            document.getElementById('estadoRegistroPoscosecha').textContent = '';
+            renderizarVistaPoscosecha();
+        });
+        document.getElementById('humedadGranoPoscosecha').addEventListener('input', event => {
+            const valor = event.target.value;
+            if (valor !== '') {
+                actualizarRecomendacionPoscosecha(Number(valor), document.getElementById('metodoPoscosecha').value);
+            } else {
+                renderizarVistaPoscosecha();
+            }
+        });
+        document.getElementById('metodoPoscosecha').addEventListener('change', () => {
+            const valor = document.getElementById('humedadGranoPoscosecha').value;
+            if (valor !== '') actualizarRecomendacionPoscosecha(Number(valor), document.getElementById('metodoPoscosecha').value);
+        });
+        document.getElementById('entradaFotosSecado').addEventListener('change', procesarFotosSecado);
+        inicializarBaseFotosParcela();
 
         function switchView(viewName) {
             document.querySelectorAll('.section-view').forEach(el => el.classList.remove('active'));
