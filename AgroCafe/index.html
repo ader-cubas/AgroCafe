@@ -628,8 +628,31 @@
             <div class="card col-12">
                 <div class="card-header" style="justify-content: space-between;">
                     <span><i data-lucide="map-pin"></i> Gestión de Parcelas y Lotes Cafetaleros</span>
-                    <button class="btn btn-accent" onclick="agregarParcela()"><i data-lucide="plus"></i> Nueva Parcela</button>
                 </div>
+                <form id="formNuevaParcela" onsubmit="agregarParcela(event)" style="margin-bottom: 22px; padding: 18px; background: #faf8f5; border: 1px solid var(--border-color); border-radius: 10px;">
+                    <h3 style="margin-bottom: 14px; color: var(--primary);">Registrar parcela</h3>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px;">
+                        <div class="form-group">
+                            <label for="nombreNuevaParcela">Nombre de la Parcela</label>
+                            <input id="nombreNuevaParcela" name="nombre" class="form-control" type="text" maxlength="100" required placeholder="Ej. Lote El Mirador">
+                        </div>
+                        <div class="form-group">
+                            <label for="ubicacionNuevaParcela">Ubicación</label>
+                            <input id="ubicacionNuevaParcela" name="ubicacion" class="form-control" type="text" maxlength="120" required placeholder="Lonya, Bagua, Jaén, San Ignacio">
+                        </div>
+                        <div class="form-group">
+                            <label for="areaNuevaParcela">Área (hectáreas)</label>
+                            <input id="areaNuevaParcela" name="area" class="form-control" type="number" min="0.01" step="0.01" required placeholder="Ej. 2.5">
+                        </div>
+                        <div class="form-group">
+                            <label for="variedadNuevaParcela">Variedad de Café</label>
+                            <input id="variedadNuevaParcela" name="variedad" class="form-control" type="text" list="variedadesCafe" maxlength="80" required placeholder="Caturra, Catimor, Typica">
+                            <datalist id="variedadesCafe"><option value="Caturra"><option value="Catimor"><option value="Typica"></datalist>
+                        </div>
+                    </div>
+                    <p id="estadoNuevaParcela" style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 12px;" role="status" aria-live="polite"></p>
+                    <button class="btn btn-accent" type="submit"><i data-lucide="save"></i> Guardar Parcela</button>
+                </form>
                 <div class="table-scroll">
                     <table class="records-table">
                         <thead>
@@ -1391,26 +1414,31 @@
             alert("¡Gasto registrado con éxito!");
         }
 
-        function agregarParcela() {
-            const nombre = prompt("Nombre de la parcela:");
-            const ubicacion = prompt("Ubicación (ej. Lonya, Amazonas):");
-            const area = prompt("Área:");
-            const variedad = prompt("Variedad:");
-
-            if(!nombre) return;
-
+        function agregarParcela(event) {
+            event.preventDefault();
+            const formulario = event.currentTarget;
+            const nombre = formulario.elements.nombre.value.trim();
+            const ubicacion = formulario.elements.ubicacion.value.trim();
+            const area = Number(formulario.elements.area.value);
+            const variedad = formulario.elements.variedad.value.trim();
+            const estado = document.getElementById('estadoNuevaParcela');
+            if (!nombre || !ubicacion || !variedad || !Number.isFinite(area) || area <= 0) {
+                estado.textContent = 'Completa todos los campos con valores válidos.';
+                return;
+            }
             const nuevasParcelas = [{
                 id: generarId(),
                 nombre,
-                ubicacion: ubicacion || 'Lonya, Amazonas',
-                area: area || '1 Hectárea',
-                variedad: variedad || 'Catimor',
+                ubicacion,
+                area: area + ' ha',
+                variedad,
                 coordenadasUTM: []
             }, ...registros.parcelas];
             if (!guardarRegistros('parcelas', nuevasParcelas)) return;
             registros.parcelas = nuevasParcelas;
             renderizarRegistros();
-            alert("¡Parcela agregada!");
+            formulario.reset();
+            estado.textContent = 'Parcela guardada. Ya está disponible en la tabla y en el selector UTM.';
         }
     </script>
 </body>
