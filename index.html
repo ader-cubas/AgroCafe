@@ -296,6 +296,116 @@
             display: none;
         }
 
+        .ndvi-controls,
+        .nutrient-controls {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 12px;
+            align-items: end;
+        }
+
+        .ndvi-layout {
+            display: grid;
+            grid-template-columns: minmax(0, 1.2fr) minmax(260px, 0.8fr);
+            gap: 20px;
+            align-items: start;
+        }
+
+        .ndvi-summary,
+        .ndvi-zone-list,
+        .nutrient-result {
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 16px;
+            background: #faf8f5;
+        }
+
+        .ndvi-score {
+            display: flex;
+            align-items: baseline;
+            gap: 8px;
+            margin-bottom: 12px;
+            color: var(--primary);
+        }
+
+        .ndvi-score strong { font-size: 2rem; }
+
+        .ndvi-bar {
+            display: flex;
+            overflow: hidden;
+            height: 20px;
+            border-radius: 5px;
+            background: #e7e4dc;
+            margin: 12px 0 8px;
+        }
+
+        .ndvi-segment { height: 100%; transition: width 0.25s ease; }
+        .ndvi-healthy { background: #398653; }
+        .ndvi-stress { background: #d59a35; }
+        .ndvi-risk { background: #b64e43; }
+
+        .ndvi-legend,
+        .ndvi-stat-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 10px;
+        }
+
+        .ndvi-stat {
+            padding: 12px;
+            background: white;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+        }
+
+        .ndvi-stat span { display: block; color: var(--text-muted); font-size: 0.8rem; }
+        .ndvi-stat strong { display: block; margin-top: 4px; font-size: 1.2rem; }
+        .ndvi-legend { grid-template-columns: 1fr; margin-top: 12px; color: var(--text-muted); font-size: 0.85rem; }
+        .ndvi-legend span { display: flex; align-items: center; gap: 8px; }
+        .legend-swatch { width: 11px; height: 11px; border-radius: 2px; }
+        .ndvi-zone-list { min-height: 145px; }
+        .ndvi-zone-list ul { margin: 10px 0 0 18px; line-height: 1.7; }
+        .form-note { color: var(--text-muted); font-size: 0.82rem; line-height: 1.45; }
+
+        .nutrient-results {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+            gap: 12px;
+            margin-top: 18px;
+        }
+
+        .nutrient-result h3 { color: var(--primary); font-size: 1rem; margin-bottom: 8px; }
+        .nutrient-result p { font-size: 0.9rem; line-height: 1.5; }
+        .nutrient-result[data-severity="none"] { border-left: 4px solid #398653; }
+        .nutrient-result[data-severity="mild"] { border-left: 4px solid #d59a35; }
+        .nutrient-result[data-severity="moderate"],
+        .nutrient-result[data-severity="severe"] { border-left: 4px solid #b64e43; }
+
+        .report-actions { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+        #reportPrintable { display: none; }
+
+        @media print {
+            @page { margin: 18mm; }
+            body, main { display: block !important; width: 100%; max-width: none; padding: 0; background: white; }
+            body * { visibility: hidden !important; }
+            #view-diagnostico { display: block !important; visibility: visible !important; }
+            #reportPrintable,
+            #reportPrintable * { visibility: visible !important; }
+            #reportPrintable {
+                display: block !important;
+                position: absolute;
+                inset: 0;
+                width: 100%;
+                color: #222;
+                font: 12pt/1.5 Georgia, serif;
+            }
+            #reportPrintable h1 { color: #1b4332; font-size: 22pt; margin-bottom: 4px; }
+            #reportPrintable h2 { color: #1b4332; font-size: 15pt; margin: 18px 0 6px; }
+            #reportPrintable p, #reportPrintable li { margin: 4px 0; }
+            #reportPrintable .report-meta { color: #555; margin-bottom: 18px; }
+            #reportPrintable .report-warning { border-top: 1px solid #999; margin-top: 24px; padding-top: 10px; font-size: 10pt; }
+        }
+
         table {
             width: 100%;
             border-collapse: collapse;
@@ -328,6 +438,8 @@
             .form-grid-mobile .form-group:first-child,
             .form-grid-mobile .form-group:nth-child(2),
             .form-grid-mobile button { grid-column: 1 / -1; }
+            .ndvi-layout { grid-template-columns: 1fr; }
+            .ndvi-stat-grid { grid-template-columns: 1fr; }
         }
     </style>
 </head>
@@ -451,13 +563,66 @@
                     </div>
                 </div>
 
-                <div class="card col-6">
-                    <div class="card-header"><i data-lucide="activity"></i> Índice de Vigor Vegetativo (NDVI Satelital)</div>
-                    <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 15px;">Evaluación multispectral del follaje de tus lotes.</p>
-                    <div style="background: #eef7f2; padding: 20px; border-radius: 10px; border-left: 5px solid var(--primary-light); text-align: center;">
-                        <i data-lucide="satellite" style="width: 40px; height: 40px; color: var(--primary); margin-bottom: 8px;"></i>
-                        <h3 style="color: var(--primary); font-size: 1.1rem;">Estado del Lote San Isidro: EXCELENTE</h3>
-                        <p style="font-size: 0.9rem; color: var(--text-muted); margin-top: 5px;">El índice NDVI muestra biomasa activa densa y desarrollo uniforme de grano en el 85% de la parcela.</p>
+                <div class="card col-12">
+                    <div class="card-header"><i data-lucide="satellite"></i> Monitoreo Satelital de Salud (NDVI)</div>
+                    <p class="form-note" style="margin-bottom: 16px;">Registra por parcela la lectura NDVI y la clasificación de cobertura. Esta versión no consulta un proveedor satelital; ingresa aquí los datos de tu plataforma de monitoreo.</p>
+                    <div class="ndvi-layout">
+                        <div>
+                            <form id="formNDVI">
+                                <div class="ndvi-controls">
+                                    <div class="form-group">
+                                        <label for="selectParcelaNDVI">Parcela</label>
+                                        <select id="selectParcelaNDVI" class="form-control"></select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="inputNDVI">Índice NDVI (0 a 1)</label>
+                                        <input id="inputNDVI" class="form-control" type="number" min="0" max="1" step="0.01" placeholder="Ej. 0.78" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="inputAreaSana">Área verde sana (%)</label>
+                                        <input id="inputAreaSana" class="form-control" type="number" min="0" max="100" step="1" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="inputEstresNDVI">Estrés nutricional (%)</label>
+                                        <input id="inputEstresNDVI" class="form-control" type="number" min="0" max="100" step="1" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="inputRiesgoNDVI">Zonas de riesgo (%)</label>
+                                        <input id="inputRiesgoNDVI" class="form-control" type="number" min="0" max="100" step="1" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="inputZonasRiesgo">Sectores de riesgo</label>
+                                        <input id="inputZonasRiesgo" class="form-control" type="text" placeholder="Ej. borde norte, sector bajo">
+                                    </div>
+                                </div>
+                                <p class="form-note" style="margin: 0 0 12px;">Las tres coberturas deben sumar 100%. Separa los sectores de riesgo con coma.</p>
+                                <button class="btn" type="submit"><i data-lucide="save"></i> Guardar lectura</button>
+                                <span id="mensajeNDVI" class="form-note" role="status" aria-live="polite"></span>
+                            </form>
+                            <div class="ndvi-summary" style="margin-top: 18px;">
+                                <div class="ndvi-score"><strong id="valorNDVI">—</strong><span>NDVI · <b id="estadoNDVI">Sin lectura</b></span></div>
+                                <div class="ndvi-bar" role="img" aria-label="Distribución de cobertura de la parcela">
+                                    <div id="barraSana" class="ndvi-segment ndvi-healthy"></div>
+                                    <div id="barraEstres" class="ndvi-segment ndvi-stress"></div>
+                                    <div id="barraRiesgo" class="ndvi-segment ndvi-risk"></div>
+                                </div>
+                                <div class="ndvi-stat-grid">
+                                    <div class="ndvi-stat"><span>Área verde sana</span><strong id="valorAreaSana">—</strong></div>
+                                    <div class="ndvi-stat"><span>Estrés nutricional</span><strong id="valorEstresNDVI">—</strong></div>
+                                    <div class="ndvi-stat"><span>Zonas de riesgo</span><strong id="valorRiesgoNDVI">—</strong></div>
+                                </div>
+                                <div class="ndvi-legend" aria-label="Leyenda de cobertura">
+                                    <span><i class="legend-swatch ndvi-healthy"></i>Vigor saludable</span>
+                                    <span><i class="legend-swatch ndvi-stress"></i>Estrés a revisar</span>
+                                    <span><i class="legend-swatch ndvi-risk"></i>Riesgo prioritario</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="ndvi-zone-list">
+                            <strong><i data-lucide="map"></i> Zonas de riesgo de la parcela</strong>
+                            <ul id="listaZonasNDVI"><li>Guarda una lectura para visualizar sectores.</li></ul>
+                            <p id="fechaNDVI" class="form-note" style="margin-top: 12px;"></p>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -491,7 +656,40 @@
                         <p id="textoResultSuelo" style="margin-top: 6px; font-size: 0.95rem;"></p>
                     </div>
                 </div>
+                <div class="card col-12">
+                    <div class="card-header"><i data-lucide="microscope"></i> Diagnóstico Nutricional y Fisiología Vegetal</div>
+                    <p class="form-note">Selecciona la intensidad observada para cada nutriente. El sistema relaciona síntomas foliares frecuentes con una corrección foliar de referencia para café.</p>
+                    <div class="nutrient-controls" style="margin-top: 16px;">
+                        <div class="form-group">
+                            <label for="nutrientN">Nitrógeno (N)</label>
+                            <select id="nutrientN" class="form-control nutrient-select"><option value="none">Sin señal</option><option value="mild">Leve</option><option value="moderate">Moderada</option><option value="severe">Severa</option></select>
+                        </div>
+                        <div class="form-group">
+                            <label for="nutrientP">Fósforo (P)</label>
+                            <select id="nutrientP" class="form-control nutrient-select"><option value="none">Sin señal</option><option value="mild">Leve</option><option value="moderate">Moderada</option><option value="severe">Severa</option></select>
+                        </div>
+                        <div class="form-group">
+                            <label for="nutrientK">Potasio (K)</label>
+                            <select id="nutrientK" class="form-control nutrient-select"><option value="none">Sin señal</option><option value="mild">Leve</option><option value="moderate">Moderada</option><option value="severe">Severa</option></select>
+                        </div>
+                        <div class="form-group">
+                            <label for="nutrientB">Boro (B)</label>
+                            <select id="nutrientB" class="form-control nutrient-select"><option value="none">Sin señal</option><option value="mild">Leve</option><option value="moderate">Moderada</option><option value="severe">Severa</option></select>
+                        </div>
+                        <div class="form-group">
+                            <label for="nutrientZn">Zinc (Zn)</label>
+                            <select id="nutrientZn" class="form-control nutrient-select"><option value="none">Sin señal</option><option value="mild">Leve</option><option value="moderate">Moderada</option><option value="severe">Severa</option></select>
+                        </div>
+                    </div>
+                    <div id="nutrientResults" class="nutrient-results" aria-live="polite"></div>
+                    <p class="form-note" style="margin-top: 14px;">Las dosis son referencias foliares por tanque de 20 L, no sustituyen el análisis foliar/de suelo ni la etiqueta del producto. Confirma el diagnóstico con un profesional, realiza una prueba en pocas plantas y no mezcles productos sin verificar compatibilidad. El boro puede causar toxicidad por exceso.</p>
+                </div>
+                <div class="card col-12 report-actions">
+                    <button class="btn btn-accent" type="button" onclick="generarInformeTecnico()"><i data-lucide="file-down"></i> Generar Informe Técnico en PDF/Imprimible</button>
+                    <span class="form-note">Abre el diálogo de impresión del navegador; elige “Guardar como PDF” para descargarlo.</span>
+                </div>
             </div>
+            <section id="reportPrintable" hidden aria-hidden="true"></section>
         </div>
 
         <!-- VISTA 5: MERCADO Y PRECIOS -->
@@ -706,6 +904,22 @@
             ])
         };
 
+        const claveLecturasNDVI = 'agrocafe_ndvi_v1';
+
+        function cargarLecturasNDVI() {
+            try {
+                const guardadas = localStorage.getItem(claveLecturasNDVI);
+                if (guardadas === null) return {};
+                const lecturas = JSON.parse(guardadas);
+                return lecturas && typeof lecturas === 'object' && !Array.isArray(lecturas) ? lecturas : {};
+            } catch (error) {
+                console.error('No se pudieron cargar las lecturas NDVI.', error);
+                return {};
+            }
+        }
+
+        let lecturasNDVI = cargarLecturasNDVI();
+
         function agregarCelda(fila, valor) {
             const celda = document.createElement('td');
             celda.textContent = valor;
@@ -778,6 +992,7 @@
             });
             renderizarLoteActivo();
             actualizarResumenDashboard();
+            renderizarSelectorNDVI();
         }
 
         function renderizarLoteActivo() {
@@ -797,6 +1012,12 @@
         }
 
         renderizarRegistros();
+
+        document.getElementById('selectParcelaNDVI').addEventListener('change', renderizarLecturaNDVI);
+        document.getElementById('formNDVI').addEventListener('submit', guardarLecturaNDVI);
+        document.querySelectorAll('.nutrient-select').forEach(campo => {
+            campo.addEventListener('change', renderizarDiagnosticoNutricional);
+        });
 
         function switchView(viewName) {
             document.querySelectorAll('.section-view').forEach(el => el.classList.remove('active'));
@@ -1005,6 +1226,220 @@
             document.getElementById('textoResultSuelo').innerHTML = "<b>Análisis:</b> pH 5.4. Aplicar 1.2 kg de cal agrícola por planta y refuerzo NPK.";
         }
 
+        function renderizarSelectorNDVI() {
+            const selector = document.getElementById('selectParcelaNDVI');
+            const seleccionAnterior = selector.value;
+            selector.replaceChildren();
+
+            if (!registros.parcelas.length) {
+                const opcion = document.createElement('option');
+                opcion.value = '';
+                opcion.textContent = 'Sin parcelas registradas';
+                selector.appendChild(opcion);
+                selector.disabled = true;
+            } else {
+                selector.disabled = false;
+                registros.parcelas.forEach(parcela => {
+                    const opcion = document.createElement('option');
+                    opcion.value = parcela.id;
+                    opcion.textContent = parcela.nombre;
+                    selector.appendChild(opcion);
+                });
+                selector.value = registros.parcelas.some(parcela => parcela.id === seleccionAnterior)
+                    ? seleccionAnterior
+                    : registros.parcelas[0].id;
+            }
+
+            renderizarLecturaNDVI();
+        }
+
+        function renderizarLecturaNDVI() {
+            const idParcela = document.getElementById('selectParcelaNDVI').value;
+            const lectura = lecturasNDVI[idParcela];
+            const campos = {
+                ndvi: document.getElementById('inputNDVI'),
+                sana: document.getElementById('inputAreaSana'),
+                estres: document.getElementById('inputEstresNDVI'),
+                riesgo: document.getElementById('inputRiesgoNDVI'),
+                zonas: document.getElementById('inputZonasRiesgo')
+            };
+
+            Object.entries(campos).forEach(([clave, campo]) => {
+                campo.value = lectura && lectura[clave] !== undefined ? lectura[clave] : '';
+            });
+
+            document.getElementById('mensajeNDVI').textContent = lectura
+                ? 'Lectura guardada en este dispositivo.'
+                : 'Sin lectura guardada para esta parcela.';
+            document.getElementById('valorNDVI').textContent = lectura ? Number(lectura.ndvi).toFixed(2) : '—';
+            document.getElementById('valorAreaSana').textContent = lectura ? lectura.sana + '%' : '—';
+            document.getElementById('valorEstresNDVI').textContent = lectura ? lectura.estres + '%' : '—';
+            document.getElementById('valorRiesgoNDVI').textContent = lectura ? lectura.riesgo + '%' : '—';
+
+            const estado = !lectura ? 'Sin lectura' : Number(lectura.ndvi) < 0.4
+                ? 'Vigor bajo · priorizar inspección'
+                : Number(lectura.ndvi) < 0.6 ? 'Vigor moderado · revisar sectores' : 'Vigor adecuado';
+            document.getElementById('estadoNDVI').textContent = estado;
+            document.getElementById('barraSana').style.width = lectura ? lectura.sana + '%' : '0%';
+            document.getElementById('barraEstres').style.width = lectura ? lectura.estres + '%' : '0%';
+            document.getElementById('barraRiesgo').style.width = lectura ? lectura.riesgo + '%' : '0%';
+
+            const listaZonas = document.getElementById('listaZonasNDVI');
+            listaZonas.replaceChildren();
+            const zonas = lectura ? lectura.zonas.split(',').map(zona => zona.trim()).filter(Boolean) : [];
+            if (!zonas.length) {
+                const item = document.createElement('li');
+                item.textContent = lectura ? 'No se reportaron sectores de riesgo.' : 'Guarda una lectura para visualizar sectores.';
+                listaZonas.appendChild(item);
+            } else {
+                zonas.forEach(zona => {
+                    const item = document.createElement('li');
+                    item.textContent = zona;
+                    listaZonas.appendChild(item);
+                });
+            }
+            document.getElementById('fechaNDVI').textContent = lectura && lectura.fecha
+                ? 'Actualizado: ' + lectura.fecha
+                : '';
+        }
+
+        function guardarLecturaNDVI(event) {
+            event.preventDefault();
+            const idParcela = document.getElementById('selectParcelaNDVI').value;
+            if (!idParcela) {
+                alert('Registra una parcela antes de guardar una lectura NDVI.');
+                return;
+            }
+
+            const lectura = {
+                ndvi: Number(document.getElementById('inputNDVI').value),
+                sana: Number(document.getElementById('inputAreaSana').value),
+                estres: Number(document.getElementById('inputEstresNDVI').value),
+                riesgo: Number(document.getElementById('inputRiesgoNDVI').value),
+                zonas: document.getElementById('inputZonasRiesgo').value.trim(),
+                fecha: new Date().toLocaleString('es-PE')
+            };
+
+            if (![lectura.ndvi, lectura.sana, lectura.estres, lectura.riesgo].every(Number.isFinite)
+                || lectura.ndvi < 0 || lectura.ndvi > 1
+                || [lectura.sana, lectura.estres, lectura.riesgo].some(valor => valor < 0 || valor > 100)) {
+                alert('Ingresa un NDVI entre 0 y 1 y porcentajes entre 0 y 100.');
+                return;
+            }
+            if (lectura.sana + lectura.estres + lectura.riesgo !== 100) {
+                alert('Área sana, estrés y riesgo deben sumar exactamente 100%.');
+                return;
+            }
+
+            const lecturasActualizadas = { ...lecturasNDVI, [idParcela]: lectura };
+            try {
+                localStorage.setItem(claveLecturasNDVI, JSON.stringify(lecturasActualizadas));
+                lecturasNDVI = lecturasActualizadas;
+                renderizarLecturaNDVI();
+            } catch (error) {
+                console.error('No se pudo guardar la lectura NDVI.', error);
+                alert('No se pudo guardar la lectura en este dispositivo.');
+            }
+        }
+
+        const guiaNutricional = [
+            {
+                id: 'nutrientN', nombre: 'Nitrógeno (N)', sintoma: 'Clorosis uniforme que comienza en hojas maduras y menor crecimiento.',
+                tratamiento: 'Urea foliar de bajo biuret al 1%: 200 g por tanque de 20 L.'
+            },
+            {
+                id: 'nutrientP', nombre: 'Fósforo (P)', sintoma: 'Crecimiento lento, hojas verde oscuro y posibles tonos rojizos o púrpuras.',
+                tratamiento: 'Fosfato monopotásico (0-52-34) al 0.5%: 100 g por tanque de 20 L.'
+            },
+            {
+                id: 'nutrientK', nombre: 'Potasio (K)', sintoma: 'Amarillamiento o necrosis en bordes de hojas maduras y baja tolerancia al estrés.',
+                tratamiento: 'Nitrato de potasio al 1%: 200 g por tanque de 20 L; considera el aporte adicional de N.'
+            },
+            {
+                id: 'nutrientB', nombre: 'Boro (B)', sintoma: 'Hojas nuevas deformes, entrenudos cortos y daño en puntos de crecimiento.',
+                tratamiento: 'Ácido bórico al 0.1%: 20 g por tanque de 20 L. No exceder la etiqueta: el margen entre deficiencia y toxicidad es estrecho.'
+            },
+            {
+                id: 'nutrientZn', nombre: 'Zinc (Zn)', sintoma: 'Hojas jóvenes pequeñas y estrechas, entrenudos cortos o crecimiento en roseta.',
+                tratamiento: 'Sulfato de zinc heptahidratado al 0.3%: 60 g por tanque de 20 L; validar compatibilidad y etiqueta.'
+            }
+        ];
+
+        function renderizarDiagnosticoNutricional() {
+            const resultados = document.getElementById('nutrientResults');
+            resultados.replaceChildren();
+
+            guiaNutricional.forEach(nutriente => {
+                const severidad = document.getElementById(nutriente.id).value;
+                const tarjeta = document.createElement('article');
+                tarjeta.className = 'nutrient-result';
+                tarjeta.dataset.severity = severidad;
+
+                const titulo = document.createElement('h3');
+                titulo.textContent = nutriente.nombre + ' · ' + ({ none: 'Sin señal seleccionada', mild: 'Señal leve', moderate: 'Señal moderada', severe: 'Señal severa' })[severidad];
+                const sintoma = document.createElement('p');
+                sintoma.innerHTML = '<strong>Signo fisiológico:</strong> ' + nutriente.sintoma;
+                const tratamiento = document.createElement('p');
+                tratamiento.style.marginTop = '8px';
+                tratamiento.innerHTML = severidad === 'none'
+                    ? '<strong>Tratamiento:</strong> No se propone corrección mientras no se observe una señal.'
+                    : '<strong>Corrección foliar de referencia:</strong> ' + nutriente.tratamiento;
+                tarjeta.append(titulo, sintoma, tratamiento);
+                resultados.appendChild(tarjeta);
+            });
+        }
+
+        function generarInformeTecnico() {
+            const informe = document.getElementById('reportPrintable');
+            const idParcela = document.getElementById('selectParcelaNDVI').value;
+            const parcela = registros.parcelas.find(item => item.id === idParcela);
+            const lectura = lecturasNDVI[idParcela];
+            informe.replaceChildren();
+
+            const titulo = document.createElement('h1');
+            titulo.textContent = 'Informe Técnico de Monitoreo y Diagnóstico';
+            const meta = document.createElement('p');
+            meta.className = 'report-meta';
+            meta.textContent = 'AgroCafé Pro · Emitido: ' + new Date().toLocaleString('es-PE');
+            const datosParcela = document.createElement('p');
+            datosParcela.textContent = parcela
+                ? 'Parcela: ' + parcela.nombre + ' · Ubicación: ' + parcela.ubicacion + ' · Área: ' + parcela.area + ' · Variedad: ' + parcela.variedad
+                : 'Parcela: sin parcela seleccionada.';
+            informe.append(titulo, meta, datosParcela);
+
+            const tituloNDVI = document.createElement('h2');
+            tituloNDVI.textContent = 'Monitoreo de salud (NDVI)';
+            const resumenNDVI = document.createElement('p');
+            resumenNDVI.textContent = lectura
+                ? 'NDVI: ' + Number(lectura.ndvi).toFixed(2) + ' · Área verde sana: ' + lectura.sana + '% · Estrés nutricional: ' + lectura.estres + '% · Zonas de riesgo: ' + lectura.riesgo + '% · Sectores: ' + (lectura.zonas || 'no reportados') + ' · Lectura: ' + lectura.fecha
+                : 'No hay lectura NDVI guardada para esta parcela.';
+            informe.append(tituloNDVI, resumenNDVI);
+
+            const tituloNutricion = document.createElement('h2');
+            tituloNutricion.textContent = 'Diagnóstico nutricional y fisiología vegetal';
+            const lista = document.createElement('ul');
+            guiaNutricional.forEach(nutriente => {
+                const severidad = document.getElementById(nutriente.id).value;
+                const item = document.createElement('li');
+                item.textContent = nutriente.nombre + ' · ' + ({ none: 'sin señal seleccionada', mild: 'leve', moderate: 'moderada', severe: 'severa' })[severidad] + '. ' + nutriente.sintoma + ' ' + (severidad === 'none' ? 'Sin corrección sugerida.' : nutriente.tratamiento);
+                lista.appendChild(item);
+            });
+            informe.append(tituloNutricion, lista);
+
+            const advertencia = document.createElement('p');
+            advertencia.className = 'report-warning';
+            advertencia.textContent = 'Alcance y seguridad: el NDVI y las señales foliares consignadas son datos ingresados por el usuario; este sistema no recibe imágenes satelitales ni realiza análisis de laboratorio o diagnóstico automático. Las dosis indicadas son referencias foliares por tanque de 20 L, sujetas a confirmación mediante análisis, etiqueta del producto y asesoría agronómica. Realiza prueba en pocas plantas y verifica compatibilidad antes de mezclar insumos.';
+            informe.appendChild(advertencia);
+
+            informe.hidden = false;
+            informe.setAttribute('aria-hidden', 'false');
+            window.addEventListener('afterprint', () => {
+                informe.hidden = true;
+                informe.setAttribute('aria-hidden', 'true');
+            }, { once: true });
+            window.requestAnimationFrame(() => window.print());
+        }
+
         function registrarNuevoGasto() {
             const labor = document.getElementById('inputLabor').value;
             const cat = document.getElementById('inputCat').value;
@@ -1058,6 +1493,8 @@
             renderizarRegistros();
             alert("¡Parcela agregada!");
         }
+
+        renderizarDiagnosticoNutricional();
     </script>
 </body>
 </html>
