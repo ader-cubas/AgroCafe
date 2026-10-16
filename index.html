@@ -633,6 +633,10 @@
                                         <select id="selectParcelaNDVI" class="form-control"></select>
                                     </div>
                                     <div class="form-group">
+                                        <label for="inputUbicacionNDVI">Coordenadas GPS o ubicación</label>
+                                        <input id="inputUbicacionNDVI" class="form-control" type="text" placeholder="Ej. -6.15, -77.55 o Sector norte">
+                                    </div>
+                                    <div class="form-group">
                                         <label for="inputNDVI">Índice NDVI (0 a 1)</label>
                                         <input id="inputNDVI" class="form-control" type="number" min="0" max="1" step="0.01" placeholder="Ej. 0.78" required>
                                     </div>
@@ -1352,6 +1356,10 @@
             Object.entries(campos).forEach(([clave, campo]) => {
                 campo.value = lectura && lectura[clave] !== undefined ? lectura[clave] : '';
             });
+            const parcela = registros.parcelas.find(item => item.id === idParcela);
+            document.getElementById('inputUbicacionNDVI').value = lectura && lectura.ubicacion
+                ? lectura.ubicacion
+                : (parcela && parcela.ubicacion) || '';
 
             document.getElementById('mensajeNDVI').textContent = lectura
                 ? 'Lectura guardada en este dispositivo.'
@@ -1368,12 +1376,15 @@
                     estres: Number(lectura.estres) || 0,
                     riesgo: Number(lectura.riesgo) || 0,
                     zonas: typeof lectura.zonas === 'string' ? lectura.zonas : '',
+                    ubicacion: typeof lectura.ubicacion === 'string' && lectura.ubicacion.trim()
+                        ? lectura.ubicacion
+                        : parcela.ubicacion || '',
                     fecha: lectura.fecha || '',
                     estimado: false
                 };
             }
 
-            return { ndvi: 0.68, sana: 68, estres: 22, riesgo: 10, zonas: '', fecha: '', estimado: true };
+            return { ndvi: 0.68, sana: 68, estres: 22, riesgo: 10, zonas: '', ubicacion: parcela.ubicacion || '', fecha: '', estimado: true };
         }
 
         function diagnosticarNDVI(ndvi) {
@@ -1432,7 +1443,7 @@
                 nombre.textContent = parcela.nombre;
                 const meta = document.createElement('p');
                 meta.className = 'ndvi-parcel-meta';
-                meta.textContent = [parcela.ubicacion, parcela.area].filter(Boolean).join(' · ');
+                meta.textContent = [lectura.ubicacion || parcela.ubicacion, parcela.area].filter(Boolean).join(' · ');
                 identificacion.append(nombre, meta);
                 const estado = document.createElement('span');
                 estado.className = 'ndvi-state-badge ndvi-state-' + diagnostico.estado;
@@ -1556,6 +1567,7 @@
                 estres: Number(document.getElementById('inputEstresNDVI').value),
                 riesgo: Number(document.getElementById('inputRiesgoNDVI').value),
                 zonas: document.getElementById('inputZonasRiesgo').value.trim(),
+                ubicacion: document.getElementById('inputUbicacionNDVI').value.trim(),
                 fecha: new Date().toLocaleString('es-PE')
             };
 
@@ -1642,7 +1654,7 @@
             meta.textContent = 'AgroCafé Pro · Emitido: ' + new Date().toLocaleString('es-PE');
             const datosParcela = document.createElement('p');
             datosParcela.textContent = parcela
-                ? 'Parcela: ' + parcela.nombre + ' · Ubicación: ' + parcela.ubicacion + ' · Área: ' + parcela.area + ' · Variedad: ' + parcela.variedad
+                ? 'Parcela: ' + parcela.nombre + ' · Ubicación: ' + ((lectura && lectura.ubicacion) || parcela.ubicacion || 'Sin ubicación registrada') + ' · Área: ' + parcela.area + ' · Variedad: ' + parcela.variedad
                 : 'Parcela: sin parcela seleccionada.';
             informe.append(titulo, meta, datosParcela);
 
