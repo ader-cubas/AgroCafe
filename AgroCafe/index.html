@@ -399,15 +399,16 @@
                     <div class="price-summary">
                         <div>
                             <span style="font-size: 0.85rem; color: var(--text-muted);">Bolsa Nueva York (ICE NY)</span>
-                            <div class="price-badge">US$ 215.40 / QQ</div>
+                            <div class="price-badge">US$ 305.55 / QQ</div>
                         </div>
                         <div>
-                            <span style="font-size: 0.85rem; color: var(--text-muted);">Referencia Local (Lonya / Caj.)</span>
-                            <div class="price-badge" style="color: #b08968;">S/ 735.00 / QQ</div>
+                            <span style="font-size: 0.85rem; color: var(--text-muted);">Referencia local estimada / QQ</span>
+                            <div class="price-badge" style="color: #b08968;">Lonya S/ 1,049.71</div>
+                            <div style="font-size: 0.9rem; color: #9c7553; font-weight: 700;">Cajamarca S/ 1,042.61</div>
                         </div>
                         <div>
-                            <span style="font-size: 0.85rem; color: var(--text-muted);">Tendencia Semanal</span>
-                            <div style="color: #2b7042; font-weight: bold;">▲ +3.2% (Alza)</div>
+                            <span style="font-size: 0.85rem; color: var(--text-muted);">Base de referencia</span>
+                            <div style="color: #2b7042; font-weight: bold;">Futuros ICE NY · Investing</div>
                         </div>
                     </div>
                     <canvas id="chartPrecios" height="115"></canvas>
@@ -532,14 +533,14 @@
         <!-- VISTA 5: MERCADO Y PRECIOS -->
         <div id="view-precios" class="section-view">
             <div class="card col-12">
-                <div class="card-header"><i data-lucide="line-chart"></i> Cotizaciones Regionales Actualizadas (2026)</div>
+                <div class="card-header"><i data-lucide="line-chart"></i> Referencias regionales estimadas por QQ</div>
                 <table>
                     <thead>
                         <tr><th>Zona / Cooperativa</th><th>Variedad</th><th>Precio x Quintal (QQ)</th><th>Tendencia</th></tr>
                     </thead>
                     <tbody>
-                        <tr><td>Lonya / Utcubamba (Amazonas)</td><td>Typica / Caturra Especial</td><td>S/ 740.00</td><td style="color:#2b7042; font-weight:bold;">▲ Alza (+3.1%)</td></tr>
-                        <tr><td>Jaén / San Ignacio (Cajamarca)</td><td>Catimor / Caturra Pergamino</td><td>S/ 735.00</td><td style="color:#2b7042; font-weight:bold;">▲ Alza (+2.5%)</td></tr>
+                        <tr><td>Lonya / Utcubamba (Amazonas)</td><td>Typica / Caturra Especial</td><td>S/ 1,049.71</td><td>Estimación proporcional a ICE NY</td></tr>
+                        <tr><td>Jaén / San Ignacio (Cajamarca)</td><td>Catimor / Caturra Pergamino</td><td>S/ 1,042.61</td><td>Estimación proporcional a ICE NY</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -2214,14 +2215,15 @@
         new Chart(ctx, {
             type: 'line',
             data: {
-                labels: ['May', 'Jun', 'Jul', 'Ago', 'Set', 'Oct (Actual)'],
+                labels: ['May', 'Jun', 'Jul', 'Ago', 'Set', 'Oct 2026 (ref.)'],
                 datasets: [
-                    { label: 'Bolsa NY (US$/QQ)', data: [185, 192, 205, 198, 210, 215.4], borderColor: '#1b4332', backgroundColor: 'rgba(27, 67, 50, 0.1)', fill: true, tension: 0.3 },
-                    { label: 'Ref. Local (Caj. & Lonya)', data: [640, 660, 700, 680, 720, 735], borderColor: '#b08968', borderDash: [5, 5], fill: false, tension: 0.3 }
+                    { label: 'Bolsa NY ICE (US$/QQ)', data: [185, 192, 205, 198, 210, 305.55], borderColor: '#1b4332', backgroundColor: 'rgba(27, 67, 50, 0.1)', fill: true, tension: 0.3 },
+                    { label: 'Referencia local estimada promedio (S/ por QQ)', data: [640, 660, 700, 680, 720, 1046.16], borderColor: '#b08968', borderDash: [5, 5], fill: false, tension: 0.3 }
                 ]
             },
             options: { responsive: true, plugins: { legend: { position: 'top' } } }
         });
+        document.getElementById('chartPrecios').insertAdjacentHTML('afterend', '<p class="form-note" style="margin-top:8px">Último ICE NY informado: US$ 305.55/QQ (Investing). Referencias locales escaladas proporcionalmente desde los valores previos de la app; no son ofertas verificadas. Confirma tipo de cambio, diferencial, calidad, humedad y condiciones del comprador.</p>');
 
         function simularDiagnosticoHoja() {
             document.getElementById('resultHoja').style.display = 'block';
