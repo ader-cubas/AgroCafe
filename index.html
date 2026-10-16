@@ -367,6 +367,64 @@
         .ndvi-zone-list ul { margin: 10px 0 0 18px; line-height: 1.7; }
         .form-note { color: var(--text-muted); font-size: 0.82rem; line-height: 1.45; }
 
+        .ndvi-parcel-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(275px, 1fr));
+            gap: 16px;
+            margin-top: 20px;
+        }
+
+        .ndvi-parcel-card {
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 18px;
+            background: #fff;
+        }
+
+        .ndvi-parcel-heading,
+        .ndvi-parcel-reading {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 12px;
+        }
+
+        .ndvi-parcel-heading h3 { color: var(--primary); font-size: 1.05rem; }
+        .ndvi-parcel-meta { color: var(--text-muted); font-size: 0.82rem; margin-top: 4px; }
+        .ndvi-state-badge { padding: 5px 8px; border-radius: 4px; font-size: 0.78rem; font-weight: 700; white-space: nowrap; }
+        .ndvi-state-healthy { color: #205b36; background: #e4f2e8; }
+        .ndvi-state-stress { color: #80570c; background: #fff2d3; }
+        .ndvi-state-alert { color: #8c302a; background: #f9e5e2; }
+        .ndvi-parcel-reading { align-items: baseline; margin-top: 18px; }
+        .ndvi-parcel-reading strong { color: var(--text-main); font-size: 1.75rem; }
+        .ndvi-parcel-reading span { color: var(--text-muted); font-size: 0.82rem; }
+        .ndvi-status-bar {
+            position: relative;
+            height: 12px;
+            margin: 10px 0 5px;
+            border-radius: 6px;
+            background: linear-gradient(90deg, #b64e43 0%, #b64e43 40%, #d59a35 40%, #d59a35 65%, #398653 65%, #398653 100%);
+        }
+        .ndvi-status-marker {
+            position: absolute;
+            top: 50%;
+            width: 16px;
+            height: 16px;
+            border: 3px solid #fff;
+            border-radius: 50%;
+            background: #252a25;
+            box-shadow: 0 0 0 1px #252a25;
+            transform: translate(-50%, -50%);
+        }
+        .ndvi-status-scale { display: flex; justify-content: space-between; color: var(--text-muted); font-size: 0.72rem; }
+        .ndvi-coverage-bar { display: flex; height: 10px; overflow: hidden; border-radius: 5px; margin: 16px 0 8px; background: #eee; }
+        .ndvi-diagnosis { border-left: 4px solid var(--primary-light); padding-left: 12px; margin-top: 14px; }
+        .ndvi-diagnosis strong { display: block; color: var(--primary); margin-bottom: 5px; }
+        .ndvi-diagnosis[data-state="stress"] { border-color: #d59a35; }
+        .ndvi-diagnosis[data-state="alert"] { border-color: #b64e43; }
+        .ndvi-diagnosis ul { margin: 7px 0 0 18px; font-size: 0.87rem; line-height: 1.5; }
+        .ndvi-estimate-note { color: var(--text-muted); font-size: 0.78rem; margin-top: 12px; line-height: 1.4; }
+
         .nutrient-results {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
@@ -619,11 +677,16 @@
                             </div>
                         </div>
                         <div class="ndvi-zone-list">
-                            <strong><i data-lucide="map"></i> Zonas de riesgo de la parcela</strong>
-                            <ul id="listaZonasNDVI"><li>Guarda una lectura para visualizar sectores.</li></ul>
-                            <p id="fechaNDVI" class="form-note" style="margin-top: 12px;"></p>
+                            <strong><i data-lucide="activity"></i> Interpretación de la escala</strong>
+                            <ul>
+                                <li><strong style="color: #8c302a;">0.00–0.39 · Alerta:</strong> inspeccionar causas de estrés.</li>
+                                <li><strong style="color: #80570c;">0.40–0.64 · Estrés:</strong> revisar humedad y follaje.</li>
+                                <li><strong style="color: #205b36;">0.65–1.00 · Sano:</strong> mantener monitoreo regular.</li>
+                            </ul>
+                            <p class="form-note" style="margin-top: 12px;">Rangos orientativos: deben calibrarse según fecha, sensor, sombra y etapa del cafeto. Un NDVI bajo no identifica por sí solo una deficiencia o enfermedad.</p>
                         </div>
                     </div>
+                    <div id="ndviParcelCards" class="ndvi-parcel-grid" aria-live="polite"></div>
                 </div>
             </div>
         </div>
@@ -1015,6 +1078,13 @@
 
         document.getElementById('selectParcelaNDVI').addEventListener('change', renderizarLecturaNDVI);
         document.getElementById('formNDVI').addEventListener('submit', guardarLecturaNDVI);
+        document.getElementById('ndviParcelCards').addEventListener('click', event => {
+            const boton = event.target.closest('[data-editar-ndvi]');
+            if (!boton) return;
+            document.getElementById('selectParcelaNDVI').value = boton.dataset.editarNdvi;
+            renderizarLecturaNDVI();
+            document.getElementById('formNDVI').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        });
         document.querySelectorAll('.nutrient-select').forEach(campo => {
             campo.addEventListener('change', renderizarDiagnosticoNutricional);
         });
@@ -1271,36 +1341,149 @@
             document.getElementById('mensajeNDVI').textContent = lectura
                 ? 'Lectura guardada en este dispositivo.'
                 : 'Sin lectura guardada para esta parcela.';
-            document.getElementById('valorNDVI').textContent = lectura ? Number(lectura.ndvi).toFixed(2) : '—';
-            document.getElementById('valorAreaSana').textContent = lectura ? lectura.sana + '%' : '—';
-            document.getElementById('valorEstresNDVI').textContent = lectura ? lectura.estres + '%' : '—';
-            document.getElementById('valorRiesgoNDVI').textContent = lectura ? lectura.riesgo + '%' : '—';
+            renderizarTarjetasNDVI();
+        }
 
-            const estado = !lectura ? 'Sin lectura' : Number(lectura.ndvi) < 0.4
-                ? 'Vigor bajo · priorizar inspección'
-                : Number(lectura.ndvi) < 0.6 ? 'Vigor moderado · revisar sectores' : 'Vigor adecuado';
-            document.getElementById('estadoNDVI').textContent = estado;
-            document.getElementById('barraSana').style.width = lectura ? lectura.sana + '%' : '0%';
-            document.getElementById('barraEstres').style.width = lectura ? lectura.estres + '%' : '0%';
-            document.getElementById('barraRiesgo').style.width = lectura ? lectura.riesgo + '%' : '0%';
-
-            const listaZonas = document.getElementById('listaZonasNDVI');
-            listaZonas.replaceChildren();
-            const zonas = lectura ? lectura.zonas.split(',').map(zona => zona.trim()).filter(Boolean) : [];
-            if (!zonas.length) {
-                const item = document.createElement('li');
-                item.textContent = lectura ? 'No se reportaron sectores de riesgo.' : 'Guarda una lectura para visualizar sectores.';
-                listaZonas.appendChild(item);
-            } else {
-                zonas.forEach(zona => {
-                    const item = document.createElement('li');
-                    item.textContent = zona;
-                    listaZonas.appendChild(item);
-                });
+        function obtenerLecturaNDVI(parcela) {
+            const lectura = lecturasNDVI[parcela.id];
+            if (lectura && Number.isFinite(Number(lectura.ndvi))) {
+                return {
+                    ndvi: Number(lectura.ndvi),
+                    sana: Number(lectura.sana) || 0,
+                    estres: Number(lectura.estres) || 0,
+                    riesgo: Number(lectura.riesgo) || 0,
+                    zonas: typeof lectura.zonas === 'string' ? lectura.zonas : '',
+                    fecha: lectura.fecha || '',
+                    estimado: false
+                };
             }
-            document.getElementById('fechaNDVI').textContent = lectura && lectura.fecha
-                ? 'Actualizado: ' + lectura.fecha
-                : '';
+
+            return { ndvi: 0.68, sana: 68, estres: 22, riesgo: 10, zonas: '', fecha: '', estimado: true };
+        }
+
+        function diagnosticarNDVI(ndvi) {
+            if (ndvi < 0.4) {
+                return {
+                    estado: 'alert', etiqueta: 'Alerta · vigor bajo',
+                    acciones: [
+                        'Inspeccionar el lote pronto y verificar humedad, drenaje y raíces.',
+                        'Revisar el envés de las hojas y buscar lesiones compatibles con roya; confirmar antes de aplicar un control.',
+                        'Aplicar nitrógeno solo si el análisis foliar o de suelo confirma deficiencia.'
+                    ]
+                };
+            }
+            if (ndvi < 0.65) {
+                return {
+                    estado: 'stress', etiqueta: 'Estrés · revisar el lote',
+                    acciones: [
+                        'Comprobar humedad del suelo y drenaje en los sectores señalados.',
+                        'Inspeccionar hojas para detectar roya u otras causas de pérdida de vigor.',
+                        'Si hay clorosis, confirmar el estado de nitrógeno con análisis antes de fertilizar y repetir la lectura en 10–14 días.'
+                    ]
+                };
+            }
+            return {
+                estado: 'healthy', etiqueta: 'Sano · vigor adecuado',
+                acciones: [
+                    'Mantener el manejo de humedad y nutrición según análisis y etapa del cultivo.',
+                    'Continuar el monitoreo de roya y comparar la próxima lectura; no aumentar nitrógeno solo por el NDVI.'
+                ]
+            };
+        }
+
+        function renderizarTarjetasNDVI() {
+            const contenedor = document.getElementById('ndviParcelCards');
+            contenedor.replaceChildren();
+
+            if (!registros.parcelas.length) {
+                const vacio = document.createElement('p');
+                vacio.className = 'form-note';
+                vacio.textContent = 'Registra una parcela para ver su monitoreo NDVI.';
+                contenedor.appendChild(vacio);
+                return;
+            }
+
+            registros.parcelas.forEach(parcela => {
+                const lectura = obtenerLecturaNDVI(parcela);
+                const diagnostico = diagnosticarNDVI(lectura.ndvi);
+                const tarjeta = document.createElement('article');
+                tarjeta.className = 'ndvi-parcel-card';
+
+                const encabezado = document.createElement('div');
+                encabezado.className = 'ndvi-parcel-heading';
+                const identificacion = document.createElement('div');
+                const nombre = document.createElement('h3');
+                nombre.textContent = parcela.nombre;
+                const meta = document.createElement('p');
+                meta.className = 'ndvi-parcel-meta';
+                meta.textContent = [parcela.ubicacion, parcela.area].filter(Boolean).join(' · ');
+                identificacion.append(nombre, meta);
+                const estado = document.createElement('span');
+                estado.className = 'ndvi-state-badge ndvi-state-' + diagnostico.estado;
+                estado.textContent = diagnostico.etiqueta;
+                encabezado.append(identificacion, estado);
+
+                const lecturaResumen = document.createElement('div');
+                lecturaResumen.className = 'ndvi-parcel-reading';
+                const valor = document.createElement('strong');
+                valor.textContent = lectura.ndvi.toFixed(2);
+                const tituloValor = document.createElement('span');
+                tituloValor.textContent = lectura.estimado ? 'NDVI estimado' : 'NDVI registrado';
+                lecturaResumen.append(valor, tituloValor);
+
+                const escala = document.createElement('div');
+                escala.className = 'ndvi-status-bar';
+                escala.setAttribute('role', 'img');
+                escala.setAttribute('aria-label', 'Escala NDVI: rojo alerta, amarillo estrés, verde sano');
+                const marcador = document.createElement('span');
+                marcador.className = 'ndvi-status-marker';
+                marcador.style.left = (Math.max(0, Math.min(1, lectura.ndvi)) * 100) + '%';
+                escala.appendChild(marcador);
+                const escalaLabels = document.createElement('div');
+                escalaLabels.className = 'ndvi-status-scale';
+                escalaLabels.innerHTML = '<span>Alerta 0</span><span>Estrés 0.40</span><span>Sano 0.65–1</span>';
+
+                const cobertura = document.createElement('div');
+                cobertura.className = 'ndvi-coverage-bar';
+                [[lectura.sana, 'ndvi-healthy'], [lectura.estres, 'ndvi-stress'], [lectura.riesgo, 'ndvi-risk']].forEach(([porcentaje, clase]) => {
+                    const segmento = document.createElement('span');
+                    segmento.className = 'ndvi-segment ' + clase;
+                    segmento.style.width = Math.max(0, Math.min(100, porcentaje)) + '%';
+                    cobertura.appendChild(segmento);
+                });
+                const coberturaTexto = document.createElement('p');
+                coberturaTexto.className = 'form-note';
+                coberturaTexto.textContent = 'Área sana ' + lectura.sana + '% · Estrés ' + lectura.estres + '% · Riesgo ' + lectura.riesgo + '%';
+
+                const diagnosticoBox = document.createElement('div');
+                diagnosticoBox.className = 'ndvi-diagnosis';
+                diagnosticoBox.dataset.state = diagnostico.estado;
+                const tituloDiagnostico = document.createElement('strong');
+                tituloDiagnostico.textContent = 'Diagnóstico automático';
+                const acciones = document.createElement('ul');
+                diagnostico.acciones.forEach(accion => {
+                    const item = document.createElement('li');
+                    item.textContent = accion;
+                    acciones.appendChild(item);
+                });
+                diagnosticoBox.append(tituloDiagnostico, acciones);
+
+                const nota = document.createElement('p');
+                nota.className = 'ndvi-estimate-note';
+                nota.textContent = lectura.estimado
+                    ? 'Estimación provisional de demostración; no procede de sensor. Actualízala con una lectura de tu plataforma satelital antes de tomar decisiones.'
+                    : (lectura.fecha ? 'Lectura ingresada: ' + lectura.fecha : 'Lectura ingresada manualmente.');
+
+                const editar = document.createElement('button');
+                editar.type = 'button';
+                editar.className = 'btn';
+                editar.style.marginTop = '12px';
+                editar.dataset.editarNdvi = parcela.id;
+                editar.textContent = lectura.estimado ? 'Registrar lectura' : 'Editar lectura';
+
+                tarjeta.append(encabezado, lecturaResumen, escala, escalaLabels, cobertura, coberturaTexto, diagnosticoBox, nota, editar);
+                contenedor.appendChild(tarjeta);
+            });
         }
 
         function guardarLecturaNDVI(event) {
