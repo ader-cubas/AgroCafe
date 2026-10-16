@@ -776,7 +776,24 @@
                 fila.appendChild(crearCeldaAcciones('parcelas', parcela.id));
                 tablaParcelas.appendChild(fila);
             });
+            renderizarLoteActivo();
             actualizarResumenDashboard();
+        }
+
+        function renderizarLoteActivo() {
+            const lote = registros.parcelas[0];
+            if (!lote) {
+                document.getElementById('lblNombreLote').textContent = 'Sin parcelas';
+                document.getElementById('lblUbicacionLote').textContent = '—';
+                document.getElementById('lblAreaLote').textContent = '—';
+                document.getElementById('lblVariedadLote').textContent = '—';
+                return;
+            }
+
+            document.getElementById('lblNombreLote').textContent = lote.nombre;
+            document.getElementById('lblUbicacionLote').textContent = lote.ubicacion;
+            document.getElementById('lblAreaLote').textContent = lote.area;
+            document.getElementById('lblVariedadLote').textContent = lote.variedad;
         }
 
         renderizarRegistros();
@@ -931,15 +948,37 @@
         }
 
         function editarLote() {
-            const nuevoNombre = prompt("Nombre del lote:", document.getElementById('lblNombreLote').innerText);
-            const nuevaUbicacion = prompt("Ubicación:", document.getElementById('lblUbicacionLote').innerText);
-            const nuevaArea = prompt("Área cultivada:", document.getElementById('lblAreaLote').innerText);
-            const nuevaVariedad = prompt("Variedad:", document.getElementById('lblVariedadLote').innerText);
+            const loteActivo = registros.parcelas[0];
+            if (!loteActivo) {
+                alert('Agrega una parcela antes de editar el lote activo.');
+                return;
+            }
 
-            if(nuevoNombre) document.getElementById('lblNombreLote').innerText = nuevoNombre;
-            if(nuevaUbicacion) document.getElementById('lblUbicacionLote').innerText = nuevaUbicacion;
-            if(nuevaArea) document.getElementById('lblAreaLote').innerText = nuevaArea;
-            if(nuevaVariedad) document.getElementById('lblVariedadLote').innerText = nuevaVariedad;
+            const nuevoNombre = prompt('Nombre del lote:', loteActivo.nombre);
+            if (nuevoNombre === null) return;
+            const nuevaUbicacion = prompt('Ubicación:', loteActivo.ubicacion);
+            if (nuevaUbicacion === null) return;
+            const nuevaArea = prompt('Área cultivada:', loteActivo.area);
+            if (nuevaArea === null) return;
+            const nuevaVariedad = prompt('Variedad:', loteActivo.variedad);
+            if (nuevaVariedad === null) return;
+
+            const loteActualizado = {
+                ...loteActivo,
+                nombre: nuevoNombre.trim(),
+                ubicacion: nuevaUbicacion.trim(),
+                area: nuevaArea.trim(),
+                variedad: nuevaVariedad.trim()
+            };
+            if (Object.values(loteActualizado).some(valor => typeof valor === 'string' && !valor.trim())) {
+                alert('Completa todos los datos del lote.');
+                return;
+            }
+
+            const parcelasActualizadas = [loteActualizado, ...registros.parcelas.slice(1)];
+            if (!guardarRegistros('parcelas', parcelasActualizadas)) return;
+            registros.parcelas = parcelasActualizadas;
+            renderizarRegistros();
             alert("¡Lote actualizado con éxito!");
         }
 
