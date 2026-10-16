@@ -1,0 +1,1417 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AgroCafé Pro - Sistema Inteligente de Gestión Cafetalera</title>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        :root {
+            --primary: #1b4332;
+            --primary-light: #2d6a4f;
+            --accent: #b08968;
+            --accent-hover: #9c7553;
+            --bg-body: #f4f1ea;
+            --card-bg: #ffffff;
+            --text-main: #2b2b2b;
+            --text-muted: #6c757d;
+            --border-color: #e2dcd0;
+            --shadow: 0 4px 20px rgba(0,0,0,0.06);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-body);
+            color: var(--text-main);
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* Sidebar Profesional */
+        aside {
+            width: 280px;
+            background: linear-gradient(180deg, var(--primary) 0%, #112920 100%);
+            color: white;
+            padding: 25px 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 25px;
+            box-shadow: 4px 0 15px rgba(0,0,0,0.15);
+            z-index: 10;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: #e9f5ec;
+            border-bottom: 1px solid rgba(255,255,255,0.15);
+            padding-bottom: 15px;
+        }
+
+        .menu {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .menu-item {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 12px 16px;
+            border-radius: 10px;
+            color: #d1e7dd;
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: all 0.25s ease;
+        }
+
+        .menu-item:hover, .menu-item.active {
+            background-color: var(--primary-light);
+            color: white;
+            transform: translateX(4px);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+        }
+
+        /* Contenido Principal */
+        main {
+            flex: 1;
+            padding: 30px;
+            overflow-y: auto;
+            max-width: 1450px;
+            margin: 0 auto;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        header h1 {
+            font-size: 1.8rem;
+            color: var(--primary);
+        }
+
+        .user-profile {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: white;
+            padding: 8px 18px;
+            border-radius: 30px;
+            box-shadow: var(--shadow);
+            font-weight: 600;
+            border: 1px solid var(--border-color);
+        }
+
+        .section-view {
+            display: none;
+            animation: fadeIn 0.3s ease-in-out;
+        }
+
+        .section-view.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(6px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .grid-layout {
+            display: grid;
+            grid-template-columns: repeat(12, 1fr);
+            gap: 20px;
+        }
+
+        .dashboard-totals { margin-bottom: 20px; }
+        .dashboard-total-value { font-size: 1.45rem; font-weight: 700; color: var(--primary); }
+
+        .card {
+            background-color: var(--card-bg);
+            border-radius: 16px;
+            padding: 24px;
+            border: 1px solid var(--border-color);
+            box-shadow: var(--shadow);
+        }
+
+        .col-12 { grid-column: span 12; }
+        .col-8  { grid-column: span 8; }
+        .col-4  { grid-column: span 4; }
+        .col-6  { grid-column: span 6; }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 18px;
+            font-size: 1.15rem;
+            font-weight: 700;
+            color: var(--primary);
+            border-bottom: 2px solid var(--bg-body);
+            padding-bottom: 12px;
+        }
+
+        .price-summary {
+            display: flex;
+            justify-content: space-between;
+            background: #faf8f5;
+            padding: 16px;
+            border-radius: 12px;
+            margin-bottom: 18px;
+            border: 1px solid var(--border-color);
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .price-badge {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: #2b7042;
+        }
+
+        /* Formularios y Botones */
+        .form-group {
+            margin-bottom: 12px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            font-size: 0.85rem;
+            color: var(--primary);
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 11px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 0.95rem;
+            background-color: #faf8f5;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: var(--primary-light);
+            background-color: #fff;
+        }
+
+        .btn {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 11px 20px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: background 0.2s;
+        }
+
+        .btn:hover { background-color: var(--primary-light); }
+        .btn-accent { background-color: var(--accent); }
+        .btn-accent:hover { background-color: var(--accent-hover); }
+
+        /* Chat / IA */
+        .chat-container {
+            display: flex;
+            flex-direction: column;
+            height: 450px;
+        }
+
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            background: #faf8f5;
+            padding: 16px;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        .message {
+            padding: 12px 16px;
+            border-radius: 12px;
+            max-width: 82%;
+            font-size: 0.95rem;
+            line-height: 1.4;
+        }
+
+        .message.bot {
+            background: #eef7f2;
+            color: var(--primary);
+            align-self: flex-start;
+            border-left: 4px solid var(--primary-light);
+        }
+
+        .message.user {
+            background: var(--primary);
+            color: white;
+            align-self: flex-end;
+        }
+
+        .upload-zone {
+            border: 2px dashed #b7b0a1;
+            border-radius: 12px;
+            padding: 25px;
+            text-align: center;
+            background-color: #faf8f5;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .upload-zone:hover { border-color: var(--primary-light); background-color: #f2efe9; }
+
+        .result-box {
+            margin-top: 15px;
+            padding: 16px;
+            border-radius: 10px;
+            background-color: #eef7f2;
+            border-left: 5px solid var(--primary-light);
+            display: none;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+
+        th, td {
+            padding: 12px 14px;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+            font-size: 0.95rem;
+        }
+
+        th { background-color: #faf8f5; color: var(--primary); font-weight: 700; }
+
+        .table-scroll { width: 100%; overflow-x: auto; }
+        .records-table { min-width: 680px; }
+        .action-cell { white-space: nowrap; }
+        .btn-delete { background-color: #a83232; padding: 7px 11px; font-size: 0.85rem; }
+        .btn-delete:hover { background-color: #842626; }
+
+        @media (max-width: 900px) {
+            body { flex-direction: column; }
+            aside { width: 100%; padding: 15px; gap: 15px; }
+            .menu { flex-direction: row; overflow-x: auto; padding-bottom: 5px; }
+            .menu-item { padding: 10px 12px; font-size: 0.85rem; white-space: nowrap; }
+            main { padding: 15px; }
+            .col-8, .col-4, .col-6 { grid-column: span 12; }
+            .form-grid-mobile { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+            .form-grid-mobile .form-group:first-child,
+            .form-grid-mobile .form-group:nth-child(2),
+            .form-grid-mobile button { grid-column: 1 / -1; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Menú Lateral -->
+    <aside>
+        <div class="brand">
+            <i data-lucide="sprout"></i> AgroCafé Pro
+        </div>
+        <ul class="menu">
+            <li><a class="menu-item active" id="menu-dashboard" onclick="switchView('dashboard')"><i data-lucide="layout-dashboard"></i> Panel Principal</a></li>
+            <li><a class="menu-item" id="menu-asistente" onclick="switchView('asistente')"><i data-lucide="bot"></i> Asistente IA (Chat)</a></li>
+            <li><a class="menu-item" id="menu-precision" onclick="switchView('precision')"><i data-lucide="satellite"></i> Agricultura de Precisión</a></li>
+            <li><a class="menu-item" id="menu-diagnostico" onclick="switchView('diagnostico')"><i data-lucide="scan-eye"></i> IA & Suelos</a></li>
+            <li><a class="menu-item" id="menu-precios" onclick="switchView('precios')"><i data-lucide="line-chart"></i> Mercado & Precios</a></li>
+            <li><a class="menu-item" id="menu-gastos" onclick="switchView('gastos')"><i data-lucide="receipt"></i> Gastos de Cultivo</a></li>
+            <li><a class="menu-item" id="menu-ventas" onclick="switchView('ventas')"><i data-lucide="dollar-sign"></i> Venta de Café</a></li>
+            <li><a class="menu-item" id="menu-parcelas" onclick="switchView('parcelas')"><i data-lucide="map-pin"></i> Parcelas & Lotes</a></li>
+        </ul>
+    </aside>
+
+    <!-- Área de Trabajo -->
+    <main>
+        <header>
+            <div>
+                <h1>Gestión y Diagnóstico Cafetalero Avanzado</h1>
+                <p style="color: var(--text-muted); font-size: 0.95rem;">Campaña 2026 - Cajamarca & Amazonas (Lonya, Bagua, Jaén, San Ignacio)</p>
+            </div>
+            <div class="user-profile">
+                <i data-lucide="user" style="color: var(--primary);"></i> Perfil corporativo
+            </div>
+        </header>
+
+        <!-- VISTA 1: PANEL PRINCIPAL -->
+        <div id="view-dashboard" class="section-view active">
+            <div class="grid-layout dashboard-totals" aria-label="Resumen financiero">
+                <div class="card col-4">
+                    <div class="card-header"><i data-lucide="receipt"></i> Total Gastos de Cultivo</div>
+                    <strong class="dashboard-total-value" id="dashboardTotalGastos">S/ 0.00</strong>
+                </div>
+                <div class="card col-4">
+                    <div class="card-header"><i data-lucide="badge-dollar-sign"></i> Total Ventas / Ingresos</div>
+                    <strong class="dashboard-total-value" id="dashboardTotalIngresos">S/ 0.00</strong>
+                </div>
+                <div class="card col-4">
+                    <div class="card-header"><i data-lucide="scale"></i> Ganancia / Utilidad Neta</div>
+                    <strong class="dashboard-total-value" id="dashboardUtilidadNeta">S/ 0.00</strong>
+                </div>
+            </div>
+            <div class="grid-layout">
+                <div class="card col-8">
+                    <div class="card-header"><i data-lucide="trending-up"></i> Inteligencia de Mercado - Precios Bolsa NY & Local</div>
+                    <div class="price-summary">
+                        <div>
+                            <span style="font-size: 0.85rem; color: var(--text-muted);">Bolsa Nueva York (ICE NY)</span>
+                            <div class="price-badge">US$ 215.40 / QQ</div>
+                        </div>
+                        <div>
+                            <span style="font-size: 0.85rem; color: var(--text-muted);">Referencia Local (Lonya / Caj.)</span>
+                            <div class="price-badge" style="color: #b08968;">S/ 735.00 / QQ</div>
+                        </div>
+                        <div>
+                            <span style="font-size: 0.85rem; color: var(--text-muted);">Tendencia Semanal</span>
+                            <div style="color: #2b7042; font-weight: bold;">▲ +3.2% (Alza)</div>
+                        </div>
+                    </div>
+                    <canvas id="chartPrecios" height="115"></canvas>
+                </div>
+
+                <div class="card col-4">
+                    <div class="card-header" style="justify-content: space-between;">
+                        <span><i data-lucide="map"></i> Lote Activo</span>
+                        <button class="btn" style="padding: 5px 10px; font-size: 0.8rem;" onclick="editarLote()"><i data-lucide="edit-3"></i> Editar</button>
+                    </div>
+                    <div style="display: flex; flex-direction: column; gap: 14px;">
+                        <div style="display: flex; justify-content: space-between;"><span>Nombre:</span><strong id="lblNombreLote">San Isidro</strong></div>
+                        <div style="display: flex; justify-content: space-between;"><span>Ubicación:</span><strong id="lblUbicacionLote">Lonya, Amazonas</strong></div>
+                        <div style="display: flex; justify-content: space-between;"><span>Área Cultivada:</span><strong id="lblAreaLote">2.5 Hectáreas</strong></div>
+                        <div style="display: flex; justify-content: space-between;"><span>Variedad:</span><strong id="lblVariedadLote">Caturra / Catimor</strong></div>
+                        <div style="display: flex; justify-content: space-between;"><span>Etapa:</span><strong id="lblEtapaLote" style="color: #b08968;">Cosecha de Grano</strong></div>
+                        <hr style="border: none; border-top: 1px solid var(--border-color);">
+                        <div style="display: flex; justify-content: space-between; font-size: 1.1rem;">
+                            <span>Costo Est. Quintal:</span><strong style="color: var(--primary);">S/ 350.00 / QQ</strong>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- VISTA 2: ASISTENTE IA (CHAT) -->
+        <div id="view-asistente" class="section-view">
+            <div class="card col-12">
+                <div class="card-header"><i data-lucide="bot"></i> Prompt en Diálogo - Asistente Agrónomo IA en Vivo</div>
+                <p style="margin-bottom: 15px; color: var(--text-muted);">Consulta sobre fertilización, control fitosanitario o análisis de rentabilidad para tus parcelas en Lonya y Cajamarca.</p>
+                <div class="chat-container">
+                    <div class="chat-messages" id="chatBox">
+                        <div class="message bot">
+                            ¡Hola! Estoy conectado con la base de datos de AgroCafé Pro. Pregúntame lo que necesites sobre costos, abonamiento NPK o manejo de cosecha.
+                        </div>
+                    </div>
+                    <div style="display: flex; gap: 10px;">
+                        <input type="text" id="chatInput" class="form-control" placeholder="Escribe tu consulta agronómica..." onkeypress="if(event.key === 'Enter') enviarMensajeChat()">
+                        <button class="btn" onclick="enviarMensajeChat()"><i data-lucide="send"></i> Enviar</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- VISTA 3: AGRICULTURA DE PRECISIÓN (NUEVO) -->
+        <div id="view-precision" class="section-view">
+            <div class="grid-layout">
+                <div class="card col-6">
+                    <div class="card-header"><i data-lucide="cloud-rain"></i> Monitoreo Climático y Humedad</div>
+                    <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 15px;">Datos en tiempo real para Lonya y San Ignacio.</p>
+                    <div style="background: #faf8f5; padding: 15px; border-radius: 10px; border: 1px solid var(--border-color); display: flex; flex-direction: column; gap: 10px;">
+                        <div style="display: flex; justify-content: space-between;"><span>Temperatura Promedio:</span><strong>22.4 °C</strong></div>
+                        <div style="display: flex; justify-content: space-between;"><span>Humedad Relativa del Suelo:</span><strong style="color: #2b7042;">82% (Óptima)</strong></div>
+                        <div style="display: flex; justify-content: space-between;"><span>Precipitación Estimada:</span><strong>12 mm (Próx. 48 hrs)</strong></div>
+                        <div style="display: flex; justify-content: space-between;"><span>Recomendación de Riego:</span><strong style="color: var(--accent);">Suspender riego (Suelo con humedad ideal)</strong></div>
+                    </div>
+                </div>
+
+                <div class="card col-6">
+                    <div class="card-header"><i data-lucide="activity"></i> Análisis NDVI e informe técnico</div>
+                    <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 15px;">Ingresa las métricas NDVI del polígono para generar recomendaciones agronómicas por nivel de vigor.</p>
+                    <form id="formInformeNDVI">
+                        <div class="form-group">
+                            <label for="parcelaInformeNDVI">Parcela</label>
+                            <select id="parcelaInformeNDVI" class="form-control"></select>
+                        </div>
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px;">
+                            <div class="form-group">
+                                <label for="valorNDVIMedio">NDVI medio (-1 a 1)</label>
+                                <input id="valorNDVIMedio" class="form-control" type="number" min="-1" max="1" step="0.01" required placeholder="Ej. 0.62">
+                            </div>
+                            <div class="form-group">
+                                <label for="porcentajeNDVIBajo">Área con NDVI bajo (&lt; 0.4) (%)</label>
+                                <input id="porcentajeNDVIBajo" class="form-control" type="number" min="0" max="100" step="1" required placeholder="Ej. 18">
+                            </div>
+                        </div>
+                        <p style="color: var(--text-muted); font-size: 0.82rem; margin-bottom: 12px;">No hay conexión a un proveedor satelital: usa métricas de una imagen o análisis NDVI externo. Las recomendaciones requieren verificación en campo.</p>
+                        <button class="btn" type="submit"><i data-lucide="file-text"></i> Generar informe técnico</button>
+                    </form>
+                    <article id="informeTecnicoNDVI" style="display: none; margin-top: 18px; padding: 16px; background: #f4f8f5; border: 1px solid var(--border-color); border-left: 4px solid var(--primary-light); border-radius: 8px;" aria-live="polite"></article>
+                </div>
+                <div class="card col-12">
+                    <div class="card-header"><i data-lucide="map"></i> Coordenadas UTM de parcelas</div>
+                    <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 15px;">Agrega tres o más vértices en la misma zona UTM para calcular el perímetro y área.</p>
+                    <div class="editorCoordenadasUTM"></div>
+                    <div id="resumenNDVIUTM" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 12px;"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- VISTA 4: IA & SUELOS -->
+        <div id="view-diagnostico" class="section-view">
+            <div class="grid-layout">
+                <div class="card col-6">
+                    <div class="card-header"><i data-lucide="camera"></i> Diagnóstico IA de Hojas y Frutos</div>
+                    <div class="upload-zone" onclick="document.getElementById('fileHoja').click()">
+                        <i data-lucide="upload-cloud" style="width: 45px; height: 45px; color: var(--primary);"></i>
+                        <p style="margin-top: 10px; font-weight: 600;">Haz clic o sube una foto de la planta</p>
+                        <input type="file" id="fileHoja" accept="image/*" style="display: none;" onchange="simularDiagnosticoHoja()">
+                    </div>
+                    <div id="resultHoja" class="result-box">
+                        <strong>🔍 Diagnóstico de Inteligencia Artificial:</strong>
+                        <p id="textoResultHoja" style="margin-top: 6px; font-size: 0.95rem;"></p>
+                    </div>
+                </div>
+
+                <div class="card col-6">
+                    <div class="card-header"><i data-lucide="file-text"></i> Análisis de Suelo (PDF o Foto)</div>
+                    <div class="upload-zone" style="background-color: #fdfaf6;" onclick="document.getElementById('fileSuelo').click()">
+                        <i data-lucide="file-check-2" style="width: 45px; height: 45px; color: var(--accent);"></i>
+                        <p style="margin-top: 10px; font-weight: 600;">Subir PDF o foto del laboratorio de suelo</p>
+                        <input type="file" id="fileSuelo" accept="image/*,application/pdf" style="display: none;" onchange="simularDiagnosticoSuelo()">
+                    </div>
+                    <div id="resultSuelo" class="result-box" style="border-left-color: var(--accent); background-color: #faf5ef;">
+                        <strong>🌱 Plan de Abonamiento Sugerido:</strong>
+                        <p id="textoResultSuelo" style="margin-top: 6px; font-size: 0.95rem;"></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- VISTA 5: MERCADO Y PRECIOS -->
+        <div id="view-precios" class="section-view">
+            <div class="card col-12">
+                <div class="card-header"><i data-lucide="line-chart"></i> Cotizaciones Regionales Actualizadas (2026)</div>
+                <table>
+                    <thead>
+                        <tr><th>Zona / Cooperativa</th><th>Variedad</th><th>Precio x Quintal (QQ)</th><th>Tendencia</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr><td>Lonya / Utcubamba (Amazonas)</td><td>Typica / Caturra Especial</td><td>S/ 740.00</td><td style="color:#2b7042; font-weight:bold;">▲ Alza (+3.1%)</td></tr>
+                        <tr><td>Jaén / San Ignacio (Cajamarca)</td><td>Catimor / Caturra Pergamino</td><td>S/ 735.00</td><td style="color:#2b7042; font-weight:bold;">▲ Alza (+2.5%)</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- VISTA 6: GASTOS DE CULTIVO (SEPARADO Y DETALLADO) -->
+        <div id="view-gastos" class="section-view">
+            <div class="card col-12">
+                <div class="card-header"><i data-lucide="receipt"></i> Registro Detallado de Gastos e Insumos</div>
+                <div style="background: #faf8f5; padding: 18px; border-radius: 12px; margin-bottom: 20px; border: 1px solid var(--border-color);">
+                    <h3 style="margin-bottom: 12px; font-size: 1.05rem; color: var(--primary);">Registrar Nueva Labor o Gasto</h3>
+                    <div style="display: grid; grid-template-columns: 2fr 2fr 1fr 1.4fr 1fr auto; gap: 12px; align-items: end;" class="form-grid-mobile">
+                        <div class="form-group" style="margin:0;">
+                            <label>Descripción</label>
+                            <input type="text" id="inputLabor" class="form-control" placeholder="Ej. Jornales de deshierbe">
+                        </div>
+                        <div class="form-group" style="margin:0;">
+                            <label>Categoría Especializada</label>
+                            <select id="inputCat" class="form-control">
+                                <option>Deshierbe y Limpieza</option>
+                                <option>Abonamiento / Fertilización</option>
+                                <option>Control Fitosanitario (Roya/Broca)</option>
+                                <option>Mano de Obra Cosecha</option>
+                                <option>Despulpado y Lavado</option>
+                                <option>Secado (Marquesina)</option>
+                                <option>Flete y Transporte</option>
+                                <option>Otros Gastos</option>
+                            </select>
+                        </div>
+                        <div class="form-group" style="margin:0;">
+                            <label>Cantidad / Días</label>
+                            <input type="number" id="inputCant" class="form-control" placeholder="4" min="0.01" step="any">
+                        </div>
+                        <div class="form-group" style="margin:0;">
+                            <label>Precio Unitario (S/)</label>
+                            <input type="number" id="inputPrecioUnitario" class="form-control" placeholder="60.00" min="0.01" step="0.01">
+                        </div>
+                        <div class="form-group" style="margin:0;">
+                            <label>Costo Total (S/)</label>
+                            <input type="number" id="inputCosto" class="form-control" placeholder="240.00" readonly>
+                        </div>
+                        <button class="btn" onclick="registrarNuevoGasto()"><i data-lucide="plus-circle"></i> Agregar Gasto</button>
+                    </div>
+                </div>
+                <div class="table-scroll">
+                    <table class="records-table">
+                        <thead>
+                            <tr><th>Fecha</th><th>Descripción</th><th>Categoría</th><th>Cantidad / Días</th><th>Precio Unitario (S/)</th><th>Costo Total (S/)</th><th>Acciones</th></tr>
+                        </thead>
+                        <tbody id="tablaCostosDinamica"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- VISTA 7: VENTA DE CAFÉ (SEPARADO Y PROFESIONAL) -->
+        <div id="view-ventas" class="section-view">
+            <div class="card col-12">
+                <div class="card-header" style="color: #2b7042;"><i data-lucide="dollar-sign"></i> Registro de Ventas y Cosecha (Ingresos)</div>
+                <div style="background: #eef7f2; padding: 18px; border-radius: 12px; margin-bottom: 20px; border: 1px solid #c3e6cb;">
+                    <h3 style="margin-bottom: 12px; font-size: 1.05rem; color: #2b7042;">Registrar Venta de Café</h3>
+                    <div style="display: grid; grid-template-columns: 2fr 1.2fr 1.5fr 1fr auto; gap: 12px; align-items: end;" class="form-grid-mobile">
+                        <div class="form-group" style="margin:0;">
+                            <label>Comprador / Cooperativa</label>
+                            <input type="text" id="inputComprador" class="form-control" placeholder="Ej. Acopio Lonya Grande">
+                        </div>
+                        <div class="form-group" style="margin:0;">
+                            <label>Cantidad (Quintales / Kilos)</label>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                                <input type="number" id="inputCantidadVenta" class="form-control" placeholder="15" min="0.01" step="any">
+                                <select id="inputUnidadVenta" class="form-control" aria-label="Unidad de venta">
+                                    <option value="QQ">Quintales (QQ)</option>
+                                    <option value="kg">Kilos (kg)</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group" style="margin:0;">
+                            <label>Precio Unitario por Quintal/Kilo (S/)</label>
+                            <input type="number" id="inputPrecioUnitarioVenta" class="form-control" placeholder="740" min="0.01" step="0.01">
+                        </div>
+                        <div class="form-group" style="margin:0;">
+                            <label>Ingreso Total (S/)</label>
+                            <input type="number" id="inputIngresoTotal" class="form-control" readonly style="background:#fff;" placeholder="Calculado">
+                        </div>
+                        <button class="btn" style="background-color: #2b7042;" onclick="registrarNuevaVenta()"><i data-lucide="check-circle"></i> Registrar Venta</button>
+                    </div>
+                </div>
+                <div class="table-scroll">
+                    <table class="records-table">
+                        <thead>
+                            <tr><th>Fecha</th><th>Comprador / Destino</th><th>Cantidad (Quintales / Kilos)</th><th>Precio Unitario por Quintal/Kilo (S/)</th><th>Ingreso Total (S/)</th><th>Acciones</th></tr>
+                        </thead>
+                        <tbody id="tablaVentasDinamica"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- VISTA 8: PARCELAS & LOTES -->
+        <div id="view-parcelas" class="section-view">
+            <div class="card col-12">
+                <div class="card-header" style="justify-content: space-between;">
+                    <span><i data-lucide="map-pin"></i> Gestión de Parcelas y Lotes Cafetaleros</span>
+                    <button class="btn btn-accent" onclick="agregarParcela()"><i data-lucide="plus"></i> Nueva Parcela</button>
+                </div>
+                <div class="table-scroll">
+                    <table class="records-table">
+                        <thead>
+                            <tr><th>Parcela / Lote</th><th>Ubicación</th><th>Área</th><th>Variedad</th><th>Geometría UTM</th><th>Acciones</th></tr>
+                        </thead>
+                        <tbody id="tablaParcelasDinamica"></tbody>
+                    </table>
+                </div>
+                <section style="margin-top: 22px; padding: 18px; background: #faf8f5; border: 1px solid var(--border-color); border-radius: 10px;">
+                    <h3 style="margin-bottom: 8px; color: var(--primary);">Coordenadas UTM por parcela</h3>
+                    <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 14px;">Registra cada punto con su zona, Este y Norte. Usa la misma zona en todos los vértices.</p>
+                    <div class="editorCoordenadasUTM"></div>
+                </section>
+            </div>
+        </div>
+
+    </main>
+
+    <script>
+        lucide.createIcons();
+
+        const clavesAlmacenamiento = {
+            gastos: 'agrocafe_gastos_v1',
+            ventas: 'agrocafe_ventas_v1',
+            parcelas: 'agrocafe_parcelas_v1'
+        };
+
+        function cargarRegistros(tipo, registrosIniciales) {
+            try {
+                const guardados = localStorage.getItem(clavesAlmacenamiento[tipo]);
+                if (guardados === null) {
+                    localStorage.setItem(clavesAlmacenamiento[tipo], JSON.stringify(registrosIniciales));
+                    return registrosIniciales;
+                }
+                const registros = JSON.parse(guardados);
+                if (Array.isArray(registros)) return registros;
+            } catch (error) {
+                console.error('No se pudieron cargar los registros de ' + tipo, error);
+            }
+            return registrosIniciales;
+        }
+
+        function guardarRegistros(tipo, registros) {
+            try {
+                localStorage.setItem(clavesAlmacenamiento[tipo], JSON.stringify(registros));
+                return true;
+            } catch (error) {
+                console.error('No se pudieron guardar los registros de ' + tipo, error);
+                alert('No se pudo guardar el cambio en este dispositivo.');
+                return false;
+            }
+        }
+
+        function generarId() {
+            return window.crypto && typeof window.crypto.randomUUID === 'function'
+                ? window.crypto.randomUUID()
+                : Date.now().toString(36) + Math.random().toString(36).slice(2);
+        }
+
+        function migrarGastos(registrosGuardados) {
+            const registrosMigrados = registrosGuardados.map(gasto => {
+                const cantidadAnterior = gasto.cantidad;
+                const cantidadParseada = Number.parseFloat(cantidadAnterior);
+                const cantidad = Number.isFinite(cantidadParseada) && cantidadParseada > 0 ? cantidadParseada : 1;
+                const costo = Number(gasto.costo) || 0;
+                const precioGuardado = Number(gasto.precioUnitario);
+                const precioUnitario = Number.isFinite(precioGuardado) && gasto.precioUnitario !== null && gasto.precioUnitario !== ''
+                    ? precioGuardado
+                    : costo / cantidad;
+                const unidadAnterior = typeof cantidadAnterior === 'string'
+                    ? cantidadAnterior.replace(/^[\d.,\s]+/, '').trim()
+                    : '';
+
+                return {
+                    ...gasto,
+                    cantidad,
+                    unidad: gasto.unidad || unidadAnterior,
+                    precioUnitario,
+                    costo
+                };
+            });
+
+            if (JSON.stringify(registrosMigrados) !== JSON.stringify(registrosGuardados)) {
+                guardarRegistros('gastos', registrosMigrados);
+            }
+            return registrosMigrados;
+        }
+
+        const registros = {
+            gastos: migrarGastos(cargarRegistros('gastos', [
+                { id: 'gasto-inicial-1', fecha: '12/10/2026', descripcion: 'Deshierbe y limpieza manual', categoria: 'Deshierbe y Limpieza', cantidad: 4, unidad: 'Jornales', precioUnitario: 60, costo: 240 },
+                { id: 'gasto-inicial-2', fecha: '28/09/2026', descripcion: 'Abonamiento NPK + Guano de Isla', categoria: 'Abonamiento / Fertilización', cantidad: 5, unidad: 'Sacos', precioUnitario: 130, costo: 650 }
+            ])),
+            ventas: cargarRegistros('ventas', [
+                { id: 'venta-inicial-1', fecha: '10/10/2026', comprador: 'Acopio Lonya Grande', cantidad: 10, precio: 740 }
+            ]),
+            parcelas: cargarRegistros('parcelas', [
+                { id: 'parcela-inicial-1', nombre: 'Lote Principal: San Isidro', ubicacion: 'Lonya, Amazonas', area: '2.5 Hectáreas', variedad: 'Caturra / Catimor' }
+            ])
+        };
+        let idParcelaSeleccionadaUTM = '';
+
+        function agregarCelda(fila, valor) {
+            const celda = document.createElement('td');
+            celda.textContent = valor;
+            fila.appendChild(celda);
+        }
+
+        function crearCeldaAcciones(tipo, id) {
+            const celda = document.createElement('td');
+            celda.className = 'action-cell';
+            const boton = document.createElement('button');
+            boton.type = 'button';
+            boton.className = 'btn btn-delete';
+            boton.textContent = 'Eliminar';
+            boton.setAttribute('aria-label', 'Eliminar registro');
+            boton.addEventListener('click', () => eliminarRegistro(tipo, id));
+            celda.appendChild(boton);
+            return celda;
+        }
+
+        function eliminarRegistro(tipo, id) {
+            const actualizados = registros[tipo].filter(registro => registro.id !== id);
+            if (actualizados.length === registros[tipo].length) return;
+            if (!guardarRegistros(tipo, actualizados)) return;
+            registros[tipo] = actualizados;
+            renderizarRegistros();
+        }
+
+        function renderizarRegistros() {
+            const tablaGastos = document.getElementById('tablaCostosDinamica');
+            tablaGastos.replaceChildren();
+            registros.gastos.forEach(gasto => {
+                const fila = document.createElement('tr');
+                agregarCelda(fila, gasto.fecha);
+                agregarCelda(fila, gasto.descripcion);
+                agregarCelda(fila, gasto.categoria);
+                agregarCelda(fila, gasto.cantidad + (gasto.unidad ? ' ' + gasto.unidad : ''));
+                agregarCelda(fila, 'S/ ' + Number(gasto.precioUnitario).toFixed(2));
+                agregarCelda(fila, 'S/ ' + Number(gasto.costo).toFixed(2));
+                fila.appendChild(crearCeldaAcciones('gastos', gasto.id));
+                tablaGastos.appendChild(fila);
+            });
+
+            const tablaVentas = document.getElementById('tablaVentasDinamica');
+            tablaVentas.replaceChildren();
+            registros.ventas.forEach(venta => {
+                const fila = document.createElement('tr');
+                agregarCelda(fila, venta.fecha);
+                agregarCelda(fila, venta.comprador);
+                agregarCelda(fila, Number(venta.cantidad) + ' ' + (venta.unidad || 'QQ'));
+                agregarCelda(fila, 'S/ ' + Number(venta.precioUnitario ?? venta.precio).toFixed(2));
+                const ingreso = document.createElement('td');
+                ingreso.textContent = 'S/ ' + obtenerIngresoVenta(venta).toFixed(2);
+                ingreso.style.color = '#2b7042';
+                ingreso.style.fontWeight = 'bold';
+                fila.appendChild(ingreso);
+                fila.appendChild(crearCeldaAcciones('ventas', venta.id));
+                tablaVentas.appendChild(fila);
+            });
+
+            const tablaParcelas = document.getElementById('tablaParcelasDinamica');
+            tablaParcelas.replaceChildren();
+            registros.parcelas.forEach(parcela => {
+                const fila = document.createElement('tr');
+                agregarCelda(fila, parcela.nombre);
+                agregarCelda(fila, parcela.ubicacion);
+                agregarCelda(fila, parcela.area);
+                agregarCelda(fila, parcela.variedad);
+                const coordenadas = Array.isArray(parcela.coordenadasUTM) ? parcela.coordenadasUTM : [];
+                agregarCelda(fila, coordenadas.length >= 3
+                    ? coordenadas.length + ' vértices · perímetro'
+                    : coordenadas.length === 1 ? '1 punto de referencia' : coordenadas.length + ' puntos de referencia');
+                fila.appendChild(crearCeldaAcciones('parcelas', parcela.id));
+                tablaParcelas.appendChild(fila);
+            });
+            renderizarLoteActivo();
+            actualizarResumenDashboard();
+            renderizarEditoresCoordenadasUTM();
+            renderizarResumenNDVIUTM();
+            renderizarSelectorInformeNDVI();
+        }
+
+        function validarPuntoUTM(zonaIngresada, esteIngresado, norteIngresado, numeroVertice) {
+            const zona = zonaIngresada.trim().toUpperCase();
+            const este = Number(esteIngresado);
+            const norte = Number(norteIngresado);
+            const etiqueta = 'Vértice ' + numeroVertice + ': ';
+            if (!/^(?:[1-9]|[1-5]\d|60)[C-HJ-NP-X]$/.test(zona)) {
+                return { error: etiqueta + 'la zona debe tener formato como 17S.' };
+            }
+            if (!Number.isFinite(este) || este < 100000 || este > 900000
+                || !Number.isFinite(norte) || norte < 0 || norte > 10000000) {
+                return { error: etiqueta + 'las coordenadas Este/Norte están fuera de los rangos UTM esperados.' };
+            }
+            return { punto: { zona, este, norte } };
+        }
+
+        function renderizarEditoresCoordenadasUTM() {
+            document.querySelectorAll('.editorCoordenadasUTM').forEach(editor => {
+                if (!editor.querySelector('.formCoordenadasUTM')) {
+                    editor.innerHTML = '<form class="formCoordenadasUTM">' +
+                        '<div class="form-group"><label>Parcela</label><select class="form-control selectorParcelaUTM"></select></div>' +
+                        '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;align-items:end">' +
+                        '<div class="form-group"><label>Zona UTM</label><input class="form-control zonaUTM" type="text" maxlength="3" placeholder="17S" aria-label="Zona UTM"></div>' +
+                        '<div class="form-group"><label>Coordenada Este (m)</label><input class="form-control esteUTM" type="number" min="100000" max="900000" step="any" placeholder="740000" aria-label="Coordenada Este en metros"></div>' +
+                        '<div class="form-group"><label>Coordenada Norte (m)</label><input class="form-control norteUTM" type="number" min="0" max="10000000" step="any" placeholder="9320000" aria-label="Coordenada Norte en metros"></div>' +
+                        '<div class="form-group"><button class="btn btn-accent agregarVerticeUTM" type="button"><i data-lucide="plus"></i> Agregar Vértice</button></div></div>' +
+                        '<div class="table-scroll"><table class="records-table"><thead><tr><th>Vértice</th><th>Zona UTM</th><th>Este (m)</th><th>Norte (m)</th><th>Acción</th></tr></thead><tbody class="tablaVerticesUTM"></tbody></table></div>' +
+                        '<p class="estadoCoordenadasUTM" style="color:var(--text-muted);font-size:.85rem;margin:10px 0" role="status" aria-live="polite"></p>' +
+                        '<p class="resultadoPoligonoUTM" style="font-weight:600;color:var(--primary);margin-bottom:12px" aria-live="polite"></p>' +
+                        '<div style="display:flex;gap:10px;flex-wrap:wrap"><button class="btn calcularPoligonoUTM" type="button"><i data-lucide="pentagon"></i> Calcular polígono</button><button class="btn guardarCoordenadasUTM" type="submit"><i data-lucide="save"></i> Guardar coordenadas</button></div>' +
+                        '</form>';
+                    const form = editor.querySelector('.formCoordenadasUTM');
+                    form.addEventListener('submit', guardarCoordenadasUTM);
+                    form.addEventListener('click', manejarAccionEditorUTM);
+                    form.querySelector('.selectorParcelaUTM').addEventListener('change', event => {
+                        idParcelaSeleccionadaUTM = event.target.value;
+                        renderizarEditoresCoordenadasUTM();
+                    });
+                }
+
+                const selector = editor.querySelector('.selectorParcelaUTM');
+                selector.replaceChildren();
+                registros.parcelas.forEach(parcela => {
+                    const opcion = document.createElement('option');
+                    opcion.value = parcela.id;
+                    opcion.textContent = parcela.nombre;
+                    selector.appendChild(opcion);
+                });
+                const idSeleccionado = registros.parcelas.some(parcela => parcela.id === idParcelaSeleccionadaUTM)
+                    ? idParcelaSeleccionadaUTM
+                    : registros.parcelas[0]?.id || '';
+                idParcelaSeleccionadaUTM = idSeleccionado;
+                selector.value = idSeleccionado;
+                selector.disabled = !idSeleccionado;
+                const parcela = registros.parcelas.find(item => item.id === idSeleccionado);
+                const coordenadas = parcela && Array.isArray(parcela.coordenadasUTM) ? parcela.coordenadasUTM : [];
+                editor.querySelector('.zonaUTM').value = coordenadas[0]?.zona || '';
+                const cuerpo = editor.querySelector('.tablaVerticesUTM');
+                cuerpo.replaceChildren();
+                coordenadas.forEach((punto, indice) => {
+                    const fila = document.createElement('tr');
+                    agregarCelda(fila, indice + 1);
+                    agregarCelda(fila, punto.zona);
+                    agregarCelda(fila, Number(punto.este).toLocaleString('es-PE'));
+                    agregarCelda(fila, Number(punto.norte).toLocaleString('es-PE'));
+                    const accion = document.createElement('td');
+                    const boton = document.createElement('button');
+                    boton.type = 'button';
+                    boton.className = 'btn btn-delete';
+                    boton.dataset.eliminarVertice = indice;
+                    boton.textContent = 'Eliminar';
+                    boton.setAttribute('aria-label', 'Eliminar vértice ' + (indice + 1));
+                    accion.appendChild(boton);
+                    fila.appendChild(accion);
+                    cuerpo.appendChild(fila);
+                });
+                editor.querySelector('.estadoCoordenadasUTM').textContent = parcela
+                    ? coordenadas.length >= 3
+                        ? 'Perímetro en borrador con ' + coordenadas.length + ' vértices (' + coordenadas[0].zona + '). Guarda los cambios para conservarlos.'
+                        : coordenadas.length
+                            ? coordenadas.length + ' vértice(s); agrega al menos ' + (3 - coordenadas.length) + ' para definir el perímetro.'
+                            : 'No hay vértices UTM registrados para esta parcela.'
+                    : 'Agrega una parcela para registrar coordenadas.';
+                editor.querySelector('.resultadoPoligonoUTM').textContent = '';
+                editor.querySelectorAll('.zonaUTM, .esteUTM, .norteUTM, .agregarVerticeUTM, .calcularPoligonoUTM, .guardarCoordenadasUTM').forEach(control => {
+                    control.disabled = !parcela;
+                });
+            });
+            lucide.createIcons();
+        }
+
+        function manejarAccionEditorUTM(event) {
+            const formulario = event.currentTarget;
+            const parcela = registros.parcelas.find(item => item.id === formulario.querySelector('.selectorParcelaUTM').value);
+            if (!parcela) return;
+            if (event.target.closest('.agregarVerticeUTM')) {
+                const coordenadas = Array.isArray(parcela.coordenadasUTM) ? parcela.coordenadasUTM : [];
+                const resultado = validarPuntoUTM(
+                    formulario.querySelector('.zonaUTM').value,
+                    formulario.querySelector('.esteUTM').value,
+                    formulario.querySelector('.norteUTM').value,
+                    coordenadas.length + 1
+                );
+                const estado = formulario.querySelector('.estadoCoordenadasUTM');
+                if (resultado.error) {
+                    estado.textContent = resultado.error;
+                    return;
+                }
+                if (coordenadas.length && resultado.punto.zona !== coordenadas[0].zona) {
+                    estado.textContent = 'Usa una misma zona UTM para todos los vértices (' + coordenadas[0].zona + ').';
+                    return;
+                }
+                parcela.coordenadasUTM = [...coordenadas, resultado.punto];
+                formulario.querySelector('.esteUTM').value = '';
+                formulario.querySelector('.norteUTM').value = '';
+                renderizarEditoresCoordenadasUTM();
+                return;
+            }
+            const botonEliminar = event.target.closest('[data-eliminar-vertice]');
+            if (botonEliminar) {
+                const indice = Number(botonEliminar.dataset.eliminarVertice);
+                parcela.coordenadasUTM = parcela.coordenadasUTM.filter((punto, posicion) => posicion !== indice);
+                renderizarEditoresCoordenadasUTM();
+                return;
+            }
+            if (event.target.closest('.calcularPoligonoUTM')) {
+                const resultado = calcularMetricasPoligono(parcela.coordenadasUTM || []);
+                const salida = formulario.querySelector('.resultadoPoligonoUTM');
+                salida.textContent = resultado.error || ('Área: ' + resultado.areaM2.toLocaleString('es-PE', { maximumFractionDigits: 2 }) +
+                    ' m² (' + (resultado.areaM2 / 10000).toLocaleString('es-PE', { maximumFractionDigits: 4 }) +
+                    ' ha) · Perímetro: ' + resultado.perimetroM.toLocaleString('es-PE', { maximumFractionDigits: 2 }) + ' m');
+            }
+        }
+
+        function calcularMetricasPoligono(coordenadas) {
+            if (coordenadas.length < 3) return { error: 'Agrega al menos 3 vértices para calcular el polígono.' };
+            if (coordenadas.some(punto => punto.zona !== coordenadas[0].zona)) {
+                return { error: 'Todos los vértices deben pertenecer a la misma zona UTM.' };
+            }
+            let sumaArea = 0;
+            let perimetroM = 0;
+            coordenadas.forEach((punto, indice) => {
+                const siguiente = coordenadas[(indice + 1) % coordenadas.length];
+                sumaArea += punto.este * siguiente.norte - siguiente.este * punto.norte;
+                perimetroM += Math.hypot(siguiente.este - punto.este, siguiente.norte - punto.norte);
+            });
+            const areaM2 = Math.abs(sumaArea) / 2;
+            return areaM2 > 0 ? { areaM2, perimetroM } : { error: 'Los vértices no forman un polígono con área.' };
+        }
+
+        function guardarCoordenadasUTM(event) {
+            event.preventDefault();
+            const idParcela = event.currentTarget.querySelector('.selectorParcelaUTM').value;
+            const parcela = registros.parcelas.find(item => item.id === idParcela);
+            if (!parcela) return;
+            const coordenadas = Array.isArray(parcela.coordenadasUTM) ? parcela.coordenadasUTM : [];
+            for (let indice = 0; indice < coordenadas.length; indice += 1) {
+                const validacion = validarPuntoUTM(coordenadas[indice].zona, coordenadas[indice].este, coordenadas[indice].norte, indice + 1);
+                if (validacion.error) {
+                    event.currentTarget.querySelector('.estadoCoordenadasUTM').textContent = validacion.error;
+                    return;
+                }
+            }
+            if (coordenadas.some(punto => punto.zona !== coordenadas[0]?.zona)) {
+                event.currentTarget.querySelector('.estadoCoordenadasUTM').textContent = 'Usa una misma zona UTM para todos los vértices.';
+                return;
+            }
+            if (!guardarRegistros('parcelas', registros.parcelas)) return;
+            renderizarRegistros();
+        }
+
+        function renderizarResumenNDVIUTM() {
+            const resumen = document.getElementById('resumenNDVIUTM');
+            resumen.replaceChildren();
+            if (!registros.parcelas.length) {
+                const vacio = document.createElement('p');
+                vacio.textContent = 'Agrega parcelas y registra sus vértices UTM para asociar límites a futuras lecturas satelitales.';
+                resumen.appendChild(vacio);
+                return;
+            }
+            registros.parcelas.forEach(parcela => {
+                const puntos = Array.isArray(parcela.coordenadasUTM) ? parcela.coordenadasUTM : [];
+                const tarjeta = document.createElement('article');
+                tarjeta.style.cssText = 'padding: 14px; border: 1px solid var(--border-color); border-radius: 8px; background: #faf8f5;';
+                const titulo = document.createElement('strong');
+                titulo.textContent = parcela.nombre;
+                const detalle = document.createElement('p');
+                detalle.style.cssText = 'margin-top: 6px; color: var(--text-muted); font-size: 0.88rem;';
+                detalle.textContent = puntos.length >= 3
+                    ? (() => {
+                        const metricas = calcularMetricasPoligono(puntos);
+                        return metricas.error
+                            ? puntos.length + ' vértices (' + puntos[0].zona + '), polígono inválido.'
+                            : puntos.length + ' vértices (' + puntos[0].zona + ') · ' + (metricas.areaM2 / 10000).toLocaleString('es-PE', { maximumFractionDigits: 3 }) + ' ha.';
+                    })()
+                    : puntos.length
+                        ? puntos.length + ' punto(s) de referencia; faltan vértices para cerrar el perímetro.'
+                        : 'Sin geometría UTM registrada.';
+                tarjeta.append(titulo, detalle);
+                resumen.appendChild(tarjeta);
+            });
+        }
+
+        function renderizarSelectorInformeNDVI() {
+            const selector = document.getElementById('parcelaInformeNDVI');
+            const seleccionAnterior = selector.value || selector.dataset.seleccion || '';
+            selector.replaceChildren();
+            registros.parcelas.forEach(parcela => {
+                const opcion = document.createElement('option');
+                opcion.value = parcela.id;
+                opcion.textContent = parcela.nombre;
+                selector.appendChild(opcion);
+            });
+            const idSeleccionado = registros.parcelas.some(parcela => parcela.id === seleccionAnterior)
+                ? seleccionAnterior
+                : registros.parcelas[0]?.id || '';
+            selector.value = idSeleccionado;
+            selector.disabled = !idSeleccionado;
+            selector.dataset.seleccion = idSeleccionado;
+            cargarAnalisisNDVISeleccionado();
+        }
+
+        function cargarAnalisisNDVISeleccionado() {
+            const idParcela = document.getElementById('parcelaInformeNDVI').value;
+            const parcela = registros.parcelas.find(item => item.id === idParcela);
+            const analisis = parcela && parcela.analisisNDVI;
+            document.getElementById('valorNDVIMedio').value = analisis ? analisis.ndviMedio : '';
+            document.getElementById('porcentajeNDVIBajo').value = analisis ? analisis.porcentajeBajo : '';
+            if (analisis) {
+                mostrarInformeTecnicoNDVI(parcela, analisis);
+            } else {
+                const informe = document.getElementById('informeTecnicoNDVI');
+                informe.replaceChildren();
+                informe.style.display = 'none';
+            }
+        }
+
+        function generarInformeTecnicoNDVI(event) {
+            event.preventDefault();
+            const idParcela = document.getElementById('parcelaInformeNDVI').value;
+            const parcela = registros.parcelas.find(item => item.id === idParcela);
+            const ndviMedio = Number(document.getElementById('valorNDVIMedio').value);
+            const porcentajeBajo = Number(document.getElementById('porcentajeNDVIBajo').value);
+            if (!parcela || !Number.isFinite(ndviMedio) || ndviMedio < -1 || ndviMedio > 1
+                || !Number.isFinite(porcentajeBajo) || porcentajeBajo < 0 || porcentajeBajo > 100) return;
+
+            const analisis = {
+                ndviMedio,
+                porcentajeBajo,
+                fecha: new Date().toLocaleDateString('es-PE')
+            };
+            const parcelasActualizadas = registros.parcelas.map(item => item.id === idParcela
+                ? { ...item, analisisNDVI: analisis }
+                : item);
+            if (!guardarRegistros('parcelas', parcelasActualizadas)) return;
+            registros.parcelas = parcelasActualizadas;
+            renderizarSelectorInformeNDVI();
+        }
+
+        function mostrarInformeTecnicoNDVI(parcela, analisis) {
+            const informe = document.getElementById('informeTecnicoNDVI');
+            const puntos = Array.isArray(parcela.coordenadasUTM) ? parcela.coordenadasUTM : [];
+            const geometria = calcularMetricasPoligono(puntos);
+            const ndvi = Number(analisis.ndviMedio);
+            const porcentajeBajo = Number(analisis.porcentajeBajo);
+            const vigor = ndvi < 0.3
+                ? 'Vigor muy bajo: el valor sugiere cobertura escasa o estrés importante; confirma que el análisis excluya suelo expuesto y sombras.'
+                : ndvi < 0.5
+                    ? 'Vigor intermedio: hay sectores que requieren evaluación localizada antes de intervenir.'
+                    : 'Vigor general adecuado: conserva el manejo actual y atiende únicamente anomalías puntuales.';
+            const prioridad = porcentajeBajo >= 30 ? 'alta' : porcentajeBajo >= 10 ? 'moderada' : 'localizada';
+            const hectareasBajoVigor = !geometria.error ? geometria.areaM2 * porcentajeBajo / 10000 : null;
+            const acciones = [
+                ['Abono al suelo', porcentajeBajo > 0 || ndvi < 0.5
+                    ? 'Prioriza muestreo de suelo y revisión de raíces en los parches de bajo NDVI. Ajusta fuente, dosis y fraccionamiento del abono según análisis de suelo, etapa del cafeto y carga productiva; evita fertilizar toda la parcela por igual.'
+                    : 'No se justifica aumentar el abonamiento solo por este promedio. Mantén el plan basado en análisis de suelo y demanda del cultivo; inspecciona los parches anómalos.'],
+                ['Fertirriego', porcentajeBajo > 0
+                    ? 'Comprueba humedad del perfil, caudal y uniformidad del sistema. Si existe riego localizado y el suelo lo requiere, aplica fertirriego fraccionado únicamente en los sectores afectados y evita hacerlo con el suelo saturado.'
+                    : 'Mantén el riego según humedad del suelo y clima. No intensifiques el fertirriego sin evidencia de déficit hídrico o nutricional.'],
+                ['Aplicación foliar', ndvi < 0.5 || porcentajeBajo >= 10
+                    ? 'Inspecciona hojas jóvenes y adultas para confirmar una deficiencia o daño foliar. Considera una aplicación correctiva localizada solo si el diagnóstico lo respalda, respetando etiqueta, compatibilidad y condiciones de aplicación.'
+                    : 'No se recomienda una aplicación foliar preventiva por el NDVI medio. Continúa el monitoreo y trata únicamente una deficiencia confirmada.'],
+                ['Trabajo de campo', 'Recorre y georreferencia los focos de bajo vigor. Revisa drenaje, humedad, malezas, sombra, compactación, raíces y síntomas de plagas o enfermedades; registra hallazgos para contrastarlos con el siguiente análisis NDVI.']
+            ];
+
+            informe.replaceChildren();
+            informe.style.display = 'block';
+            const titulo = document.createElement('h3');
+            titulo.textContent = 'Informe técnico agronómico · ' + parcela.nombre;
+            titulo.style.cssText = 'color:var(--primary);margin-bottom:8px';
+            const resumen = document.createElement('p');
+            resumen.textContent = 'Fecha: ' + analisis.fecha + ' · NDVI medio: ' + ndvi.toFixed(2) +
+                ' · Área con NDVI < 0.4: ' + porcentajeBajo + '% · Prioridad de inspección: ' + prioridad + '.';
+            const diagnostico = document.createElement('p');
+            diagnostico.style.cssText = 'margin-top:8px';
+            diagnostico.textContent = 'Diagnóstico: ' + vigor;
+            const superficie = document.createElement('p');
+            superficie.style.cssText = 'margin-top:6px;color:var(--text-muted);font-size:.88rem';
+            superficie.textContent = geometria.error
+                ? 'Área afectada estimada no disponible: registra y calcula un polígono válido en coordenadas UTM.'
+                : 'Área del polígono: ' + (geometria.areaM2 / 10000).toLocaleString('es-PE', { maximumFractionDigits: 3 }) +
+                    ' ha · Superficie estimada con bajo vigor: ' + hectareasBajoVigor.toLocaleString('es-PE', { maximumFractionDigits: 3 }) + ' ha.';
+            informe.append(titulo, resumen, diagnostico, superficie);
+            acciones.forEach(([categoria, recomendacion]) => {
+                const encabezado = document.createElement('h4');
+                encabezado.textContent = categoria;
+                encabezado.style.cssText = 'margin-top:12px;color:var(--primary)';
+                const detalle = document.createElement('p');
+                detalle.textContent = recomendacion;
+                detalle.style.cssText = 'margin-top:4px;line-height:1.5';
+                informe.append(encabezado, detalle);
+            });
+            const advertencia = document.createElement('p');
+            advertencia.textContent = 'Este informe es una guía automatizada basada en las métricas NDVI ingresadas; confirma las causas mediante evaluación de campo y análisis de suelo/foliar antes de aplicar insumos.';
+            advertencia.style.cssText = 'margin-top:14px;padding-top:10px;border-top:1px solid var(--border-color);color:var(--text-muted);font-size:.82rem';
+            informe.appendChild(advertencia);
+        }
+
+        function renderizarLoteActivo() {
+            const lote = registros.parcelas[0];
+            if (!lote) {
+                document.getElementById('lblNombreLote').textContent = 'Sin parcelas';
+                document.getElementById('lblUbicacionLote').textContent = '—';
+                document.getElementById('lblAreaLote').textContent = '—';
+                document.getElementById('lblVariedadLote').textContent = '—';
+                return;
+            }
+
+            document.getElementById('lblNombreLote').textContent = lote.nombre;
+            document.getElementById('lblUbicacionLote').textContent = lote.ubicacion;
+            document.getElementById('lblAreaLote').textContent = lote.area;
+            document.getElementById('lblVariedadLote').textContent = lote.variedad;
+        }
+
+        renderizarRegistros();
+
+        document.getElementById('formInformeNDVI').addEventListener('submit', generarInformeTecnicoNDVI);
+        document.getElementById('parcelaInformeNDVI').addEventListener('change', cargarAnalisisNDVISeleccionado);
+
+        function switchView(viewName) {
+            document.querySelectorAll('.section-view').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.menu-item').forEach(el => el.classList.remove('active'));
+
+            document.getElementById('view-' + viewName).classList.add('active');
+            document.getElementById('menu-' + viewName).classList.add('active');
+        }
+
+        // Cálculo automático de ventas
+        document.getElementById('inputCantidadVenta').addEventListener('input', calcularIngresoTotal);
+        document.getElementById('inputPrecioUnitarioVenta').addEventListener('input', calcularIngresoTotal);
+        document.getElementById('inputCant').addEventListener('input', calcularCostoTotal);
+        document.getElementById('inputPrecioUnitario').addEventListener('input', calcularCostoTotal);
+
+        function calcularIngresoTotal() {
+            const cantidad = parseFloat(document.getElementById('inputCantidadVenta').value);
+            const precioUnitario = parseFloat(document.getElementById('inputPrecioUnitarioVenta').value);
+            const campoTotal = document.getElementById('inputIngresoTotal');
+
+            if (!Number.isFinite(cantidad) || !Number.isFinite(precioUnitario)) {
+                campoTotal.value = '';
+                return;
+            }
+
+            campoTotal.value = (cantidad * precioUnitario).toFixed(2);
+        }
+
+        function calcularCostoTotal() {
+            const cantidad = parseFloat(document.getElementById('inputCant').value);
+            const precioUnitario = parseFloat(document.getElementById('inputPrecioUnitario').value);
+            const campoTotal = document.getElementById('inputCosto');
+
+            if (!Number.isFinite(cantidad) || !Number.isFinite(precioUnitario)) {
+                campoTotal.value = '';
+                return;
+            }
+
+            campoTotal.value = (cantidad * precioUnitario).toFixed(2);
+        }
+
+        function registrarNuevaVenta() {
+            const comprador = document.getElementById('inputComprador').value;
+            const cantidad = parseFloat(document.getElementById('inputCantidadVenta').value);
+            const precioUnitario = parseFloat(document.getElementById('inputPrecioUnitarioVenta').value);
+            const unidad = document.getElementById('inputUnidadVenta').value;
+
+            if (!comprador || !Number.isFinite(cantidad) || cantidad <= 0 || !Number.isFinite(precioUnitario) || precioUnitario <= 0) {
+                alert("Completa el comprador, una cantidad válida y el precio unitario.");
+                return;
+            }
+
+            const ingresoTotal = Number((cantidad * precioUnitario).toFixed(2));
+            const nuevasVentas = [{
+                id: generarId(),
+                fecha: new Date().toLocaleDateString(),
+                comprador,
+                cantidad,
+                unidad,
+                precioUnitario,
+                precio: precioUnitario,
+                ingresoTotal
+            }, ...registros.ventas];
+            if (!guardarRegistros('ventas', nuevasVentas)) return;
+            registros.ventas = nuevasVentas;
+            renderizarRegistros();
+
+            document.getElementById('inputComprador').value = '';
+            document.getElementById('inputCantidadVenta').value = '';
+            document.getElementById('inputUnidadVenta').value = 'QQ';
+            document.getElementById('inputPrecioUnitarioVenta').value = '';
+            document.getElementById('inputIngresoTotal').value = '';
+            alert("¡Venta de café registrada con éxito!");
+        }
+
+        function obtenerIngresoVenta(venta) {
+            const ingresoGuardado = Number(venta.ingresoTotal);
+            if (Number.isFinite(ingresoGuardado) && venta.ingresoTotal !== undefined && venta.ingresoTotal !== null) {
+                return ingresoGuardado;
+            }
+
+            const cantidad = Number(venta.cantidad);
+            const precioUnitario = Number(venta.precioUnitario ?? venta.precio);
+            return (Number.isFinite(cantidad) ? cantidad : 0) * (Number.isFinite(precioUnitario) ? precioUnitario : 0);
+        }
+
+        function leerRegistrosAlmacenados(tipo) {
+            try {
+                const contenido = localStorage.getItem(clavesAlmacenamiento[tipo]);
+                if (contenido === null) return registros[tipo];
+                const guardados = JSON.parse(contenido);
+                return Array.isArray(guardados) ? guardados : registros[tipo];
+            } catch (error) {
+                console.error('No se pudieron leer los registros de ' + tipo, error);
+                return registros[tipo];
+            }
+        }
+
+        function actualizarResumenDashboard() {
+            const gastosGuardados = leerRegistrosAlmacenados('gastos');
+            const ventasGuardadas = leerRegistrosAlmacenados('ventas');
+            const totalGastos = gastosGuardados
+                .reduce((total, gasto) => total + (Number(gasto.costo) || 0), 0);
+            const totalIngresos = ventasGuardadas
+                .reduce((total, venta) => total + obtenerIngresoVenta(venta), 0);
+            const utilidadNeta = Number((totalIngresos - totalGastos).toFixed(2));
+
+            document.getElementById('dashboardTotalGastos').textContent = 'S/ ' + totalGastos.toFixed(2);
+            document.getElementById('dashboardTotalIngresos').textContent = 'S/ ' + totalIngresos.toFixed(2);
+            const indicadorUtilidad = document.getElementById('dashboardUtilidadNeta');
+            indicadorUtilidad.textContent = 'S/ ' + utilidadNeta.toFixed(2);
+            indicadorUtilidad.style.color = utilidadNeta < 0 ? '#a83232' : '#2b7042';
+        }
+
+        window.addEventListener('storage', event => {
+            const tipo = Object.keys(clavesAlmacenamiento).find(nombre => clavesAlmacenamiento[nombre] === event.key);
+            if (!tipo) return;
+
+            try {
+                const guardados = JSON.parse(event.newValue || '[]');
+                if (!Array.isArray(guardados)) return;
+                registros[tipo] = tipo === 'gastos' ? migrarGastos(guardados) : guardados;
+                renderizarRegistros();
+            } catch (error) {
+                console.error('No se pudieron sincronizar los registros entre pestañas.', error);
+            }
+        });
+
+        function enviarMensajeChat() {
+            const input = document.getElementById('chatInput');
+            const chatBox = document.getElementById('chatBox');
+            const texto = input.value.trim();
+            if(!texto) return;
+
+            const msgUser = document.createElement('div');
+            msgUser.className = 'message user';
+            msgUser.innerText = texto;
+            chatBox.appendChild(msgUser);
+            input.value = '';
+            chatBox.scrollTop = chatBox.scrollHeight;
+
+            setTimeout(() => {
+                const msgBot = document.createElement('div');
+                msgBot.className = 'message bot';
+                msgBot.innerText = "Revisando tus datos para Lonya y Cajamarca: Te sugiero controlar estrictamente los costos de transporte y flete frente al precio de venta actual en cooperativa para asegurar un margen neto superior al 35%.";
+                chatBox.appendChild(msgBot);
+                chatBox.scrollTop = chatBox.scrollHeight;
+            }, 700);
+        }
+
+        function editarLote() {
+            const loteActivo = registros.parcelas[0];
+            if (!loteActivo) {
+                alert('Agrega una parcela antes de editar el lote activo.');
+                return;
+            }
+
+            const nuevoNombre = prompt('Nombre del lote:', loteActivo.nombre);
+            if (nuevoNombre === null) return;
+            const nuevaUbicacion = prompt('Ubicación:', loteActivo.ubicacion);
+            if (nuevaUbicacion === null) return;
+            const nuevaArea = prompt('Área cultivada:', loteActivo.area);
+            if (nuevaArea === null) return;
+            const nuevaVariedad = prompt('Variedad:', loteActivo.variedad);
+            if (nuevaVariedad === null) return;
+
+            const loteActualizado = {
+                ...loteActivo,
+                nombre: nuevoNombre.trim(),
+                ubicacion: nuevaUbicacion.trim(),
+                area: nuevaArea.trim(),
+                variedad: nuevaVariedad.trim()
+            };
+            if (Object.values(loteActualizado).some(valor => typeof valor === 'string' && !valor.trim())) {
+                alert('Completa todos los datos del lote.');
+                return;
+            }
+
+            const parcelasActualizadas = [loteActualizado, ...registros.parcelas.slice(1)];
+            if (!guardarRegistros('parcelas', parcelasActualizadas)) return;
+            registros.parcelas = parcelasActualizadas;
+            renderizarRegistros();
+            alert("¡Lote actualizado con éxito!");
+        }
+
+        const ctx = document.getElementById('chartPrecios').getContext('2d');
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: ['May', 'Jun', 'Jul', 'Ago', 'Set', 'Oct (Actual)'],
+                datasets: [
+                    { label: 'Bolsa NY (US$/QQ)', data: [185, 192, 205, 198, 210, 215.4], borderColor: '#1b4332', backgroundColor: 'rgba(27, 67, 50, 0.1)', fill: true, tension: 0.3 },
+                    { label: 'Ref. Local (Caj. & Lonya)', data: [640, 660, 700, 680, 720, 735], borderColor: '#b08968', borderDash: [5, 5], fill: false, tension: 0.3 }
+                ]
+            },
+            options: { responsive: true, plugins: { legend: { position: 'top' } } }
+        });
+
+        function simularDiagnosticoHoja() {
+            document.getElementById('resultHoja').style.display = 'block';
+            document.getElementById('textoResultHoja').innerHTML = "<b>Alerta Detectada:</b> Roya Amarilla en 12% del follaje (Lonya).<br><b>Recomendación:</b> Aplicar cobre sistémico.";
+        }
+
+        function simularDiagnosticoSuelo() {
+            document.getElementById('resultSuelo').style.display = 'block';
+            document.getElementById('textoResultSuelo').innerHTML = "<b>Análisis:</b> pH 5.4. Aplicar 1.2 kg de cal agrícola por planta y refuerzo NPK.";
+        }
+
+        function registrarNuevoGasto() {
+            const labor = document.getElementById('inputLabor').value;
+            const cat = document.getElementById('inputCat').value;
+            const cantidad = parseFloat(document.getElementById('inputCant').value);
+            const precioUnitario = parseFloat(document.getElementById('inputPrecioUnitario').value);
+
+            if (!labor || !Number.isFinite(cantidad) || cantidad <= 0 || !Number.isFinite(precioUnitario) || precioUnitario <= 0) {
+                alert("Completa la descripción, una cantidad válida y el precio unitario.");
+                return;
+            }
+
+            const costo = Number((cantidad * precioUnitario).toFixed(2));
+
+            const nuevosGastos = [{
+                id: generarId(),
+                fecha: new Date().toLocaleDateString(),
+                descripcion: labor,
+                categoria: cat,
+                cantidad,
+                precioUnitario,
+                costo
+            }, ...registros.gastos];
+            if (!guardarRegistros('gastos', nuevosGastos)) return;
+            registros.gastos = nuevosGastos;
+            renderizarRegistros();
+
+            document.getElementById('inputLabor').value = '';
+            document.getElementById('inputCant').value = '';
+            document.getElementById('inputPrecioUnitario').value = '';
+            document.getElementById('inputCosto').value = '';
+            alert("¡Gasto registrado con éxito!");
+        }
+
+        function agregarParcela() {
+            const nombre = prompt("Nombre de la parcela:");
+            const ubicacion = prompt("Ubicación (ej. Lonya, Amazonas):");
+            const area = prompt("Área:");
+            const variedad = prompt("Variedad:");
+
+            if(!nombre) return;
+
+            const nuevasParcelas = [{
+                id: generarId(),
+                nombre,
+                ubicacion: ubicacion || 'Lonya, Amazonas',
+                area: area || '1 Hectárea',
+                variedad: variedad || 'Catimor',
+                coordenadasUTM: []
+            }, ...registros.parcelas];
+            if (!guardarRegistros('parcelas', nuevasParcelas)) return;
+            registros.parcelas = nuevasParcelas;
+            renderizarRegistros();
+            alert("¡Parcela agregada!");
+        }
+    </script>
+</body>
+</html>
