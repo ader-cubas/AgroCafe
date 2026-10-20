@@ -515,101 +515,51 @@
 
             <!-- 5. MORTALIDAD Y BAJAS -->
             <div id="view-bajas" class="space-y-6 view-section hidden">
-                <div class="bg-white p-6 rounded-2xl border border-stone-200 shadow-xs">
-                    <h3 class="text-lg font-bold text-stone-800 mb-4">Registrar Baja / Mortalidad Sanitaria</h3>
-                    <form onsubmit="guardarBaja(event)" class="grid grid-cols-1 sm:grid-cols-6 gap-4">
-                        <div>
-                            <label class="block text-xs font-bold text-stone-600 mb-1">Identificador (Código / Poza)</label>
-                            <select id="baja-identificador" required class="w-full px-3 py-2 border rounded-xl text-sm outline-none focus:border-emerald-600">
-                                <option value="">Selecciona una poza</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label class="block text-xs font-bold text-stone-600 mb-1">Cantidad de Bajas</label>
-                            <input type="number" id="baja-cantidad" required min="1" value="1" class="w-full px-3 py-2 border rounded-xl text-sm outline-none focus:border-emerald-600">
-                        </div>
-                        <div class="sm:col-span-2">
-                            <label class="block text-xs font-bold text-stone-600 mb-1">Motivo / Causa</label>
-                            <input type="text" id="baja-motivo" required class="w-full px-3 py-2 border rounded-xl text-sm outline-none focus:border-emerald-600" placeholder="Ej. Neumonía / Enteritis">
-                        </div>
-                        <div>
-                            <label class="block text-xs font-bold text-stone-600 mb-1">Foto (opcional)</label>
-                            <input type="file" id="baja-foto" accept="image/*" class="w-full px-3 py-2 border rounded-xl text-sm">
-                        </div>
-                        <div class="flex items-end">
-                            <button type="submit" class="w-full bg-rose-600 text-white font-semibold py-2 px-4 rounded-xl text-sm hover:bg-rose-700 transition shadow-xs">Registrar Baja</button>
-                        </div>
-                    </form>
-                </div>
-
-                <section class="surface bg-white p-5 sm:p-6 border border-stone-200">
-                    <h3 class="text-lg font-bold text-stone-800">Asistente de diagnóstico y necropsia</h3>
-                    <p class="mt-1 text-sm text-amber-800">Orientación para aislamiento y seguimiento, no sustituye un diagnóstico veterinario. No administres fármacos ni retrases la consulta en animales graves.</p>
-                    <form onsubmit="guardarNecropsia(event)" class="mt-4 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-                        <label class="text-xs font-bold text-stone-600">Poza / animal
-                            <select id="necro-poza" required class="mt-1 w-full px-3 py-2 border rounded-xl text-sm"><option value="">Selecciona una poza</option></select>
-                        </label>
-                        <label class="text-xs font-bold text-stone-600">Síntoma / patología
-                            <select id="necro-diagnostico" required onchange="aplicarProtocoloDiagnostico(this.value)" class="mt-1 w-full px-3 py-2 border rounded-xl text-sm">
-                                <option value="">Selecciona un hallazgo</option>
-                                <option value="Linfoadenitis">Linfoadenitis (secas / abscesos ganglionares)</option>
-                                <option value="Salmonelosis / cuadros digestivos agudos">Salmonelosis / cuadros digestivos agudos</option>
-                                <option value="Neumonía / cuadros respiratorios">Neumonía / cuadros respiratorios</option>
-                                <option value="Coccidiosis">Coccidiosis</option>
-                                <option value="Sarna / Ácaros / Carachama">Sarna / Ácaros / Carachama</option>
-                                <option value="Piojos, pulgas y ectoparásitos">Piojos, pulgas y ectoparásitos (pediculosis)</option>
-                                <option value="Observación no concluyente">Observación no concluyente</option>
-                            </select>
-                        </label>
-                        <label class="text-xs font-bold text-stone-600">Foto de lesión / animal
-                            <input type="file" id="necro-foto" accept="image/*" capture="environment" onchange="previsualizarFotoNecropsia(event)" class="mt-1 w-full px-3 py-2 border rounded-xl text-sm">
-                        </label>
-                        <div class="flex flex-col items-start gap-2">
-                            <img id="necro-preview" class="hidden max-h-28 rounded-lg border border-stone-200" alt="Vista previa de la foto clínica">
-                            <button type="button" id="necro-ai-button" onclick="analizarFotoIA()" class="rounded-xl bg-emerald-700 px-4 py-3 font-bold text-white">🤖 Analizar foto con IA</button>
-                        </div>
-                        <div id="necro-ia-panel" class="hidden sm:col-span-2 xl:col-span-4 rounded-xl border border-emerald-200 bg-emerald-50 p-4">
-                            <p id="necro-ia-estado" class="text-sm font-semibold text-emerald-900" role="status" aria-live="polite"></p>
-                            <label class="mt-3 block text-xs font-bold text-stone-700">Confirma o corrige el patrón sugerido por la foto
-                                <select id="necro-patron-visual" disabled onchange="aplicarPatronVisualIA()" class="mt-1 w-full px-3 py-2 border rounded-xl text-sm">
-                                    <option value="">Selecciona el hallazgo visual observado</option>
-                                    <option value="linfoadenitis">Bultos o abscesos en cuello, mandíbula o papada</option>
-                                    <option value="respiratorio">Secreción nasal/ocular o respiración dificultosa</option>
-                                    <option value="salmonelosis">Congestión rojiza o puntos necróticos oscuros (sugerencia)</option>
-                                    <option value="coccidiosis">Heces blandas/mucosas y pérdida de condición</option>
-                                    <option value="sarna">Costras gruesas, alopecia o picazón intensa</option>
-                                    <option value="ectoparasitos">Piojos/pulgas visibles o rascado persistente</option>
-                                    <option value="incierto">No observo un patrón claro</option>
-                                </select>
-                            </label>
-                            <p class="mt-2 text-xs text-amber-900">Sugerencia cromática local, no es un modelo veterinario ni confirma enfermedades. Verifica el hallazgo y consulta a un profesional.</p>
-                        </div>
-                        <label class="text-xs font-bold text-stone-600 sm:col-span-2">Síntomas de referencia
-                            <textarea id="necro-sintomas" readonly rows="3" class="mt-1 w-full px-3 py-2 border rounded-xl text-sm bg-stone-50" placeholder="Se completan al seleccionar una patología."></textarea>
-                        </label>
-                        <label class="text-xs font-bold text-stone-600 sm:col-span-2">Lesiones de referencia
-                            <textarea id="necro-lesiones" readonly rows="3" class="mt-1 w-full px-3 py-2 border rounded-xl text-sm bg-stone-50" placeholder="Se completan al seleccionar una patología."></textarea>
-                        </label>
-                        <label class="text-xs font-bold text-stone-600 sm:col-span-2">Manejo inmediato recomendado
-                            <textarea id="necro-recomendacion" readonly rows="3" class="mt-1 w-full px-3 py-2 border rounded-xl text-sm bg-stone-50" placeholder="Selecciona una patología para ver medidas de bioseguridad y evaluación."></textarea>
-                        </label>
-                        <label class="text-xs font-bold text-stone-600">Días de protocolo / seguimiento (referencia)
-                            <input type="number" id="necro-dias" min="1" max="30" value="3" required class="mt-1 w-full px-3 py-2 border rounded-xl text-sm">
-                        </label>
-                        <label class="text-xs font-bold text-stone-600 sm:col-span-2 xl:col-span-2">Vía / pauta farmacológica
-                            <textarea id="necro-via" readonly rows="3" class="mt-1 w-full px-3 py-2 border rounded-xl text-sm bg-stone-50" placeholder="Se completa al seleccionar una patología."></textarea>
-                        </label>
-                        <label class="text-xs font-bold text-stone-600 sm:col-span-2 xl:col-span-4">Sugerencia farmacológica / dosis
-                            <textarea id="necro-pauta" readonly rows="3" class="mt-1 w-full px-3 py-2 border rounded-xl text-sm bg-stone-50" placeholder="Se completa al seleccionar una patología."></textarea>
-                        </label>
-                        <p id="necro-duracion" class="sm:col-span-2 xl:col-span-4 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-900">La duración del tratamiento debe confirmarla el veterinario.</p>
-                        <label class="text-xs font-bold text-stone-600 sm:col-span-2 xl:col-span-4">Observaciones de necropsia / síntomas
-                            <textarea id="necro-observacion" rows="2" class="mt-1 w-full px-3 py-2 border rounded-xl text-sm" placeholder="Signos observados, fecha de inicio, hallazgos..."></textarea>
-                        </label>
-                        <div class="sm:col-span-2 xl:col-span-4 flex justify-end">
-                            <button type="submit" class="rounded-xl bg-rose-700 px-6 text-white font-bold">Guardar diagnóstico en Kardex</button>
-                        </div>
-                    </form>
+                <section class="surface border border-stone-200 bg-white p-5 sm:p-7">
+                    <div class="mx-auto max-w-3xl space-y-6">
+                        <header>
+                            <p class="text-sm font-bold uppercase text-emerald-800">Registro sanitario</p>
+                            <h3 class="mt-1 text-2xl font-extrabold text-stone-900">Mortalidad y bajas</h3>
+                            <p class="mt-2 text-sm text-stone-600">Fotografía la lesión para recibir una orientación inicial. La imagen se enviará al servicio veterinario configurado.</p>
+                        </header>
+                        <form id="baja-form" onsubmit="guardarBaja(event)" class="space-y-5">
+                            <input type="file" id="baja-foto" accept="image/*" capture="environment" onchange="previsualizarFotoBaja(event)" class="hidden" aria-label="Tomar o seleccionar una foto de la lesión">
+                            <button type="button" onclick="document.getElementById('baja-foto').click()" class="flex min-h-32 w-full items-center justify-center gap-4 rounded-xl border-2 border-emerald-800 bg-emerald-800 px-5 py-6 text-center text-xl font-extrabold text-white shadow-lg transition hover:bg-emerald-900 focus-visible:outline focus-visible:outline-4 focus-visible:outline-offset-2 focus-visible:outline-emerald-500">
+                                <i class="ph ph-camera text-4xl" aria-hidden="true"></i><span>📸 TOMAR FOTO A LA LESIÓN</span>
+                            </button>
+                            <div id="baja-preview-card" class="hidden rounded-xl border border-stone-200 bg-stone-50 p-4">
+                                <div class="flex flex-col gap-4 sm:flex-row sm:items-center">
+                                    <img id="baja-preview" class="hidden h-32 w-full rounded-lg border border-stone-200 bg-white object-contain sm:w-40" alt="Vista previa de la lesión">
+                                    <div class="min-w-0 flex-1">
+                                        <p id="baja-analysis-status" class="flex items-center gap-2 text-sm font-bold text-emerald-900" role="status" aria-live="polite">
+                                            <span id="baja-analysis-spinner" class="hidden h-5 w-5 animate-spin rounded-full border-2 border-emerald-700 border-t-transparent" aria-hidden="true"></span>
+                                            <span id="baja-analysis-message">Preparando foto...</span>
+                                        </p>
+                                        <p id="baja-analysis-detail" class="mt-2 text-sm text-stone-600"></p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                                <label class="text-sm font-bold text-stone-700">Poza o identificador
+                                    <select id="baja-identificador" required class="mt-1 w-full rounded-lg border border-stone-300 px-3 py-3 text-base"><option value="">Selecciona una poza</option></select>
+                                </label>
+                                <label class="text-sm font-bold text-stone-700">Cantidad de animales
+                                    <input type="number" id="baja-cantidad" required min="1" value="1" inputmode="numeric" class="mt-1 w-full rounded-lg border border-stone-300 px-3 py-3 text-base">
+                                </label>
+                            </div>
+                            <div id="baja-results" class="hidden space-y-4" aria-live="polite">
+                                <h4 class="text-lg font-extrabold text-stone-900">Orientación veterinaria</h4>
+                                <div class="grid grid-cols-1 gap-3 md:grid-cols-2">
+                                    <article class="rounded-xl border border-rose-200 bg-rose-50 p-4"><span class="inline-flex rounded-full bg-rose-700 px-3 py-1 text-sm font-bold text-white">🟥 Causa probable / diagnóstico</span><p id="baja-result-cause" class="mt-3 whitespace-pre-line text-base font-semibold text-stone-900"></p></article>
+                                    <article class="rounded-xl border border-orange-200 bg-orange-50 p-4"><span class="inline-flex rounded-full bg-orange-600 px-3 py-1 text-sm font-bold text-white">🟧 Lesión / síntomas observados</span><p id="baja-result-lesions" class="mt-3 whitespace-pre-line text-base text-stone-900"></p></article>
+                                    <article class="rounded-xl border border-emerald-200 bg-emerald-50 p-4"><span class="inline-flex rounded-full bg-emerald-700 px-3 py-1 text-sm font-bold text-white">🟩 Manejo inmediato / bioseguridad</span><p id="baja-result-management" class="mt-3 whitespace-pre-line text-base text-stone-900"></p></article>
+                                    <article class="rounded-xl border border-sky-200 bg-sky-50 p-4"><span class="inline-flex rounded-full bg-sky-700 px-3 py-1 text-sm font-bold text-white">🟦 Vía y dosis sugerida</span><p id="baja-result-medication" class="mt-3 whitespace-pre-line text-base text-stone-900"></p><p class="mt-3 border-t border-sky-200 pt-3 text-sm font-semibold text-sky-950">Seguimiento orientativo: <span id="baja-result-days"></span> días. Confirma cualquier tratamiento y dosis con un veterinario.</p></article>
+                                </div>
+                                <p class="rounded-lg bg-amber-50 px-4 py-3 text-sm font-medium text-amber-950">La foto no confirma un diagnóstico. No administres medicamentos basándote solo en esta orientación; contacta a un veterinario, sobre todo ante dolor intenso, dificultad para respirar o varias bajas.</p>
+                            </div>
+                            <button type="submit" id="baja-save-button" disabled class="w-full rounded-xl bg-rose-700 px-5 py-4 text-lg font-extrabold text-white shadow transition hover:bg-rose-800 disabled:cursor-not-allowed disabled:bg-stone-300 disabled:text-stone-600">💾 GUARDAR REGISTRO DE BAJA</button>
+                        </form>
+                    </div>
                 </section>
 
                 <div class="bg-white p-6 rounded-2xl border border-stone-200 shadow-xs space-y-4">
@@ -833,6 +783,8 @@
         let chartMortalidadInstance = null;
         let codigoQRActual = '';
         let fotoClinicaAnalizadaBase64 = '';
+        let bajaAnalisisActual = null;
+        let bajaFotoVersion = 0;
 
         function fechaHoy() {
             const hoy = new Date();
@@ -1239,33 +1191,34 @@
             e.preventDefault();
             const formulario = e.currentTarget;
             if (formulario.dataset.saving === 'true') return;
+            if (!bajaAnalisisActual || !fotoClinicaAnalizadaBase64) {
+                mostrarToast('Toma una foto y espera el análisis antes de guardar', 'error');
+                return;
+            }
             formulario.dataset.saving = 'true';
             const boton = e.submitter || formulario.querySelector('[type="submit"]');
             if (boton) boton.disabled = true;
             try {
-                const archivo = document.getElementById('baja-foto').files[0];
-                if (archivo && (!archivo.type.startsWith('image/') || archivo.size > 12 * 1024 * 1024)) {
-                    throw new Error('Selecciona una imagen válida de hasta 12 MB');
-                }
-                const foto = archivo ? await comprimirFotoClinica(archivo) : '';
+                const resultado = bajaAnalisisActual;
+                const foto = fotoClinicaAnalizadaBase64;
                 const baja = {
                     fecha: fechaHoy(),
                     identificador: document.getElementById('baja-identificador').value,
                     cantidad: parseInt(document.getElementById('baja-cantidad').value, 10),
-                    motivo: document.getElementById('baja-motivo').value.trim()
+                    motivo: resultado.motivo_causa
                 };
                 const registro = {
                     fecha: baja.fecha,
                     destino: baja.identificador,
-                    diagnostico: baja.motivo,
-                    sintomas: 'No consignados en el registro de baja.',
-                    lesiones: 'No consignadas en el registro de baja.',
-                    producto: 'No aplicado: registro de mortalidad.',
-                    cantidad: `Bajas: ${baja.cantidad}; dosis: no aplica.`,
-                    diasProtocolo: 'No aplica',
-                    via: 'No aplica: registro de mortalidad.',
+                    diagnostico: resultado.motivo_causa,
+                    sintomas: resultado.lesiones_referencia,
+                    lesiones: resultado.lesiones_referencia,
+                    producto: resultado.manejo_inmediato,
+                    cantidad: `Bajas: ${baja.cantidad}; ${resultado.sugerencia_dosis}`,
+                    diasProtocolo: resultado.dias_protocolo,
+                    via: resultado.via_farmacologica,
                     foto,
-                    nota: `Registro de Mortalidad y Bajas; causa: ${baja.motivo}.`
+                    nota: `Registro de Mortalidad y Bajas. Orientación Gemini 2.5 Flash: ${resultado.motivo_causa}.`
                 };
                 db.bajas.unshift(baja);
                 try {
@@ -1282,12 +1235,19 @@
                 }
                 formulario.reset();
                 document.getElementById('baja-cantidad').value = '1';
+                fotoClinicaAnalizadaBase64 = '';
+                bajaAnalisisActual = null;
+                document.getElementById('baja-preview-card').classList.add('hidden');
+                document.getElementById('baja-preview').removeAttribute('src');
+                document.getElementById('baja-preview').classList.add('hidden');
+                document.getElementById('baja-results').classList.add('hidden');
+                document.getElementById('baja-save-button').disabled = true;
             } catch (error) {
                 console.error('Error al registrar la baja en el Kardex:', error);
                 mostrarToast(error.message || 'No se pudo guardar la baja en el Kardex', 'error');
             } finally {
                 formulario.dataset.saving = 'false';
-                if (boton) boton.disabled = false;
+                if (boton) boton.disabled = !bajaAnalisisActual || !fotoClinicaAnalizadaBase64;
             }
         }
 
@@ -1334,334 +1294,82 @@
             guardarBD();
         }
 
-        function guardarTemperatura(event) {
-            event.preventDefault();
-            const valor = Number(document.getElementById('temperatura-actual').value);
-            if (!Number.isFinite(valor) || valor < -10 || valor > 60) {
-                mostrarToast('Ingresa una temperatura válida en °C', 'error');
-                return;
-            }
-            db.temperatura = { valor, fecha: new Date().toISOString() };
-            guardarBD('Lectura de temperatura guardada');
-        }
-
-        function registrarEmpadre(event) {
-            event.preventDefault();
-            const poza = document.getElementById('empadre-poza').value;
-            const fechaEmpadre = document.getElementById('empadre-fecha').value;
-            if (db.gestaciones.some(item => item.poza === poza && !item.fechaParto)) {
-                mostrarToast(`Ya existe una gestación pendiente para ${poza}`, 'error');
-                return;
-            }
-            db.gestaciones.unshift({ id: Date.now(), poza, fechaEmpadre, fechaParto: '', fechaDestete: '' });
-            document.getElementById('empadre-fecha').value = fechaHoy();
-            guardarBD('Empadre registrado; proyecciones calculadas');
-        }
-
-        function guardarTratamiento(event) {
-            event.preventDefault();
-            const producto = document.getElementById('salud-producto').value;
-            const manual = producto === 'Otro indicado por veterinario';
-            const nombreProducto = manual ? document.getElementById('salud-producto-manual').value.trim() : producto;
-            if (manual && !nombreProducto) {
-                mostrarToast('Ingresa el producto prescrito por el veterinario', 'error');
-                return;
-            }
-            db.tratamientos.unshift({
-                fecha: document.getElementById('salud-fecha').value,
-                destino: document.getElementById('salud-destino').value,
-                diagnostico: '',
-                producto: nombreProducto,
-                cantidad: document.getElementById('salud-cantidad').value.trim(),
-                via: 'Según indicación veterinaria',
-                nota: document.getElementById('salud-nota').value.trim()
-            });
-            document.getElementById('salud-destino').value = '';
-            document.getElementById('salud-producto').value = '';
-            document.getElementById('salud-producto-manual').value = '';
-            document.getElementById('salud-producto-manual-wrap').classList.add('hidden');
-            document.getElementById('salud-producto-manual').required = false;
-            document.getElementById('salud-cantidad').readOnly = false;
-            document.getElementById('salud-cantidad').value = '';
-            document.getElementById('salud-peso').value = '';
-            document.getElementById('salud-animales').value = '';
-            document.getElementById('salud-nota').value = '';
-            document.getElementById('salud-calculo').textContent = 'Selecciona un producto e ingresa el peso y la cantidad para calcular.';
-            guardarBD('Aplicación añadida al kardex');
-        }
-
-        function calcularDosisPoza() {
-            const selector = document.getElementById('salud-producto');
-            const opcion = selector.selectedOptions[0];
-            const manual = selector.value === 'Otro indicado por veterinario';
-            const manualWrap = document.getElementById('salud-producto-manual-wrap');
-            const manualInput = document.getElementById('salud-producto-manual');
-            const dosisInput = document.getElementById('salud-cantidad');
-            const resumen = document.getElementById('salud-calculo');
-            manualWrap.classList.toggle('hidden', !manual);
-            manualInput.required = manual;
-            dosisInput.readOnly = !manual && Boolean(opcion.dataset.dosis);
-            if (!opcion.dataset.dosis) {
-                if (manual) resumen.textContent = 'Registra únicamente la pauta y vía prescritas por el veterinario.';
-                else {
-                    dosisInput.value = '';
-                    resumen.textContent = 'Selecciona un producto e ingresa el peso y la cantidad para calcular.';
-                }
-                return;
-            }
-            const pesoGramos = Number(document.getElementById('salud-peso').value);
-            const cantidad = Number(document.getElementById('salud-animales').value);
-            if (!(pesoGramos > 0) || !(cantidad > 0)) {
-                dosisInput.value = '';
-                resumen.textContent = 'Ingresa peso promedio y cantidad para ver la dosis individual y total.';
-                return;
-            }
-            const dosisReferencia = Number(opcion.dataset.dosis);
-            const dosisIndividual = opcion.dataset.unidad === 'animal' ? dosisReferencia : dosisReferencia * (pesoGramos / 1000);
-            const dosisTotal = dosisIndividual * cantidad;
-            const formato = valor => Number(valor.toFixed(4)).toString();
-            dosisInput.value = `${formato(dosisIndividual)} ml/animal · ${formato(dosisTotal)} ml total (${cantidad} cuyes)`;
-            resumen.textContent = `Dosis individual: ${formato(dosisIndividual)} ml por cuy · Dosis total para ${cantidad} cuyes: ${formato(dosisTotal)} ml.`;
-        }
-
-        function obtenerProtocoloDiagnostico(patologia) {
-            const protocolos = {
-                Linfoadenitis: {
-                    sintomas: 'Bultos o abultamientos abscesados en cuello, mandíbula o papada; pueden madurar y drenar pus espesa.',
-                    lesiones: 'Ganglios linfáticos hipertrofiados con caseum o pus blanquecina/amarillenta.',
-                    manejo: 'Aislamiento estricto de la poza. El drenaje y la desinfección cuidadosa con yodo debe realizarlos personal capacitado, evitando contaminar el piso. Limpiar rigurosamente comederos y consultar al veterinario.',
-                    dias: 3,
-                    duracion: 'Seguimiento veterinario sugerido: 3 días; la duración antibiótica no está especificada y debe prescribirla el veterinario.',
-                    pauta: 'Referencia: Enrofloxacina 5% o penicilinas según criterio veterinario. La dosis no está especificada en este protocolo; no calcular ni administrar sin prescripción.',
-                    viaPauta: 'Vía oral o parenteral (aislamiento estricto y drenaje/desinfección de abscesos).'
-                },
-                'Salmonelosis / cuadros digestivos agudos': {
-                    sintomas: 'Decaimiento, pelo erizado, diarrea severa, parálisis del tren posterior o muerte súbita.',
-                    lesiones: 'Hígado congestionado o con puntos de necrosis; posibles adherencias fibrinopurulentas en vísceras.',
-                    manejo: 'Aislamiento inmediato, hidratación y desinfección total de instalaciones. Usar guantes, reforzar higiene y solicitar atención veterinaria urgente por riesgo zoonótico.',
-                    dias: 5,
-                    duracion: 'Referencia de protocolo: 5 días; el veterinario debe confirmar inicio y duración.',
-                    pauta: 'Referencia proporcionada: Enrofloxacina 5% (0.1 ml/kg) o Trimethoprim/Sulfa (0.2 ml/kg) por 5 días.',
-                    viaPauta: 'Vía oral (agua de bebida o sonda individual). Tratar a todo el lote afectado.'
-                },
-                'Neumonía / cuadros respiratorios': {
-                    sintomas: 'Secreción nasal u ocular, respiración dificultosa y ruidos o ronquidos pulmonares.',
-                    lesiones: 'Pulmones congestivos o hepatizados, con líquido o espuma.',
-                    manejo: 'Control estricto de corrientes de aire y humedad, mantener cama seca, aislamiento y valoración veterinaria pronta. Vigilar dificultad respiratoria.',
-                    dias: 5,
-                    duracion: 'Referencia proporcionada: antibiótico durante 3 a 5 días; 5 días cargados como máximo de referencia, confirmar con el veterinario.',
-                    pauta: 'Referencia proporcionada: Vitamina C y Enrofloxacina 5% (0.1 ml/kg) o Tilosina durante 3 a 5 días.',
-                    viaPauta: 'Vía oral o intramuscular según indicación clínica. Mejorar ventilación.'
-                },
-                Coccidiosis: {
-                    sintomas: 'Heces blandas o mucosas, posible presencia de sangre y pérdida notable de condición corporal.',
-                    lesiones: 'Intestinos inflamados con contenido gaseoso o hemorragias intestinales.',
-                    manejo: 'Aislar, retirar heces y cama húmeda, limpiar y desinfectar la poza. Solicitar confirmación veterinaria; controlar hidratación y evolución.',
-                    dias: 2,
-                    duracion: 'Referencia proporcionada: 2 días consecutivos y repetir el tratamiento al día 7; confirmar protocolo y calendario con el veterinario.',
-                    pauta: 'Referencia proporcionada: Toltrazuril 2.5% (0.04 ml/kg) durante 2 días consecutivos; repetir a los 7 días.',
-                    viaPauta: 'Vía oral (Toltrazuril/Sulfas en agua de bebida por 3 a 5 días).'
-                },
-                'Sarna / Ácaros / Carachama': {
-                    sintomas: 'Prurito severo, inquietud, costras gruesas blanquecinas o amarillentas y alopecia en orejas, hocico, ojos o lomo.',
-                    lesiones: 'Hiperqueratosis, piel engrosada y heridas por rascado constante.',
-                    manejo: 'Aislar animales afectados y desinfectar pozas. Confirmar el agente y revisar contactos; usar antiparasitarios solo bajo supervisión veterinaria.',
-                    dias: 14,
-                    duracion: 'Referencia proporcionada: segunda dosis de refuerzo a los 10–14 días; 14 días cargados para seguimiento y confirmación veterinaria.',
-                    pauta: 'Referencia proporcionada: Ivermectina 1% (0.2 ml/kg), con segunda dosis de refuerzo a los 10–14 días.',
-                    viaPauta: 'Vía subcutánea (Ivermectina) o aplicación tópica/baños según prescripción.'
-                },
-                'Piojos, pulgas y ectoparásitos': {
-                    sintomas: 'Picazón intensa, rascado continuo contra paredes, pelo revuelto y posible anemia leve.',
-                    lesiones: 'Piojos o pulgas visibles entre el pelaje, sobre todo detrás de las orejas y en la rabadilla.',
-                    manejo: 'Aislar afectados, cambiar y eliminar yacija/viruta contaminada y desinfectar la instalación. Confirmar ectoparásito y usar solo productos seguros para cuyes bajo indicación veterinaria.',
-                    dias: 14,
-                    duracion: 'Referencia proporcionada: repetir a los 10–14 días; seguimiento sugerido hasta el día 14 y confirmación veterinaria.',
-                    pauta: 'Referencia proporcionada: Ivermectina 1% (0.2 ml/kg vía subcutánea) o baño ectoparasiticida seguro, con repetición a los 10–14 días.',
-                    viaPauta: 'Vía tópica / espolvoreo / baño antiparasitario en ambiente y animales.'
-                },
-                'Observación no concluyente': {
-                    sintomas: 'Patrón visual no concluyente; registra los signos observados y su evolución.',
-                    lesiones: 'La imagen no permite confirmar ni descartar lesiones internas.',
-                    manejo: 'Aislar si hay signos compatibles con enfermedad y solicitar valoración veterinaria; no iniciar tratamiento empírico.',
-                    dias: 3,
-                    duracion: 'Reevaluación sugerida en 3 días o antes si empeora; confirmar con el veterinario.',
-                    pauta: 'Sin pauta automática; requiere diagnóstico y prescripción veterinaria.',
-                    viaPauta: 'No aplica hasta contar con evaluación veterinaria.'
-                }
-            };
-            const alias = {
-                Salmonelosis: 'Salmonelosis / cuadros digestivos agudos',
-                Neumonía: 'Neumonía / cuadros respiratorios',
-                'Carachama / Ácaros': 'Sarna / Ácaros / Carachama'
-            };
-            return protocolos[alias[patologia] || patologia] || null;
-        }
-
-        function obtenerOrientacionDiagnostica(patologia) {
-            return obtenerProtocoloDiagnostico(patologia)?.manejo || '';
-        }
-
-        function aplicarProtocoloDiagnostico(patologia) {
-            const protocolo = obtenerProtocoloDiagnostico(patologia);
-            const campos = {
-                'necro-sintomas': protocolo?.sintomas || '',
-                'necro-lesiones': protocolo?.lesiones || '',
-                'necro-recomendacion': protocolo?.manejo || '',
-                'necro-via': protocolo?.viaPauta || 'Selecciona una patología para consultar su vía documentada.',
-                'necro-pauta': protocolo?.pauta || 'Selecciona una patología para consultar su pauta documentada.'
-            };
-            Object.entries(campos).forEach(([id, valor]) => {
-                document.getElementById(id).value = valor;
-            });
-            document.getElementById('necro-dias').value = protocolo?.dias || 3;
-            document.getElementById('necro-duracion').textContent = protocolo?.duracion || 'Selecciona una patología para consultar la duración de referencia.';
-            return protocolo;
-        }
-
-        function detectarPatronVisualLocal(imagen) {
-            const lienzo = document.createElement('canvas');
-            lienzo.width = 64;
-            lienzo.height = 64;
-            const contexto = lienzo.getContext('2d', { willReadFrequently: true });
-            contexto.drawImage(imagen, 0, 0, 64, 64);
-            const pixeles = contexto.getImageData(0, 0, 64, 64).data;
-            const zonasRojizas = new Array(64).fill(0);
-            const zonasOscuras = new Array(64).fill(0);
-            let pixelesRojizos = 0;
-            let pixelesOscuros = 0;
-            for (let indice = 0; indice < pixeles.length; indice += 4) {
-                const rojo = pixeles[indice];
-                const verde = pixeles[indice + 1];
-                const azul = pixeles[indice + 2];
-                const pixel = indice / 4;
-                const zona = Math.floor(pixel / 512) * 8 + Math.floor((pixel % 64) / 8);
-                if (rojo > 70 && rojo > verde * 1.22 && rojo > azul * 1.15 && verde < 180) {
-                    pixelesRojizos++;
-                    zonasRojizas[zona]++;
-                }
-                if (rojo > verde * 1.1 && rojo > azul * 1.05 && rojo + verde + azul < 250) {
-                    pixelesOscuros++;
-                    zonasOscuras[zona]++;
-                }
-            }
-            const zonasConcentradas = zonasRojizas.filter(cantidad => cantidad >= 3).length;
-            const congestionRojiza = pixelesRojizos / 4096 >= 0.025 && zonasConcentradas >= 2;
-            const puntosNecroticosAgrupados = pixelesOscuros / 4096 >= 0.003 && zonasOscuras.filter(cantidad => cantidad >= 2).length >= 2;
-            return congestionRojiza || puntosNecroticosAgrupados ? 'salmonelosis' : 'incierto';
-        }
-
-        async function analizarFotoIA() {
-            const archivo = document.getElementById('necro-foto').files[0];
-            const boton = document.getElementById('necro-ai-button');
-            const panel = document.getElementById('necro-ia-panel');
-            const estado = document.getElementById('necro-ia-estado');
-            const patron = document.getElementById('necro-patron-visual');
-            if (!archivo) {
-                mostrarToast('Primero toma o selecciona una foto para analizar', 'error');
-                return;
-            }
-            boton.disabled = true;
-            boton.textContent = 'Analizando imagen local...';
-            estado.textContent = 'Comprimiendo y revisando la legibilidad de la foto en este dispositivo; no se envía a internet.';
-            panel.classList.remove('hidden');
-            patron.disabled = true;
-            try {
-                fotoClinicaAnalizadaBase64 = fotoClinicaAnalizadaBase64 || await comprimirFotoClinica(archivo);
-                const imagen = await new Promise((resolve, reject) => {
-                    const elemento = new Image();
-                    elemento.onload = () => resolve(elemento);
-                    elemento.onerror = () => reject(new Error('No se pudo abrir la imagen local'));
-                    elemento.src = fotoClinicaAnalizadaBase64;
-                });
-                const lienzo = document.createElement('canvas');
-                lienzo.width = 48;
-                lienzo.height = 48;
-                const contexto = lienzo.getContext('2d', { willReadFrequently: true });
-                contexto.drawImage(imagen, 0, 0, 48, 48);
-                const pixeles = contexto.getImageData(0, 0, 48, 48).data;
-                let luminancia = 0;
-                for (let indice = 0; indice < pixeles.length; indice += 4) {
-                    luminancia += 0.2126 * pixeles[indice] + 0.7152 * pixeles[indice + 1] + 0.0722 * pixeles[indice + 2];
-                }
-                luminancia /= pixeles.length / 4;
-                const calidad = luminancia < 45 ? 'La foto parece oscura; considera repetirla con más luz.' : luminancia > 225 ? 'La foto parece sobreexpuesta; reduce el reflejo y vuelve a tomarla.' : 'La iluminación permite revisar la imagen; confirma manualmente el hallazgo observado.';
-                patron.value = detectarPatronVisualLocal(imagen);
-                patron.disabled = false;
-                aplicarPatronVisualIA();
-                const sugerencia = patron.value === 'salmonelosis' ? 'Se observan zonas rojizas o puntos oscuros agrupados; revisa si corresponden a hallazgos hepáticos.' : 'No se encontró un patrón cromático específico; se seleccionó observación no concluyente.';
-                estado.textContent = `Revisión local completada (${imagen.width} × ${imagen.height} px). ${sugerencia} ${calidad} Esta sugerencia no confirma enfermedades ni sustituye un modelo veterinario.`;
-            } catch (error) {
-                fotoClinicaAnalizadaBase64 = '';
-                panel.classList.add('hidden');
-                mostrarToast(error.message || 'No se pudo analizar la imagen', 'error');
-            } finally {
-                boton.disabled = false;
-                boton.textContent = '🤖 Analizar foto con IA';
-            }
-        }
-
-        function aplicarPatronVisualIA() {
-            const diagnosticos = {
-                linfoadenitis: 'Linfoadenitis',
-                respiratorio: 'Neumonía / cuadros respiratorios',
-                salmonelosis: 'Salmonelosis / cuadros digestivos agudos',
-                coccidiosis: 'Coccidiosis',
-                sarna: 'Sarna / Ácaros / Carachama',
-                ectoparasitos: 'Piojos, pulgas y ectoparásitos',
-                incierto: 'Observación no concluyente'
-            };
-            const seleccion = document.getElementById('necro-patron-visual').value;
-            const diagnostico = diagnosticos[seleccion] || '';
-            document.getElementById('necro-diagnostico').value = diagnostico;
-            aplicarProtocoloDiagnostico(diagnostico);
-            if (seleccion === 'incierto') {
-                document.getElementById('necro-recomendacion').value = 'No se identifica un patrón específico. Aísla si hay signos de enfermedad, registra cambios y solicita una revisión veterinaria.';
-            }
-        }
-
-        async function previsualizarFotoNecropsia(event) {
+        async function previsualizarFotoBaja(event) {
             const archivo = event.target.files[0];
-            const preview = document.getElementById('necro-preview');
-            if (preview.dataset.objectUrl) URL.revokeObjectURL(preview.dataset.objectUrl);
-            delete preview.dataset.objectUrl;
+            const versionCaptura = ++bajaFotoVersion;
+            const preview = document.getElementById('baja-preview');
+            const previewCard = document.getElementById('baja-preview-card');
+            const status = document.getElementById('baja-analysis-message');
+            const spinner = document.getElementById('baja-analysis-spinner');
             fotoClinicaAnalizadaBase64 = '';
-            document.getElementById('necro-ia-panel').classList.add('hidden');
-            document.getElementById('necro-patron-visual').value = '';
-            document.getElementById('necro-patron-visual').disabled = true;
+            bajaAnalisisActual = null;
+            document.getElementById('baja-results').classList.add('hidden');
+            document.getElementById('baja-save-button').disabled = true;
             if (!archivo) {
+                previewCard.classList.add('hidden');
                 preview.classList.add('hidden');
                 preview.removeAttribute('src');
                 return;
             }
             if (!archivo.type.startsWith('image/') || archivo.size > 12 * 1024 * 1024) {
                 event.target.value = '';
-                preview.classList.add('hidden');
-                preview.removeAttribute('src');
-                mostrarToast('Selecciona una imagen de hasta 12 MB', 'error');
+                previewCard.classList.add('hidden');
+                mostrarToast('Selecciona una imagen válida de hasta 12 MB', 'error');
                 return;
             }
-            const vistaTemporal = URL.createObjectURL(archivo);
-            preview.dataset.objectUrl = vistaTemporal;
-            preview.src = vistaTemporal;
-            preview.classList.remove('hidden');
+            previewCard.classList.remove('hidden');
+            spinner.classList.remove('hidden');
+            status.textContent = '⏳ Analizando síntoma con el Veterinario Virtual...';
+            document.getElementById('baja-analysis-detail').textContent = 'Comprimiendo la imagen antes de enviarla.';
             try {
                 const comprimida = await comprimirFotoClinica(archivo);
-                if (event.target.files[0] !== archivo) {
-                    URL.revokeObjectURL(vistaTemporal);
-                    return;
-                }
+                if (event.target.files[0] !== archivo) return;
                 fotoClinicaAnalizadaBase64 = comprimida;
                 preview.src = comprimida;
-                URL.revokeObjectURL(vistaTemporal);
-                delete preview.dataset.objectUrl;
+                preview.classList.remove('hidden');
+                await analizarFotoBaja(comprimida, versionCaptura);
             } catch (error) {
-                if (event.target.files[0] === archivo) mostrarToast('No se pudo preparar la foto; podrás guardar el registro sin ella', 'error');
+                if (versionCaptura === bajaFotoVersion && event.target.files[0] === archivo) {
+                    status.textContent = 'No se pudo completar el análisis.';
+                    document.getElementById('baja-analysis-detail').textContent = `${error.message} Comprueba la conexión y vuelve a intentarlo.`;
+                    mostrarToast(error.message || 'No se pudo analizar la foto', 'error');
+                }
+            } finally {
+                if (versionCaptura === bajaFotoVersion) spinner.classList.add('hidden');
             }
         }
 
+        async function analizarFotoBaja(imagenBase64, versionCaptura) {
+            const endpoint = window.SISGRANJA_VET_API_URL || 'https://mdfwmaxtjhtcuzwsqrci.supabase.co/functions/v1/veterinario-virtual';
+            const publicKey = window.SISGRANJA_SUPABASE_PUBLISHABLE_KEY || 'sb_publishable_AjU9EvouA694BZwL-4Eglg_iI0rKo9I';
+            const response = await fetch(endpoint, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', apikey: publicKey },
+                body: JSON.stringify({ image: { mime_type: 'image/jpeg', data: imagenBase64.split(',')[1] } })
+            });
+            const payload = await response.json().catch(() => ({}));
+            if (!response.ok) throw new Error(payload.error || 'El servicio veterinario no está disponible.');
+            if (versionCaptura !== bajaFotoVersion) return;
+            const resultado = payload.result || payload;
+            const campos = ['motivo_causa', 'lesiones_referencia', 'manejo_inmediato', 'via_farmacologica', 'sugerencia_dosis'];
+            if (campos.some(campo => typeof resultado[campo] !== 'string' || !resultado[campo].trim())) {
+                throw new Error('El servicio devolvió una respuesta incompleta. Toma otra foto e inténtalo de nuevo.');
+            }
+            resultado.dias_protocolo = Number(resultado.dias_protocolo);
+            if (!Number.isInteger(resultado.dias_protocolo) || resultado.dias_protocolo < 1 || resultado.dias_protocolo > 30) resultado.dias_protocolo = 3;
+            bajaAnalisisActual = resultado;
+            document.getElementById('baja-result-cause').textContent = resultado.motivo_causa;
+            document.getElementById('baja-result-lesions').textContent = resultado.lesiones_referencia;
+            document.getElementById('baja-result-management').textContent = resultado.manejo_inmediato;
+            document.getElementById('baja-result-medication').textContent = `${resultado.via_farmacologica}\n${resultado.sugerencia_dosis}`;
+            document.getElementById('baja-result-days').textContent = resultado.dias_protocolo;
+            document.getElementById('baja-results').classList.remove('hidden');
+            document.getElementById('baja-save-button').disabled = false;
+            document.getElementById('baja-analysis-message').textContent = 'Orientación recibida';
+            document.getElementById('baja-analysis-detail').textContent = 'Revisa las tarjetas antes de guardar. El análisis no reemplaza la consulta veterinaria.';
+        }
+
         async function comprimirFotoClinica(archivo) {
-            if (!archivo) return '';
             const original = await new Promise((resolve, reject) => {
                 const lector = new FileReader();
                 lector.onload = () => resolve(lector.result);
@@ -1675,16 +1383,15 @@
                 elemento.src = original;
             });
             const lienzo = document.createElement('canvas');
-            const escala = Math.min(1, 800 / Math.max(imagen.width, imagen.height));
+            const escala = Math.min(1, 800 / imagen.width, 800 / imagen.height);
             let ancho = Math.max(1, Math.round(imagen.width * escala));
             let alto = Math.max(1, Math.round(imagen.height * escala));
-            const limiteCaracteres = 120000;
             while (true) {
                 lienzo.width = ancho;
                 lienzo.height = alto;
                 lienzo.getContext('2d').drawImage(imagen, 0, 0, ancho, alto);
                 const comprimida = lienzo.toDataURL('image/jpeg', 0.7);
-                if (comprimida.length <= limiteCaracteres || Math.max(ancho, alto) <= 160) return comprimida;
+                if (comprimida.length <= 120000 || Math.max(ancho, alto) <= 160) return comprimida;
                 const escalaReducida = Math.max(160, Math.round(Math.max(ancho, alto) * 0.8)) / Math.max(ancho, alto);
                 ancho = Math.max(1, Math.round(ancho * escalaReducida));
                 alto = Math.max(1, Math.round(alto * escalaReducida));
@@ -1693,77 +1400,6 @@
 
         function esLimiteAlmacenamiento(error) {
             return error?.name === 'QuotaExceededError' || error?.name === 'NS_ERROR_DOM_QUOTA_REACHED' || error?.code === 22 || error?.code === 1014;
-        }
-
-        async function guardarNecropsia(event) {
-            event.preventDefault();
-            const formulario = event.currentTarget;
-            if (formulario.dataset.saving === 'true') return;
-            formulario.dataset.saving = 'true';
-            const boton = event.submitter || formulario.querySelector('[type="submit"]');
-            if (boton) boton.disabled = true;
-            try {
-                const archivo = document.getElementById('necro-foto').files[0];
-                const foto = archivo ? (fotoClinicaAnalizadaBase64 || await comprimirFotoClinica(archivo)) : '';
-                let fotoSoloTemporal = Boolean(archivo && !foto);
-                const diagnostico = document.getElementById('necro-diagnostico').value;
-                const protocolo = obtenerProtocoloDiagnostico(diagnostico);
-                const recomendacion = protocolo?.manejo || obtenerOrientacionDiagnostica(diagnostico);
-                const dias = Number(document.getElementById('necro-dias').value);
-                const pauta = protocolo?.pauta || document.getElementById('necro-pauta').value;
-                const registro = {
-                    fecha: fechaHoy(),
-                    destino: document.getElementById('necro-poza').value,
-                    diagnostico,
-                    sintomas: protocolo?.sintomas || document.getElementById('necro-sintomas').value,
-                    lesiones: protocolo?.lesiones || document.getElementById('necro-lesiones').value,
-                    producto: pauta,
-                    cantidad: `${dias} días; ${protocolo?.duracion || 'seguimiento veterinario'}`,
-                    diasProtocolo: dias,
-                    via: protocolo?.viaPauta || document.getElementById('necro-via').value,
-                    nota: [recomendacion, document.getElementById('necro-observacion').value.trim()].filter(Boolean).join(' Observación: '),
-                    foto
-                };
-                if (foto) {
-                    try {
-                        guardarRegistroKardex(registro, 'Diagnóstico, manejo y foto guardados en el Kardex');
-                    } catch (error) {
-                        if (!esLimiteAlmacenamiento(error)) throw error;
-                        registro.foto = '';
-                        fotoSoloTemporal = true;
-                        guardarRegistroKardex(registro, 'Diagnóstico guardado; la foto queda solo en la vista previa temporal');
-                    }
-                } else {
-                    guardarRegistroKardex(registro, fotoSoloTemporal ? 'Diagnóstico guardado; la foto queda solo en la vista previa temporal' : 'Diagnóstico guardado en el Kardex');
-                }
-                if (!fotoSoloTemporal) {
-                    document.getElementById('necro-foto').value = '';
-                    const preview = document.getElementById('necro-preview');
-                    if (preview.dataset.objectUrl) URL.revokeObjectURL(preview.dataset.objectUrl);
-                    delete preview.dataset.objectUrl;
-                    preview.classList.add('hidden');
-                    preview.removeAttribute('src');
-                    fotoClinicaAnalizadaBase64 = '';
-                }
-                document.getElementById('necro-diagnostico').value = '';
-                document.getElementById('necro-sintomas').value = '';
-                document.getElementById('necro-lesiones').value = '';
-                document.getElementById('necro-dias').value = '3';
-                document.getElementById('necro-via').value = '';
-                document.getElementById('necro-patron-visual').value = '';
-                document.getElementById('necro-patron-visual').disabled = true;
-                document.getElementById('necro-ia-panel').classList.add('hidden');
-                document.getElementById('necro-pauta').value = 'Sin pauta automática; requiere diagnóstico y prescripción veterinaria';
-                document.getElementById('necro-duracion').textContent = 'La duración del tratamiento debe confirmarla el veterinario.';
-                document.getElementById('necro-recomendacion').value = '';
-                document.getElementById('necro-observacion').value = '';
-            } catch (error) {
-                console.error('Error al guardar el registro clínico:', error);
-                mostrarToast(error.message || 'No se pudo guardar la foto en el Kardex', 'error');
-            } finally {
-                formulario.dataset.saving = 'false';
-                if (boton) boton.disabled = false;
-            }
         }
 
         function mostrarFotoKardex(indice) {
