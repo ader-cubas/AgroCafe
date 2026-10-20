@@ -564,12 +564,12 @@
                             <div id="baja-results" class="hidden space-y-4" aria-live="polite">
                                 <h4 class="text-lg font-extrabold text-stone-900">Orientación veterinaria</h4>
                                 <div class="grid grid-cols-1 gap-3 md:grid-cols-2">
-                                    <article class="rounded-xl border border-rose-200 bg-rose-50 p-4"><span class="inline-flex rounded-full bg-rose-700 px-3 py-1 text-sm font-bold text-white">🟥 Causa probable / diagnóstico</span><p id="baja-result-cause" class="mt-3 whitespace-pre-line text-base font-semibold text-stone-900"></p></article>
-                                    <article class="rounded-xl border border-orange-200 bg-orange-50 p-4"><span class="inline-flex rounded-full bg-orange-600 px-3 py-1 text-sm font-bold text-white">🟧 Lesión / síntomas observados</span><p id="baja-result-lesions" class="mt-3 whitespace-pre-line text-base text-stone-900"></p></article>
-                                    <article class="rounded-xl border border-emerald-200 bg-emerald-50 p-4"><span class="inline-flex rounded-full bg-emerald-700 px-3 py-1 text-sm font-bold text-white">🟩 Manejo inmediato / bioseguridad</span><p id="baja-result-management" class="mt-3 whitespace-pre-line text-base text-stone-900"></p></article>
-                                    <article class="rounded-xl border border-sky-200 bg-sky-50 p-4"><span class="inline-flex rounded-full bg-sky-700 px-3 py-1 text-sm font-bold text-white">🟦 Vía y dosis sugerida</span><p id="baja-result-medication" class="mt-3 whitespace-pre-line text-base text-stone-900"></p><p class="mt-3 border-t border-sky-200 pt-3 text-sm font-semibold text-sky-950">Seguimiento orientativo: <span id="baja-result-days"></span> días. Confirma cualquier tratamiento y dosis con un veterinario.</p></article>
+                                    <article class="rounded-xl border border-rose-200 bg-rose-50 p-4"><span class="inline-flex rounded-full bg-rose-700 px-3 py-1 text-sm font-bold text-white">🟥 Diagnóstico o situación encontrada</span><p id="baja-result-diagnostico" class="mt-3 whitespace-pre-line text-base font-semibold text-stone-900"></p></article>
+                                    <article class="rounded-xl border border-orange-200 bg-orange-50 p-4"><span class="inline-flex rounded-full bg-orange-600 px-3 py-1 text-sm font-bold text-white">🟧 Causa principal</span><p id="baja-result-causa" class="mt-3 whitespace-pre-line text-base text-stone-900"></p></article>
+                                    <article class="rounded-xl border border-emerald-200 bg-emerald-50 p-4"><span class="inline-flex rounded-full bg-emerald-700 px-3 py-1 text-sm font-bold text-white">🟩 Acción inmediata / tratamiento</span><p id="baja-result-accion" class="mt-3 whitespace-pre-line text-base text-stone-900"></p></article>
+                                    <article class="rounded-xl border border-sky-200 bg-sky-50 p-4"><span class="inline-flex rounded-full bg-sky-700 px-3 py-1 text-sm font-bold text-white">🟦 Prevención diaria en la granja</span><p id="baja-result-prevencion" class="mt-3 whitespace-pre-line text-base text-stone-900"></p></article>
                                 </div>
-                                <p class="rounded-lg bg-amber-50 px-4 py-3 text-sm font-medium text-amber-950">La foto no confirma un diagnóstico. No administres medicamentos basándote solo en esta orientación; contacta a un veterinario, sobre todo ante dolor intenso, dificultad para respirar o varias bajas.</p>
+                                <p class="rounded-lg bg-amber-50 px-4 py-3 text-sm font-medium text-amber-950">La foto orienta, pero no confirma enfermedades internas. No mediques solo con esta imagen; un veterinario debe definir fármaco, dosis y vía tras evaluar al cuy.</p>
                             </div>
                             <button type="submit" id="baja-save-button" disabled class="action-giant action-baja disabled:cursor-not-allowed disabled:bg-stone-300 disabled:text-stone-600"><i class="ph ph-floppy-disk" aria-hidden="true"></i><span>GUARDAR REGISTRO DE BAJA</span></button>
                         </form>
@@ -1260,20 +1260,20 @@
                     fecha: fechaHoy(),
                     identificador: document.getElementById('baja-identificador').value,
                     cantidad: parseInt(document.getElementById('baja-cantidad').value, 10),
-                    motivo: resultado.motivo_causa
+                    motivo: resultado.diagnostico_situacion
                 };
                 const registro = {
                     fecha: baja.fecha,
                     destino: baja.identificador,
-                    diagnostico: resultado.motivo_causa,
-                    sintomas: resultado.lesiones_referencia,
-                    lesiones: resultado.lesiones_referencia,
-                    producto: resultado.manejo_inmediato,
-                    cantidad: `Bajas: ${baja.cantidad}; ${resultado.sugerencia_dosis}`,
-                    diasProtocolo: resultado.dias_protocolo,
-                    via: resultado.via_farmacologica,
+                    diagnostico: resultado.diagnostico_situacion,
+                    sintomas: resultado.causa_principal,
+                    lesiones: resultado.diagnostico_situacion,
+                    producto: resultado.accion_inmediata,
+                    cantidad: `Bajas: ${baja.cantidad}; prevención diaria: ${resultado.prevencion_diaria}`,
+                    diasProtocolo: 'No aplica',
+                    via: 'Tratamiento farmacológico: evaluación veterinaria requerida.',
                     foto,
-                    nota: `Registro de Mortalidad y Bajas. Orientación Gemini 2.5 Flash: ${resultado.motivo_causa}.`
+                    nota: `Causa principal: ${resultado.causa_principal}. Prevención diaria: ${resultado.prevencion_diaria}`
                 };
                 db.bajas.unshift(baja);
                 try {
@@ -1398,59 +1398,100 @@
         async function analizarFotoBaja(imagenBase64, versionCaptura) {
             const endpoint = window.SISGRANJA_VET_API_URL || 'https://mdfwmaxtjhtcuzwsqrci.supabase.co/functions/v1/veterinario-virtual';
             const publicKey = window.SISGRANJA_SUPABASE_PUBLISHABLE_KEY || 'sb_publishable_AjU9EvouA694BZwL-4Eglg_iI0rKo9I';
+            const base64 = imagenBase64.split(',')[1];
+            if (!base64 || base64.length > 120000) {
+                throw new Error('La foto supera el tamaño permitido. Toma otra imagen e inténtalo de nuevo.');
+            }
             const response = await fetch(endpoint, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', apikey: publicKey },
-                body: JSON.stringify({ image: { mime_type: 'image/jpeg', data: imagenBase64.split(',')[1] } })
+                body: JSON.stringify({ image: { mime_type: 'image/jpeg', data: base64 } })
             });
             const payload = await response.json().catch(() => ({}));
             if (!response.ok) throw new Error(payload.error || 'El servicio veterinario no está disponible.');
             if (versionCaptura !== bajaFotoVersion) return;
             const resultado = payload.result || payload;
-            const campos = ['motivo_causa', 'lesiones_referencia', 'manejo_inmediato', 'via_farmacologica', 'sugerencia_dosis'];
+            const campos = ['diagnostico_situacion', 'causa_principal', 'accion_inmediata', 'prevencion_diaria'];
             if (campos.some(campo => typeof resultado[campo] !== 'string' || !resultado[campo].trim())) {
                 throw new Error('El servicio devolvió una respuesta incompleta. Toma otra foto e inténtalo de nuevo.');
             }
-            resultado.dias_protocolo = Number(resultado.dias_protocolo);
-            if (!Number.isInteger(resultado.dias_protocolo) || resultado.dias_protocolo < 1 || resultado.dias_protocolo > 30) resultado.dias_protocolo = 3;
             bajaAnalisisActual = resultado;
-            document.getElementById('baja-result-cause').textContent = resultado.motivo_causa;
-            document.getElementById('baja-result-lesions').textContent = resultado.lesiones_referencia;
-            document.getElementById('baja-result-management').textContent = resultado.manejo_inmediato;
-            document.getElementById('baja-result-medication').textContent = `${resultado.via_farmacologica}\n${resultado.sugerencia_dosis}`;
-            document.getElementById('baja-result-days').textContent = resultado.dias_protocolo;
+            document.getElementById('baja-result-diagnostico').textContent = resultado.diagnostico_situacion;
+            document.getElementById('baja-result-causa').textContent = resultado.causa_principal;
+            document.getElementById('baja-result-accion').textContent = resultado.accion_inmediata;
+            document.getElementById('baja-result-prevencion').textContent = resultado.prevencion_diaria;
             document.getElementById('baja-results').classList.remove('hidden');
             document.getElementById('baja-save-button').disabled = false;
             document.getElementById('baja-analysis-message').textContent = 'Orientación recibida';
-            document.getElementById('baja-analysis-detail').textContent = 'Revisa las tarjetas antes de guardar. El análisis no reemplaza la consulta veterinaria.';
+            document.getElementById('baja-analysis-detail').textContent = 'Revisa las recomendaciones antes de guardar. La foto no confirma enfermedades internas.';
         }
 
         async function comprimirFotoClinica(archivo) {
-            const original = await new Promise((resolve, reject) => {
-                const lector = new FileReader();
-                lector.onload = () => resolve(lector.result);
-                lector.onerror = () => reject(new Error('No se pudo leer la foto'));
-                lector.readAsDataURL(archivo);
-            });
-            const imagen = await new Promise((resolve, reject) => {
-                const elemento = new Image();
-                elemento.onload = () => resolve(elemento);
-                elemento.onerror = () => reject(new Error('El archivo no es una imagen válida'));
-                elemento.src = original;
-            });
-            const lienzo = document.createElement('canvas');
-            const escala = Math.min(1, 800 / imagen.width, 800 / imagen.height);
-            let ancho = Math.max(1, Math.round(imagen.width * escala));
-            let alto = Math.max(1, Math.round(imagen.height * escala));
-            while (true) {
-                lienzo.width = ancho;
-                lienzo.height = alto;
-                lienzo.getContext('2d').drawImage(imagen, 0, 0, ancho, alto);
-                const comprimida = lienzo.toDataURL('image/jpeg', 0.7);
-                if (comprimida.length <= 120000 || Math.max(ancho, alto) <= 160) return comprimida;
-                const escalaReducida = Math.max(160, Math.round(Math.max(ancho, alto) * 0.8)) / Math.max(ancho, alto);
-                ancho = Math.max(1, Math.round(ancho * escalaReducida));
-                alto = Math.max(1, Math.round(alto * escalaReducida));
+            if (!archivo || !archivo.type.startsWith('image/')) throw new Error('Selecciona una imagen válida.');
+
+            let imagen;
+            let bitmap;
+            let objectUrl = '';
+            try {
+                if (typeof createImageBitmap === 'function') {
+                    try {
+                        bitmap = await createImageBitmap(archivo);
+                        imagen = bitmap;
+                    } catch (error) {
+                        imagen = null;
+                    }
+                }
+                if (!imagen) {
+                    objectUrl = URL.createObjectURL(archivo);
+                    imagen = await new Promise((resolve, reject) => {
+                        const elemento = new Image();
+                        elemento.onload = () => resolve(elemento);
+                        elemento.onerror = () => reject(new Error('No se pudo decodificar la imagen.'));
+                        elemento.src = objectUrl;
+                    });
+                }
+
+                if (!imagen.width || !imagen.height) throw new Error('La imagen no tiene dimensiones válidas.');
+                const escalaInicial = Math.min(1, 800 / imagen.width, 800 / imagen.height);
+                let ancho = Math.max(1, Math.round(imagen.width * escalaInicial));
+                let alto = Math.max(1, Math.round(imagen.height * escalaInicial));
+                let calidad = 0.76;
+                const maxBase64Length = 120000;
+                const lienzo = document.createElement('canvas');
+                const contexto = lienzo.getContext('2d');
+                if (!contexto) throw new Error('No se pudo preparar el lienzo de compresión.');
+
+                for (let intento = 0; intento < 10; intento++) {
+                    lienzo.width = ancho;
+                    lienzo.height = alto;
+                    contexto.drawImage(imagen, 0, 0, ancho, alto);
+                    const blob = await new Promise(resolve => lienzo.toBlob(resolve, 'image/jpeg', calidad));
+                    if (!blob) throw new Error('El navegador no pudo comprimir la foto.');
+
+                    const base64Comprimido = await new Promise((resolve, reject) => {
+                        const lector = new FileReader();
+                        lector.onload = () => resolve(lector.result);
+                        lector.onerror = () => reject(new Error('No se pudo preparar la foto comprimida.'));
+                        lector.readAsDataURL(blob);
+                    });
+                    if (typeof base64Comprimido === 'string' && base64Comprimido.split(',')[1]?.length <= maxBase64Length) {
+                        return base64Comprimido;
+                    }
+
+                    const ladoMayor = Math.max(ancho, alto);
+                    if (ladoMayor <= 160 && calidad <= 0.44) break;
+                    if (ladoMayor > 160) {
+                        const factor = Math.max(160, Math.round(ladoMayor * 0.8)) / ladoMayor;
+                        ancho = Math.max(1, Math.round(ancho * factor));
+                        alto = Math.max(1, Math.round(alto * factor));
+                    }
+                    if (intento % 2 === 1) calidad = Math.max(0.4, calidad - 0.1);
+                }
+
+                throw new Error('No se pudo reducir la foto al tamaño permitido. Toma otra imagen con menor resolución.');
+            } finally {
+                if (bitmap) bitmap.close();
+                if (objectUrl) URL.revokeObjectURL(objectUrl);
             }
         }
 

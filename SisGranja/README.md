@@ -120,11 +120,11 @@ El sistema ya viene vinculado y configurado con tu proyecto Supabase:
 - **Exportación Local:** Descarga en cualquier momento un archivo `.json` con el estado completo del criadero para restaurarlo en cualquier computadora o laboratorio.
 
 ## 🩺 Veterinario Virtual (Gemini)
-La versión `SisGranja_v2.5.html` envía las fotos comprimidas a una Supabase Edge Function; la clave de Gemini se mantiene solo en el servidor.
-Para el análisis, abre la aplicación desde un origen HTTP(S) permitido; el acceso por `file://` se rechaza intencionalmente.
+La versión `SisGranja_v2.5.html` redimensiona y comprime cada foto en el navegador antes de enviarla como JPEG Base64 (máximo 800 px por lado y límite verificado de 120.000 caracteres Base64). La Edge Function guarda la clave Gemini solo en el servidor y devuelve `diagnostico_situacion`, `causa_principal`, `accion_inmediata` y `prevencion_diaria`.
 
-1. Guarda `GEMINI_API_KEY` y `ALLOWED_ORIGINS` como secretos de Supabase. En `ALLOWED_ORIGINS` indica los orígenes web exactos, separados por comas; la función rechaza solicitudes de otros orígenes.
+Abre la aplicación desde un origen HTTP(S) permitido; el acceso por `file://` se rechaza intencionalmente.
+
+1. Guarda `GEMINI_API_KEY` y `ALLOWED_ORIGINS` como secretos de Supabase. En `ALLOWED_ORIGINS` indica los orígenes web exactos permitidos, separados por comas.
 2. Despliega la función desde `SisGranja/` con `supabase functions deploy veterinario-virtual`.
-3. Configura `ALLOWED_ORIGINS` con los orígenes web permitidos, separados por comas. Para pruebas locales, incluye el origen exacto del servidor local.
 
-La función limita solicitudes por dirección IP y devuelve una orientación no concluyente; no recomienda fármacos ni dosis. El seguimiento indicado no equivale a duración de tratamiento.
+El modelo orienta sobre signos visibles de parásitos, alimentación, higiene y lesiones, pero no confirma enfermedades internas ni prescribe medicamentos, dosis o vías a partir de una foto. Un veterinario debe confirmar cualquier tratamiento; las instrucciones de limpieza deben seguir la etiqueta del desinfectante y evitar mezclas.

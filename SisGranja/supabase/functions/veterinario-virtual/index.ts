@@ -6,35 +6,36 @@ const runtime = (globalThis as typeof globalThis & {
 }).Deno;
 
 const maxRequestsPerMinute = 8;
+const maxRequestBytes = 128 * 1024;
 const requestCounts = new Map<string, { count: number; startedAt: number }>();
 
 const responseSchema = {
   type: 'OBJECT',
   properties: {
-    motivo_causa: { type: 'STRING' },
-    lesiones_referencia: { type: 'STRING' },
-    manejo_inmediato: { type: 'STRING' },
-    dias_protocolo: { type: 'INTEGER' },
-    via_farmacologica: { type: 'STRING' },
-    sugerencia_dosis: { type: 'STRING' },
+    diagnostico_situacion: { type: 'STRING' },
+    causa_principal: { type: 'STRING' },
+    accion_inmediata: { type: 'STRING' },
+    prevencion_diaria: { type: 'STRING' },
   },
   required: [
-    'motivo_causa',
-    'lesiones_referencia',
-    'manejo_inmediato',
-    'dias_protocolo',
-    'via_farmacologica',
-    'sugerencia_dosis',
+    'diagnostico_situacion',
+    'causa_principal',
+    'accion_inmediata',
+    'prevencion_diaria',
   ],
   propertyOrdering: [
-    'motivo_causa',
-    'lesiones_referencia',
-    'manejo_inmediato',
-    'dias_protocolo',
-    'via_farmacologica',
-    'sugerencia_dosis',
+    'diagnostico_situacion',
+    'causa_principal',
+    'accion_inmediata',
+    'prevencion_diaria',
   ],
 };
+
+const systemPrompt = `Eres un asistente de bioseguridad, manejo y sanidad para granjas de cuyes. Analiza únicamente lo que sea visible en la fotografía y responde en español con JSON estricto según el esquema.
+Revisa, cuando la imagen lo permita: parásitos externos (piojos, pulgas, ácaros y lesiones de piel); señales externas compatibles con problemas digestivos o de alimentación, como abdomen visiblemente hinchado y forraje húmedo o fermentado; bioseguridad e higiene (comedero o bebedero sucio, heces acumuladas, cama húmeda y falta de limpieza); y lesiones visibles compatibles con enfermedad.
+No declares timpanismo, neumonía, daño hepático ni otra enfermedad interna basándote solo en una foto externa. Un órgano interno solo puede describirse si aparece explícitamente en una imagen de necropsia; aun así, no confirmes causa o enfermedad definitiva. Si la foto no permite valorar algo, dilo y expresa la incertidumbre.
+Incluye obligatoriamente: diagnostico_situacion (hallazgo o situación observada); causa_principal (causa visible o probable, por ejemplo forraje húmedo/fermentado, alimento contaminado o falta de limpieza; indica si no se puede determinar); accion_inmediata (aislamiento, retirar forraje sospechoso, ofrecer agua limpia, limpieza/desinfección y consulta veterinaria según el caso); prevencion_diaria (rutina práctica y frecuencia para limpieza, secado/ventilación del forraje y revisión de agua, comederos y bebederos).
+No prescribas medicamentos, dosis ni vías de administración a partir de una imagen. Si el caso pudiera requerir fármacos, indica que el veterinario debe definir producto, dosis y vía según examen y peso. Para limpieza, recomienda retirar animales y alimento antes de desinfectar, seguir la etiqueta del producto, enjuagar cuando corresponda y secar antes de reingresar; nunca mezclar desinfectantes. No recomiendes productos tóxicos para cuyes. Mantén cada campo breve, accionable y sin Markdown.`;
 
 function corsHeaders(origin: string | null): HeadersInit {
   const configuredOrigins = runtime.env.get('ALLOWED_ORIGINS')
@@ -99,7 +100,15 @@ runtime.serve(async (request: Request) => {
   }
 
   try {
-    const body = await request.json();
+    const declaredLength = Number(request.headers.get('content-length'));
+    if (Number.isFinite(declaredLength) && declaredLength > maxRequestBytes) {
+      return jsonResponse({ error: 'La foto supera el tamaño permitido después de comprimirla.' }, 413, origin);
+    }
+    const rawBody = await request.text();
+    if (new TextEncoder().encode(rawBody).byteLength > maxRequestBytes) {
+      return jsonResponse({ error: 'La foto supera el tamaño permitido después de comprimirla.' }, 413, origin);
+    }
+    const body = JSON.parse(rawBody);
     const image = body?.image;
     if (image?.mime_type !== 'image/jpeg' || typeof image.data !== 'string' || image.data.length > 120_000) {
       return jsonResponse({ error: 'La imagen debe ser un JPEG comprimido válido.' }, 400, origin);
@@ -115,7 +124,7 @@ runtime.serve(async (request: Request) => {
             role: 'user',
             parts: [
               {
-                text: 'Orienta el registro sanitario de un cuy usando solo hallazgos visibles. No confirmes enfermedades. Responde exclusivamente en JSON con el esquema indicado. Prioriza aislamiento, higiene, bioseguridad y consulta veterinaria. No prescribas fármacos ni dosis: indica que la vía y dosis requieren evaluación y prescripción veterinaria. dias_protocolo es solo seguimiento, nunca duración de tratamiento. Si la imagen no permite valorar, indícalo.',
+                text: systemPrompt,
               },
               { inline_data: { mime_type: 'image/jpeg', data: image.data } },
             ],
@@ -141,25 +150,17 @@ runtime.serve(async (request: Request) => {
     }
 
     const result = JSON.parse(responseText);
-    const stringFields = [
-      'motivo_causa',
-      'lesiones_referencia',
-      'manejo_inmediato',
-    ];
+    const stringFields = ['diagnostico_situacion', 'causa_principal', 'accion_inmediata', 'prevencion_diaria'];
     if (stringFields.some((field) => typeof result[field] !== 'string' || !result[field].trim())) {
       return jsonResponse({ error: 'Gemini devolvió una respuesta incompleta.' }, 502, origin);
     }
 
     return jsonResponse({
       result: {
-        motivo_causa: result.motivo_causa.slice(0, 1200),
-        lesiones_referencia: result.lesiones_referencia.slice(0, 1200),
-        manejo_inmediato: result.manejo_inmediato.slice(0, 1600),
-        dias_protocolo: Number.isInteger(result.dias_protocolo) && result.dias_protocolo >= 1 && result.dias_protocolo <= 30
-          ? result.dias_protocolo
-          : 3,
-        via_farmacologica: 'No indicada sin evaluación clínica y prescripción veterinaria.',
-        sugerencia_dosis: 'No se recomienda una dosis basada solo en una imagen. Consulta a un veterinario.',
+        diagnostico_situacion: result.diagnostico_situacion.slice(0, 1200),
+        causa_principal: result.causa_principal.slice(0, 1000),
+        accion_inmediata: result.accion_inmediata.slice(0, 1600),
+        prevencion_diaria: result.prevencion_diaria.slice(0, 1200),
       },
     }, 200, origin);
   } catch {
