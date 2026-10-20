@@ -26,6 +26,19 @@
         button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px solid #86c9a7; outline-offset: 2px; }
         input, select { min-height: 48px; }
         button { min-height: 48px; }
+        .action-giant { display: flex; min-height: 76px; width: 100%; align-items: center; justify-content: center; gap: 12px; border-radius: 14px; padding: 16px 20px; color: #fff; font-size: 1.2rem; font-weight: 800; text-align: center; box-shadow: 0 5px 12px rgb(24 53 43 / 15%); transition: filter 150ms ease, transform 150ms ease; }
+        .action-giant:hover { filter: brightness(.94); }
+        .action-giant:active { transform: scale(.985); }
+        .action-giant:disabled { filter: grayscale(.65); }
+        .action-giant i { font-size: 2rem; flex: none; }
+        .action-parto { background: #176b4b; }
+        .action-destete { background: #a34d16; }
+        .action-venta { background: #176b9b; }
+        .action-baja { background: #a33b32; }
+        .toast-confirmation { width: min(100%, 520px); min-height: 72px; border-radius: 14px; padding: 18px 20px; color: #fff; font-size: 1.15rem; font-weight: 800; box-shadow: 0 12px 32px rgb(24 53 43 / 24%); }
+        .toast-confirmation i { font-size: 1.8rem; flex: none; }
+        .toast-success { background: #176b4b; }
+        .toast-error { background: #a33b32; }
         .surface { border-radius: 14px !important; box-shadow: 0 2px 8px rgb(24 53 43 / 5%); }
         .bg-white.rounded-2xl { border-color: #e0e8e1; border-radius: 14px; box-shadow: 0 2px 8px rgb(24 53 43 / 5%); }
         .app-topbar button, .app-topbar label { min-height: 40px; }
@@ -55,7 +68,12 @@
             .app-topbar { min-height: 60px; height: auto; padding: 8px 14px; gap: 8px; }
             .app-topbar > div:last-child { flex-wrap: nowrap; overflow-x: auto; max-width: 58%; }
             .app-topbar > div:last-child > span { display: none; }
-            .app-content { padding: 16px; }
+            .app-content { padding: 12px; }
+            form input:not([type="checkbox"]), form select { min-height: 58px; font-size: 16px; }
+            button { min-height: 56px; }
+            .action-giant { min-height: 88px; font-size: 1.3rem; }
+            #toast-container { right: 12px; bottom: calc(12px + env(safe-area-inset-bottom)); left: 12px; align-items: center; }
+            #toast-container > div { width: 100%; }
         }
         @media (min-width: 768px) and (max-width: 1023px) {
         }
@@ -321,7 +339,7 @@
                     <h3 id="quick-actions-title" class="text-base font-bold text-stone-800 mb-3">Acceso rápido por poza</h3>
                     <div class="grid grid-cols-1 sm:grid-cols-[minmax(0,1fr)_repeat(5,auto)] gap-2 items-end">
                         <label class="text-xs font-bold text-stone-600">Poza
-                            <select id="quick-poza" class="mt-1 w-full px-3 py-2 border rounded-xl text-sm"><option value="">Selecciona una poza</option></select>
+                            <select id="quick-poza" data-poza-activa="true" class="mt-1 w-full px-3 py-2 border rounded-xl text-sm"><option value="">Selecciona una poza</option></select>
                         </label>
                         <button type="button" onclick="abrirRegistroRapido('partos')" class="rounded-xl bg-emerald-700 px-4 text-sm font-bold text-white">Parto</button>
                         <button type="button" onclick="abrirRegistroRapido('destetados')" class="rounded-xl bg-sky-700 px-4 text-sm font-bold text-white">Destete</button>
@@ -408,21 +426,19 @@
                     <form onsubmit="guardarParto(event)" class="grid grid-cols-1 sm:grid-cols-4 gap-4">
                         <div>
                             <label class="block text-xs font-bold text-stone-600 mb-1">Poza / Madre</label>
-                            <select id="parto-poza" required class="w-full px-3 py-2 border rounded-xl text-sm outline-none focus:border-emerald-600">
+                            <select id="parto-poza" data-poza-activa="true" required class="w-full px-3 py-2 border rounded-xl text-sm outline-none focus:border-emerald-600">
                                 <option value="">Selecciona una poza</option>
                             </select>
                         </div>
                         <div>
                             <label class="block text-xs font-bold text-stone-600 mb-1">Crías Vivas</label>
-                            <input type="number" id="parto-vivas" required min="0" class="w-full px-3 py-2 border rounded-xl text-sm outline-none focus:border-emerald-600" placeholder="Ej. 4">
+                            <input type="number" id="parto-vivas" required min="0" inputmode="numeric" class="w-full px-3 py-2 border rounded-xl text-base outline-none focus:border-emerald-600" placeholder="Ej. 4">
                         </div>
                         <div>
                             <label class="block text-xs font-bold text-stone-600 mb-1">Crías Muertas (Natos)</label>
-                            <input type="number" id="parto-muertas" required min="0" value="0" class="w-full px-3 py-2 border rounded-xl text-sm outline-none focus:border-emerald-600">
+                            <input type="number" id="parto-muertas" required min="0" value="0" inputmode="numeric" class="w-full px-3 py-2 border rounded-xl text-base outline-none focus:border-emerald-600">
                         </div>
-                        <div class="flex items-end">
-                            <button type="submit" class="w-full bg-emerald-600 text-white font-semibold py-2 px-4 rounded-xl text-sm hover:bg-emerald-700 transition shadow-xs">Registrar Parto</button>
-                        </div>
+                        <button type="submit" class="action-giant action-parto sm:col-span-4"><i class="ph ph-baby" aria-hidden="true"></i><span>REGISTRAR PARTO</span></button>
                     </form>
                 </div>
 
@@ -455,14 +471,14 @@
                     <form onsubmit="guardarDestete(event)" class="grid grid-cols-1 md:grid-cols-4 gap-4">
                         <div>
                             <label class="block text-xs font-bold text-stone-600 mb-1">Poza Origen</label>
-                            <select id="destete-poza" required class="w-full px-3 py-2 border rounded-xl text-sm outline-none focus:border-emerald-600">
+                            <select id="destete-poza" data-poza-activa="true" required class="w-full px-3 py-2 border rounded-xl text-sm outline-none focus:border-emerald-600">
                                 <option value="">Selecciona una poza</option>
                             </select>
                         </div>
                         <div class="space-y-3">
                             <div>
                                 <label class="block text-xs font-bold text-stone-600 mb-1">Cantidad de Machos</label>
-                                <input type="number" id="destete-machos" required min="0" value="0" class="w-full px-3 py-2 border rounded-xl text-sm outline-none focus:border-emerald-600">
+                                <input type="number" id="destete-machos" required min="0" value="0" inputmode="numeric" class="w-full px-3 py-2 border rounded-xl text-base outline-none focus:border-emerald-600">
                             </div>
                             <div>
                                 <label class="block text-xs font-bold text-stone-600 mb-1">Poza Destino Machos</label>
@@ -474,7 +490,7 @@
                         <div class="space-y-3">
                             <div>
                                 <label class="block text-xs font-bold text-stone-600 mb-1">Cantidad de Hembras</label>
-                                <input type="number" id="destete-hembras" required min="0" value="0" class="w-full px-3 py-2 border rounded-xl text-sm outline-none focus:border-emerald-600">
+                                <input type="number" id="destete-hembras" required min="0" value="0" inputmode="numeric" class="w-full px-3 py-2 border rounded-xl text-base outline-none focus:border-emerald-600">
                             </div>
                             <div>
                                 <label class="block text-xs font-bold text-stone-600 mb-1">Poza Destino Hembras</label>
@@ -483,9 +499,7 @@
                                 </select>
                             </div>
                         </div>
-                        <div class="flex items-end">
-                            <button type="submit" class="w-full bg-indigo-600 text-white font-semibold py-2 px-4 rounded-xl text-sm hover:bg-indigo-700 transition shadow-xs">Guardar Destete</button>
-                        </div>
+                        <button type="submit" class="action-giant action-destete md:col-span-4"><i class="ph ph-users-three" aria-hidden="true"></i><span>GUARDAR DESTETE</span></button>
                     </form>
                 </div>
 
@@ -541,7 +555,7 @@
                             </div>
                             <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
                                 <label class="text-sm font-bold text-stone-700">Poza o identificador
-                                    <select id="baja-identificador" required class="mt-1 w-full rounded-lg border border-stone-300 px-3 py-3 text-base"><option value="">Selecciona una poza</option></select>
+                                    <select id="baja-identificador" data-poza-activa="true" required class="mt-1 w-full rounded-lg border border-stone-300 px-3 py-3 text-base"><option value="">Selecciona una poza</option></select>
                                 </label>
                                 <label class="text-sm font-bold text-stone-700">Cantidad de animales
                                     <input type="number" id="baja-cantidad" required min="1" value="1" inputmode="numeric" class="mt-1 w-full rounded-lg border border-stone-300 px-3 py-3 text-base">
@@ -557,7 +571,7 @@
                                 </div>
                                 <p class="rounded-lg bg-amber-50 px-4 py-3 text-sm font-medium text-amber-950">La foto no confirma un diagnóstico. No administres medicamentos basándote solo en esta orientación; contacta a un veterinario, sobre todo ante dolor intenso, dificultad para respirar o varias bajas.</p>
                             </div>
-                            <button type="submit" id="baja-save-button" disabled class="w-full rounded-xl bg-rose-700 px-5 py-4 text-lg font-extrabold text-white shadow transition hover:bg-rose-800 disabled:cursor-not-allowed disabled:bg-stone-300 disabled:text-stone-600">💾 GUARDAR REGISTRO DE BAJA</button>
+                            <button type="submit" id="baja-save-button" disabled class="action-giant action-baja disabled:cursor-not-allowed disabled:bg-stone-300 disabled:text-stone-600"><i class="ph ph-floppy-disk" aria-hidden="true"></i><span>GUARDAR REGISTRO DE BAJA</span></button>
                         </form>
                     </div>
                 </section>
@@ -600,19 +614,18 @@
                         </div>
                         <div>
                             <label class="block text-xs font-bold text-stone-600 mb-1">Cantidad Vendida</label>
-                            <input type="number" id="venta-cantidad" required min="1" class="w-full px-3 py-2 border rounded-xl text-sm outline-none focus:border-emerald-600" placeholder="Ej. 20">
+                            <input type="number" id="venta-cantidad" required min="1" inputmode="numeric" class="w-full px-3 py-2 border rounded-xl text-base outline-none focus:border-emerald-600" placeholder="Ej. 20">
                         </div>
                         <div>
                             <label class="block text-xs font-bold text-stone-600 mb-1">Precio por unidad (S/)</label>
-                            <input type="number" step="0.01" id="venta-monto" required min="0" class="w-full px-3 py-2 border rounded-xl text-sm outline-none focus:border-emerald-600" placeholder="Ej. 30.00">
+                            <input type="number" step="0.01" id="venta-monto" required min="0" inputmode="decimal" class="w-full px-3 py-2 border rounded-xl text-base outline-none focus:border-emerald-600" placeholder="Ej. 30.00">
                         </div>
                         <div>
-                            <label class="block text-xs font-bold text-stone-600 mb-1">Cliente / Destino</label>
-                            <input type="text" id="venta-cliente" required class="w-full px-3 py-2 border rounded-xl text-sm outline-none focus:border-emerald-600" placeholder="Ej. Mercado Local / Restaurante">
+                            <label class="block text-xs font-bold text-stone-600 mb-1">Cliente / Destino (opcional)</label>
+                            <input type="text" id="venta-cliente" list="venta-clientes-lista" autocomplete="organization" class="w-full px-3 py-2 border rounded-xl text-base outline-none focus:border-emerald-600" placeholder="Elegir o escribir cliente">
+                            <datalist id="venta-clientes-lista"></datalist>
                         </div>
-                        <div class="flex items-end">
-                            <button type="submit" class="w-full bg-blue-600 text-white font-semibold py-2 px-4 rounded-xl text-sm hover:bg-blue-700 transition shadow-xs">Registrar Ingreso</button>
-                        </div>
+                        <button type="submit" class="action-giant action-venta sm:col-span-5"><i class="ph ph-currency-circle-dollar" aria-hidden="true"></i><span>REGISTRAR VENTA</span></button>
                     </form>
                 </div>
 
@@ -748,7 +761,7 @@
     </main>
 
     <!-- MODAL / TOAST DE NOTIFICACIÓN -->
-    <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col space-y-2 pointer-events-none"></div>
+    <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col space-y-2 pointer-events-none" role="status" aria-live="polite" aria-atomic="true"></div>
 
     <div id="qr-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-stone-950/60 p-4" role="dialog" aria-modal="true" aria-labelledby="qr-titulo">
         <div class="w-full max-w-sm rounded-2xl bg-white p-6 text-center shadow-2xl">
@@ -818,14 +831,42 @@
             return [...codigos, ...new Set(codigosAdicionales)];
         }
 
+        function obtenerPozaActiva() {
+            try {
+                return localStorage.getItem('sisgranja_poza_activa') || '';
+            } catch (error) {
+                return '';
+            }
+        }
+
+        function cambiarPozaActiva(codigo) {
+            if (!codigo) return;
+            try {
+                localStorage.setItem('sisgranja_poza_activa', codigo);
+            } catch (error) {
+                console.warn('No se pudo recordar la poza activa en este dispositivo.');
+            }
+            document.querySelectorAll('[data-poza-activa="true"]').forEach(selector => {
+                if ([...selector.options].some(opcion => opcion.value === codigo)) selector.value = codigo;
+            });
+        }
+
+        function registrarControlesCampo() {
+            document.querySelectorAll('[data-poza-activa="true"]').forEach(selector => {
+                selector.addEventListener('change', () => cambiarPozaActiva(selector.value));
+            });
+        }
+
         function actualizarSelectoresPozas() {
             const codigos = obtenerCodigosPozas();
+            const pozaActiva = obtenerPozaActiva();
             document.querySelectorAll('#cuy-codigo, #parto-poza, #destete-poza, #destete-poza-machos, #destete-poza-hembras, #baja-identificador, #empadre-poza, #quick-poza, #necro-poza').forEach(selector => {
                 const valorActual = selector.value;
                 const textoInicial = 'Selecciona una poza';
                 const opciones = [new Option(textoInicial, ''), ...codigos.map(codigo => new Option(codigo, codigo))];
                 selector.replaceChildren(...opciones);
                 if (codigos.includes(valorActual)) selector.value = valorActual;
+                else if (selector.dataset.pozaActiva === 'true' && codigos.includes(pozaActiva)) selector.value = pozaActiva;
             });
 
             const ubicaciones = [...new Set(db.cuyes.map(poza => String(poza.poza || '').trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'es', { numeric: true }));
@@ -867,6 +908,13 @@
                 .reduce((total, baja) => total + Number(baja.cantidad || 0), 0);
 
             return stockInicial + nacimientos - destetadosOrigen + destetadosDestino - bajas;
+        }
+
+        function actualizarSugerenciasClientes() {
+            const lista = document.getElementById('venta-clientes-lista');
+            if (!lista) return;
+            const clientes = [...new Set(db.ventas.map(venta => String(venta.cliente || '').trim()).filter(Boolean))].slice(0, 8);
+            lista.replaceChildren(...clientes.map(cliente => new Option(cliente, cliente)));
         }
 
         function calcularTotalVentas() {
@@ -1007,14 +1055,21 @@
         function mostrarToast(mensaje, tipo = 'success') {
             const container = document.getElementById('toast-container');
             const toast = document.createElement('div');
-            toast.className = `px-4 py-3 rounded-xl shadow-lg text-white text-xs font-semibold pointer-events-auto transition transform translate-y-2 opacity-0 flex items-center gap-2 ${tipo === 'success' ? 'bg-emerald-800' : 'bg-rose-700'}`;
-            toast.innerHTML = `<i class="ph ${tipo === 'success' ? 'ph-check-circle' : 'ph-warning'} text-base"></i> ${mensaje}`;
+            const esExito = tipo === 'success';
+            toast.className = `toast-confirmation pointer-events-auto transition transform translate-y-2 opacity-0 flex items-center gap-4 ${esExito ? 'toast-success' : 'toast-error'}`;
+            toast.setAttribute('role', esExito ? 'status' : 'alert');
+            const icono = document.createElement('i');
+            icono.className = `ph ${esExito ? 'ph-check-circle' : 'ph-warning-circle'}`;
+            icono.setAttribute('aria-hidden', 'true');
+            const texto = document.createElement('span');
+            texto.textContent = mensaje;
+            toast.replaceChildren(icono, texto);
             container.appendChild(toast);
             setTimeout(() => { toast.classList.remove('translate-y-2', 'opacity-0'); }, 50);
             setTimeout(() => {
                 toast.classList.add('translate-y-2', 'opacity-0');
                 setTimeout(() => toast.remove(), 300);
-            }, 3000);
+            }, 4500);
         }
 
         function switchView(viewName) {
@@ -1128,7 +1183,7 @@
             document.getElementById('parto-poza').value = '';
             document.getElementById('parto-vivas').value = '';
             document.getElementById('parto-muertas').value = '0';
-            guardarBD();
+            guardarBD('Parto registrado correctamente');
         }
 
         function guardarDestete(e) {
@@ -1170,7 +1225,7 @@
             document.getElementById('destete-poza').value = '';
             document.getElementById('destete-machos').value = '0';
             document.getElementById('destete-hembras').value = '0';
-            guardarBD();
+            guardarBD('Destete registrado correctamente');
         }
 
         function guardarRegistroKardex(registro, mensaje) {
@@ -1235,6 +1290,7 @@
                 }
                 formulario.reset();
                 document.getElementById('baja-cantidad').value = '1';
+                document.getElementById('baja-identificador').value = obtenerPozaActiva();
                 fotoClinicaAnalizadaBase64 = '';
                 bajaAnalisisActual = null;
                 document.getElementById('baja-preview-card').classList.add('hidden');
@@ -1512,6 +1568,7 @@
             document.getElementById('badge-salud').innerText = db.tratamientos.length;
 
             actualizarSelectoresPozas();
+            actualizarSugerenciasClientes();
             actualizarTemperatura();
             actualizarProyecciones();
             if (!document.getElementById('empadre-fecha').value) document.getElementById('empadre-fecha').value = fechaHoy();
@@ -1843,6 +1900,7 @@
 
         // Inicialización
         cargarDatos();
+        registrarControlesCampo();
         renderizarTodo();
     </script>
     <link rel="manifest" href="./manifest.json">
