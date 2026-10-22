@@ -1,0 +1,4 @@
+project_id = "mdfwmaxtjhtcuzwsqrci"
+
+[functions.veterinario-virtual]
+verify_jwt = false
