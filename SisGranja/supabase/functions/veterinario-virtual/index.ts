@@ -5,48 +5,51 @@ const runtime = (globalThis as typeof globalThis & {
   };
 }).Deno;
 
-type SupportedImageMimeType = 'image/jpeg' | 'image/png' | 'image/webp';
-type ImageInlinePart = { inline_data: { mime_type: SupportedImageMimeType; data: string } };
-type TextPart = { text: string };
+type ImageMimeType = 'image/jpeg' | 'image/png' | 'image/webp';
+type GeminiPart = { text: string } | { inline_data: { mime_type: ImageMimeType; data: string } };
 type GeminiResponse = {
   candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>;
-  error?: { message?: string };
 };
 
-const maxRequestsPerMinute = 8;
-const maxRequestBytes = 128 * 1024;
-const maxBase64Length = 120_000;
+const RESULT_FIELDS = ['diagnostico_situacion', 'causa_principal', 'accion_inmediata', 'prevencion_diaria'] as const;
+const DEFAULT_MODEL = 'gemini-2.0-flash';
+const FALLBACK_MODELS = ['gemini-2.5-flash-lite'];
+const RETRYABLE_STATUS = [404, 429, 500, 503, 504];
+const ATTEMPT_TIMEOUT_MS = 12_000;
+const MAX_REQUESTS_PER_MINUTE = 8;
+const MAX_REQUEST_BYTES = 128 * 1024;
+const MAX_BASE64_LENGTH = 120_000;
+const BASE64_PATTERN = /^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/;
+
 const requestCounts = new Map<string, { count: number; startedAt: number }>();
+
 const responseSchema = {
   type: 'OBJECT',
-  properties: {
-    diagnostico_situacion: { type: 'STRING' },
-    causa_principal: { type: 'STRING' },
-    accion_inmediata: { type: 'STRING' },
-    prevencion_diaria: { type: 'STRING' },
-  },
-  required: ['diagnostico_situacion', 'causa_principal', 'accion_inmediata', 'prevencion_diaria'],
-  propertyOrdering: ['diagnostico_situacion', 'causa_principal', 'accion_inmediata', 'prevencion_diaria'],
+  properties: Object.fromEntries(RESULT_FIELDS.map(field => [field, { type: 'STRING' }])),
+  required: [...RESULT_FIELDS],
+  propertyOrdering: [...RESULT_FIELDS],
 };
 
 const systemPrompt = `Actúa como un asistente virtual especializado en bioseguridad, manejo y sanidad de cuyes; no afirmes ser el veterinario tratante. Analiza solo lo visible y responde exclusivamente con JSON válido, sin Markdown, con exactamente estos cuatro campos de texto: {"diagnostico_situacion":"...","causa_principal":"...","accion_inmediata":"...","prevencion_diaria":"..."}.
 Considera parásitos externos, lesiones de piel, señales visibles de problemas digestivos o alimentación (incluidos abdomen hinchado y forraje húmedo o fermentado), higiene de comederos, bebederos y cama, y lesiones visibles. No confirmes timpanismo, neumonía, daño hepático u otras enfermedades internas a partir de una foto externa. Si no se puede valorar, expresa la incertidumbre.
 Prioriza aislamiento cuando proceda, retirar alimento sospechoso, agua limpia, higiene y consulta veterinaria. No prescribas medicamentos, dosis ni vías desde una imagen; indica que un veterinario debe definirlos tras examinar al animal y conocer su peso. Para desinfección, sigue la etiqueta, no mezcles productos y deja secar la instalación antes de reingresar animales. Incluye medidas preventivas diarias y frecuencia práctica.`;
 
-function getAllowedOrigins(): string[] {
+function allowedOrigins(): string[] {
   return (runtime.env.get('ALLOWED_ORIGINS') || '')
     .split(',')
     .map(origin => origin.trim())
     .filter(Boolean);
 }
 
+function isAllowedOrigin(origin: string | null): boolean {
+  const allowed = allowedOrigins();
+  return Boolean(origin && (allowed.includes('*') || allowed.includes(origin)));
+}
+
 function corsHeaders(origin: string | null): HeadersInit {
-  const allowedOrigins = getAllowedOrigins();
-  const allowedOrigin = origin && (allowedOrigins.includes('*') || allowedOrigins.includes(origin))
-    ? (allowedOrigins.includes('*') ? '*' : origin)
-    : 'null';
+  const allowed = allowedOrigins();
   return {
-    'Access-Control-Allow-Origin': allowedOrigin,
+    'Access-Control-Allow-Origin': origin && isAllowedOrigin(origin) ? (allowed.includes('*') ? '*' : origin) : 'null',
     'Access-Control-Allow-Headers': 'authorization, apikey, content-type',
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
     'Access-Control-Max-Age': '86400',
@@ -59,25 +62,44 @@ function jsonResponse(body: unknown, status: number, origin: string | null): Res
   return new Response(JSON.stringify(body), { status, headers: corsHeaders(origin) });
 }
 
-function isAllowedOrigin(origin: string | null): boolean {
-  const allowedOrigins = getAllowedOrigins();
-  return Boolean(origin && allowedOrigins.length && (allowedOrigins.includes('*') || allowedOrigins.includes(origin)));
+function isRateLimited(clientIp: string): boolean {
+  const now = Date.now();
+  for (const [ip, window] of requestCounts) {
+    if (now - window.startedAt >= 60_000) requestCounts.delete(ip);
+  }
+  const window = requestCounts.get(clientIp);
+  if (window && window.count >= MAX_REQUESTS_PER_MINUTE) return true;
+  requestCounts.set(clientIp, window ? { ...window, count: window.count + 1 } : { count: 1, startedAt: now });
+  return false;
 }
 
-function cleanImageInput(body: Record<string, unknown>): { mimeType: SupportedImageMimeType; base64: string } | null {
+// Comprueba la firma binaria para que el tipo declarado coincida con la imagen real.
+function matchesImageSignature(base64: string, mimeType: ImageMimeType): boolean {
+  let header: string;
+  try {
+    header = atob(base64.slice(0, 24));
+  } catch {
+    return false;
+  }
+  if (mimeType === 'image/jpeg') return header.startsWith('\xFF\xD8\xFF');
+  if (mimeType === 'image/png') return header.startsWith('\x89PNG\r\n\x1A\n');
+  return header.startsWith('RIFF') && header.slice(8, 12) === 'WEBP';
+}
+
+function cleanImageInput(body: Record<string, unknown>): { mimeType: ImageMimeType; base64: string } | null {
   const image = body.image ?? body.img;
   const imageObject = image && typeof image === 'object' ? image as Record<string, unknown> : null;
-  const imageValue = typeof image === 'string'
-    ? image
-    : imageObject?.data ?? imageObject?.base64;
+  const imageValue = typeof image === 'string' ? image : imageObject?.data ?? imageObject?.base64;
   if (typeof imageValue !== 'string') return null;
 
-  const dataUrlMatch = imageValue.match(/^data:(image\/[a-z0-9.+-]+);base64,/i);
-  const rawMimeType = String(body.mime_type ?? body.mimeType ?? imageObject?.mime_type ?? dataUrlMatch?.[1] ?? 'image/jpeg').toLowerCase();
-  const mimeType = (rawMimeType === 'image/jpg' ? 'image/jpeg' : rawMimeType) as SupportedImageMimeType;
+  const dataUrl = imageValue.match(/^data:(image\/[a-z0-9.+-]+);base64,/i);
+  const declaredMime = String(body.mime_type ?? body.mimeType ?? imageObject?.mime_type ?? dataUrl?.[1] ?? 'image/jpeg').toLowerCase();
+  const mimeType = (declaredMime === 'image/jpg' ? 'image/jpeg' : declaredMime) as ImageMimeType;
   const base64 = imageValue.replace(/^data:image\/[a-z0-9.+-]+;base64,/i, '').trim();
-  const validBase64 = /^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/.test(base64);
-  if (!['image/jpeg', 'image/png', 'image/webp'].includes(mimeType) || !base64 || !validBase64 || base64.length > maxBase64Length) return null;
+
+  if (!['image/jpeg', 'image/png', 'image/webp'].includes(mimeType)) return null;
+  if (!base64 || base64.length > MAX_BASE64_LENGTH || !BASE64_PATTERN.test(base64)) return null;
+  if (!matchesImageSignature(base64, mimeType)) return null;
   return { mimeType, base64 };
 }
 
@@ -90,10 +112,42 @@ function parseGeminiResult(text: string): Record<string, string> | null {
     return null;
   }
   if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return null;
-  const result = parsed as Record<string, unknown>;
-  const fields = ['diagnostico_situacion', 'causa_principal', 'accion_inmediata', 'prevencion_diaria'];
-  if (fields.some(field => typeof result[field] !== 'string' || !(result[field] as string).trim())) return null;
-  return Object.fromEntries(fields.map(field => [field, (result[field] as string).slice(0, 1600)]));
+  const record = parsed as Record<string, unknown>;
+  if (RESULT_FIELDS.some(field => typeof record[field] !== 'string' || !(record[field] as string).trim())) return null;
+  return Object.fromEntries(RESULT_FIELDS.map(field => [field, (record[field] as string).trim().slice(0, 1600)]));
+}
+
+async function callGemini(apiKey: string, models: string[], parts: GeminiPart[]): Promise<Response> {
+  let response!: Response;
+  for (let attempt = 0; attempt < models.length; attempt++) {
+    const model = models[attempt];
+    try {
+      response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
+          body: JSON.stringify({
+            contents: [{ role: 'user', parts }],
+            generationConfig: {
+              responseMimeType: 'application/json',
+              responseSchema,
+              temperature: 0.3,
+              maxOutputTokens: 900,
+              // Solo los modelos 2.5 admiten desactivar el razonamiento interno.
+              ...(model.startsWith('gemini-2.5') ? { thinkingConfig: { thinkingBudget: 0 } } : {}),
+            },
+          }),
+          signal: AbortSignal.timeout(ATTEMPT_TIMEOUT_MS),
+        },
+      );
+    } catch (error) {
+      if (attempt === models.length - 1) throw error;
+      continue;
+    }
+    if (!RETRYABLE_STATUS.includes(response.status)) break;
+  }
+  return response;
 }
 
 runtime.serve(async (request: Request) => {
@@ -102,28 +156,24 @@ runtime.serve(async (request: Request) => {
   if (request.method !== 'POST') return jsonResponse({ error: 'Método no permitido.' }, 405, origin);
   if (!isAllowedOrigin(origin)) return jsonResponse({ error: 'Origen no autorizado.' }, 403, origin);
 
-  const now = Date.now();
   const clientIp = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
-  const requestWindow = requestCounts.get(clientIp);
-  if (requestWindow && now - requestWindow.startedAt < 60_000 && requestWindow.count >= maxRequestsPerMinute) {
+  if (isRateLimited(clientIp)) {
     return jsonResponse({ error: 'Límite temporal alcanzado. Intenta de nuevo en un minuto.' }, 429, origin);
   }
-  requestCounts.set(clientIp, requestWindow && now - requestWindow.startedAt < 60_000
-    ? { ...requestWindow, count: requestWindow.count + 1 }
-    : { count: 1, startedAt: now });
 
   const apiKey = runtime.env.get('GEMINI_API_KEY');
   if (!apiKey) return jsonResponse({ error: 'El servicio veterinario aún no está configurado.' }, 503, origin);
 
   try {
     const contentLength = Number(request.headers.get('content-length'));
-    if (Number.isFinite(contentLength) && contentLength > maxRequestBytes) {
+    if (Number.isFinite(contentLength) && contentLength > MAX_REQUEST_BYTES) {
       return jsonResponse({ error: 'La imagen supera el tamaño permitido.' }, 413, origin);
     }
     const rawBody = await request.text();
-    if (new TextEncoder().encode(rawBody).byteLength > maxRequestBytes) {
+    if (new TextEncoder().encode(rawBody).byteLength > MAX_REQUEST_BYTES) {
       return jsonResponse({ error: 'La imagen supera el tamaño permitido.' }, 413, origin);
     }
+
     let body: unknown;
     try {
       body = JSON.parse(rawBody);
@@ -133,47 +183,30 @@ runtime.serve(async (request: Request) => {
     if (!body || typeof body !== 'object' || Array.isArray(body)) {
       return jsonResponse({ error: 'El cuerpo JSON no es válido.' }, 400, origin);
     }
+
     const image = cleanImageInput(body as Record<string, unknown>);
     if (!image) return jsonResponse({ error: 'Envía una imagen JPEG, PNG o WebP válida en Base64.' }, 400, origin);
 
-    const imagePart: ImageInlinePart = { inline_data: { mime_type: image.mimeType, data: image.base64 } };
-    const parts: Array<TextPart | ImageInlinePart> = [{ text: systemPrompt }, imagePart];
-    const primaryModel = runtime.env.get('GEMINI_MODEL') || 'gemini-2.5-flash';
-    const models = [...new Set([primaryModel, 'gemini-2.5-flash-lite', 'gemini-2.0-flash'])];
-    // thinkingBudget 0 evita el razonamiento interno, que es lo que más tarda.
-    const buildBody = (model: string) => JSON.stringify({
-      contents: [{ role: 'user', parts }],
-      generationConfig: {
-        responseMimeType: 'application/json',
-        responseSchema,
-        maxOutputTokens: 900,
-        ...(model.startsWith('gemini-2.5') ? { thinkingConfig: { thinkingBudget: 0 } } : {}),
-      },
-    });
-    let geminiResponse!: Response;
-    // Cambia de modelo si uno está saturado, no existe o tarda más de 12 s.
-    for (let attempt = 0; attempt < models.length; attempt++) {
-      try {
-        geminiResponse = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(models[attempt])}:generateContent?key=${encodeURIComponent(apiKey)}`,
-          { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: buildBody(models[attempt]), signal: AbortSignal.timeout(12_000) },
-        );
-      } catch (error) {
-        if (attempt === models.length - 1) throw error;
-        continue;
-      }
-      if (![404, 429, 500, 503, 504].includes(geminiResponse.status)) break;
-    }
+    const primaryModel = runtime.env.get('GEMINI_MODEL') || DEFAULT_MODEL;
+    const models = [...new Set([primaryModel, ...FALLBACK_MODELS])];
+    const parts: GeminiPart[] = [
+      { text: systemPrompt },
+      { inline_data: { mime_type: image.mimeType, data: image.base64 } },
+    ];
 
-    const geminiData = await geminiResponse.json().catch(() => ({})) as GeminiResponse;
+    const geminiResponse = await callGemini(apiKey, models, parts);
     if (!geminiResponse.ok) {
+      console.error('veterinario-virtual: Gemini respondió', geminiResponse.status);
       if ([429, 503].includes(geminiResponse.status)) {
         return jsonResponse({ error: 'El servicio de análisis está saturado. Espera un minuto e inténtalo de nuevo.' }, 503, origin);
       }
       return jsonResponse({ error: 'No se pudo completar el análisis con el servicio de IA. Inténtalo de nuevo.' }, 502, origin);
     }
+
+    const geminiData = await geminiResponse.json().catch(() => ({})) as GeminiResponse;
     const resultText = geminiData.candidates?.[0]?.content?.parts?.map(part => part.text || '').join('') || '';
     if (!resultText) return jsonResponse({ error: 'Gemini no devolvió una respuesta JSON legible.' }, 502, origin);
+
     const result = parseGeminiResult(resultText);
     if (!result) return jsonResponse({ error: 'Gemini devolvió un JSON incompleto o inválido.' }, 502, origin);
     return jsonResponse({ result }, 200, origin);
