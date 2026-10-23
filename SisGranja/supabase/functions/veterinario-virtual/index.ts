@@ -11,7 +11,7 @@ type GeminiResponse = {
   candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>;
 };
 
-const RESULT_FIELDS = ['diagnostico_situacion', 'causa_principal', 'accion_inmediata', 'prevencion_diaria'] as const;
+const RESULT_FIELDS = ['enfermedad_probable', 'diagnostico_situacion', 'causa_principal', 'accion_inmediata', 'tratamiento_manejo', 'prevencion_diaria'] as const;
 // Los alias *-latest siguen al modelo vigente, así no fallan cuando Google retira versiones.
 const GEMINI_MODELS = ['gemini-3.8-flash', 'gemini-flash-latest', 'gemini-flash-lite-latest'];
 const RETRYABLE_STATUS = [404, 429, 500, 503, 504];
@@ -29,12 +29,14 @@ const responseSchema = {
   required: [...RESULT_FIELDS],
 };
 
-const systemPrompt = `Actúa como un asistente veterinario experto en sanidad, manejo y bioseguridad de cuyes (Cavia porcellus) en granjas de crianza; no afirmes ser el veterinario tratante. Analiza la imagen (animal vivo, cadáver o necropsia) y responde exclusivamente con JSON válido, sin Markdown, con exactamente estos cuatro campos de texto: {"diagnostico_situacion":"...","causa_principal":"...","accion_inmediata":"...","prevencion_diaria":"..."}.
-- diagnostico_situacion: una sola frase corta que nombre la enfermedad o patología más probable según lo observable y su nivel de certeza (probable, posible o no valorable). Considera, entre otras, coccidiosis, salmonelosis, necrosis hepática o de órganos, neumonía, timpanismo, parásitos externos (piojos, ácaros), dermatofitosis, abscesos y pododermatitis, deficiencia de vitamina C, y problemas por forraje húmedo o fermentado. Si hay lesiones de órganos o cadáver, describe el hallazgo (por ejemplo, focos blanquecinos en hígado) y la patología asociada. Si la imagen no permite valorar, dilo.
+const systemPrompt = `Actúa como un asistente veterinario experto en sanidad, manejo y bioseguridad de cuyes (Cavia porcellus) en granjas de crianza; no afirmes ser el veterinario tratante. Analiza la imagen (animal vivo, cadáver o necropsia) y responde exclusivamente con JSON válido, sin Markdown, con exactamente estos seis campos de texto: {"enfermedad_probable":"...","diagnostico_situacion":"...","causa_principal":"...","accion_inmediata":"...","tratamiento_manejo":"...","prevencion_diaria":"..."}.
+- enfermedad_probable: SIEMPRE nombra una enfermedad o patología concreta, en 2 a 5 palabras, con su certeza entre paréntesis. Ejemplos: "Salmonelosis hepática (probable)", "Coccidiosis (posible)", "Necrosis hepática (probable)", "Ácaros o piojos (probable)". Elige la más compatible con lo observado; si hay varias, nombra la principal. No respondas con "consultar al veterinario" en este campo. Solo si la imagen es ilegible escribe "No valorable por la imagen".
+- diagnostico_situacion: una frase corta con el hallazgo visible que sustenta esa enfermedad (por ejemplo, focos blanquecinos en el hígado).
 - causa_principal: causa probable (agente infeccioso, parásito, alimentación, humedad, hacinamiento o estrés) en una o dos frases.
-- accion_inmediata: de 3 a 5 pasos numerados y concretos de bioseguridad y manejo en campo: aislar animales afectados, retirar alimento sospechoso, agua limpia, retirar cama húmeda, desinfectar con el producto indicado en su etiqueta y dejar secar antes de reingresar animales, manejo seguro de cadáveres (guantes, eliminación o entierro) y avisar al veterinario.
-- prevencion_diaria: pautas claras y frecuencia práctica (por ejemplo, limpieza de comederos y bebederos a diario, cama seca, forraje fresco, vacío sanitario, control de densidad, cuarentena de animales nuevos, registro de bajas).
-No confirmes enfermedades internas con certeza a partir de una foto: indica que el diagnóstico definitivo requiere necropsia o examen de laboratorio. No prescribas medicamentos, dosis ni vías de administración; indica que un veterinario debe definirlos tras examinar al animal y conocer su peso. Responde siempre en español, de forma breve y práctica.`;
+- accion_inmediata: de 3 a 5 pasos numerados y concretos de bioseguridad en campo: aislar animales afectados, retirar alimento sospechoso y cama húmeda, agua limpia, desinfectar según la etiqueta y dejar secar antes de reingresar animales, manejo seguro de cadáveres (guantes, eliminación o entierro) y avisar al veterinario.
+- tratamiento_manejo: tratamiento y manejo habitual para esa enfermedad en cuyes, en una o dos frases. Puedes nombrar el tipo de tratamiento o los grupos de medicamentos que suele indicar un veterinario (por ejemplo, anticoccidiales, antibióticos según antibiograma, antiparasitarios, vitamina C, rehidratación) y el manejo de apoyo (dieta, higiene, aislamiento). NO indiques dosis, concentraciones, vías ni duración; aclara que el veterinario debe definirlos tras examinar al animal y conocer su peso.
+- prevencion_diaria: pautas claras y frecuencia práctica (limpieza de comederos y bebederos a diario, cama seca, forraje fresco, vacío sanitario, control de densidad, cuarentena de animales nuevos, registro de bajas).
+No afirmes con certeza enfermedades internas a partir de una foto: indica el nivel de certeza y que el diagnóstico definitivo requiere necropsia o laboratorio. Responde siempre en español, de forma breve y práctica.`;
 
 function allowedOrigins(): string[] {
   return (runtime.env.get('ALLOWED_ORIGINS') || '')
@@ -135,7 +137,7 @@ async function callGemini(apiKey: string, parts: GeminiPart[]): Promise<Response
               responseMimeType: 'application/json',
               responseSchema,
               temperature: 0.3,
-              maxOutputTokens: 900,
+              maxOutputTokens: 1400,
             },
           }),
           signal: AbortSignal.timeout(ATTEMPT_TIMEOUT_MS),

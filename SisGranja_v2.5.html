@@ -1489,10 +1489,12 @@
                 const sinTratamiento = pasos.filter(paso => !patronTratamiento.test(paso));
                 if (sinTratamiento.length) pasos = sinTratamiento;
             }
+            const enfermedad = String(resultado.enfermedad_probable || '').trim();
+            const hallazgo = frases(resultado.diagnostico_situacion)[0] || '';
             return {
-                diagnostico: acortar(frases(resultado.diagnostico_situacion)[0] || 'Sin diagnóstico claro', 110),
+                diagnostico: acortar(enfermedad ? (hallazgo ? `${enfermedad}. ${hallazgo}` : enfermedad) : (hallazgo || 'Sin diagnóstico claro'), 200),
                 pasos: pasos.slice(0, 5).map(paso => acortar(paso, 140)),
-                tratamiento: tratamiento.length ? acortar(tratamiento.slice(0, 3).join('. '), 240) : 'Sin tratamiento específico indicado; consulta al veterinario.'
+                tratamiento: tratamiento.length ? acortar(tratamiento.slice(0, 3).join('. '), 320) : 'Sin tratamiento específico indicado; consulta al veterinario.'
             };
         }
 
