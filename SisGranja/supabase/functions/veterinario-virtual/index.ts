@@ -128,21 +128,28 @@ runtime.serve(async (request: Request) => {
 
     const imagePart: ImageInlinePart = { inline_data: { mime_type: image.mimeType, data: image.base64 } };
     const parts: Array<TextPart | ImageInlinePart> = [{ text: systemPrompt }, imagePart];
-    const model = runtime.env.get('GEMINI_MODEL') || 'gemini-2.5-flash';
-    const geminiResponse = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(apiKey)}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ role: 'user', parts }],
-          generationConfig: { responseMimeType: 'application/json', responseSchema },
-        }),
-      },
-    );
+    const primaryModel = runtime.env.get('GEMINI_MODEL') || 'gemini-2.5-flash';
+    const models = [primaryModel, primaryModel, 'gemini-2.5-flash-lite', 'gemini-2.0-flash'];
+    const requestBody = JSON.stringify({
+      contents: [{ role: 'user', parts }],
+      generationConfig: { responseMimeType: 'application/json', responseSchema },
+    });
+    let geminiResponse!: Response;
+    // Reintenta con espera y modelo alterno cuando Gemini está saturado.
+    for (let attempt = 0; attempt < models.length; attempt++) {
+      geminiResponse = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(models[attempt])}:generateContent?key=${encodeURIComponent(apiKey)}`,
+        { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: requestBody },
+      );
+      if (![429, 500, 503, 504].includes(geminiResponse.status)) break;
+      if (attempt < models.length - 1) await new Promise(resolve => setTimeout(resolve, 800 * (attempt + 1)));
+    }
 
     const geminiData = await geminiResponse.json().catch(() => ({})) as GeminiResponse;
     if (!geminiResponse.ok) {
+      if ([429, 503].includes(geminiResponse.status)) {
+        return jsonResponse({ error: 'El servicio de análisis está saturado. Espera un minuto e inténtalo de nuevo.' }, 503, origin);
+      }
       return jsonResponse({ error: geminiData.error?.message || 'Error al comunicarse con Gemini.' }, 502, origin);
     }
     const resultText = geminiData.candidates?.[0]?.content?.parts?.map(part => part.text || '').join('') || '';
