@@ -129,20 +129,30 @@ runtime.serve(async (request: Request) => {
     const imagePart: ImageInlinePart = { inline_data: { mime_type: image.mimeType, data: image.base64 } };
     const parts: Array<TextPart | ImageInlinePart> = [{ text: systemPrompt }, imagePart];
     const primaryModel = runtime.env.get('GEMINI_MODEL') || 'gemini-2.5-flash';
-    const models = [primaryModel, primaryModel, 'gemini-2.5-flash-lite', 'gemini-2.0-flash'];
-    const requestBody = JSON.stringify({
+    const models = [primaryModel, 'gemini-2.5-flash-lite', 'gemini-2.0-flash'];
+    // thinkingBudget 0 evita el razonamiento interno, que es lo que más tarda.
+    const buildBody = (model: string) => JSON.stringify({
       contents: [{ role: 'user', parts }],
-      generationConfig: { responseMimeType: 'application/json', responseSchema },
+      generationConfig: {
+        responseMimeType: 'application/json',
+        responseSchema,
+        maxOutputTokens: 900,
+        ...(model.startsWith('gemini-2.5') ? { thinkingConfig: { thinkingBudget: 0 } } : {}),
+      },
     });
     let geminiResponse!: Response;
-    // Reintenta con espera y modelo alterno cuando Gemini está saturado.
+    // Cambia de modelo rápido si uno está saturado o tarda más de 12 s.
     for (let attempt = 0; attempt < models.length; attempt++) {
-      geminiResponse = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(models[attempt])}:generateContent?key=${encodeURIComponent(apiKey)}`,
-        { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: requestBody },
-      );
+      try {
+        geminiResponse = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(models[attempt])}:generateContent?key=${encodeURIComponent(apiKey)}`,
+          { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: buildBody(models[attempt]), signal: AbortSignal.timeout(12_000) },
+        );
+      } catch (error) {
+        if (attempt === models.length - 1) throw error;
+        continue;
+      }
       if (![429, 500, 503, 504].includes(geminiResponse.status)) break;
-      if (attempt < models.length - 1) await new Promise(resolve => setTimeout(resolve, 800 * (attempt + 1)));
     }
 
     const geminiData = await geminiResponse.json().catch(() => ({})) as GeminiResponse;
