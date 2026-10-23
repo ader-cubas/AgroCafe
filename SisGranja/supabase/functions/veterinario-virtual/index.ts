@@ -83,7 +83,12 @@ function cleanImageInput(body: Record<string, unknown>): { mimeType: SupportedIm
 
 function parseGeminiResult(text: string): Record<string, string> | null {
   const jsonText = text.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '').trim();
-  const parsed: unknown = JSON.parse(jsonText);
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(jsonText);
+  } catch {
+    return null;
+  }
   if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return null;
   const result = parsed as Record<string, unknown>;
   const fields = ['diagnostico_situacion', 'causa_principal', 'accion_inmediata', 'prevencion_diaria'];
@@ -119,7 +124,12 @@ runtime.serve(async (request: Request) => {
     if (new TextEncoder().encode(rawBody).byteLength > maxRequestBytes) {
       return jsonResponse({ error: 'La imagen supera el tamaño permitido.' }, 413, origin);
     }
-    const body: unknown = JSON.parse(rawBody);
+    let body: unknown;
+    try {
+      body = JSON.parse(rawBody);
+    } catch {
+      return jsonResponse({ error: 'El cuerpo JSON no es válido.' }, 400, origin);
+    }
     if (!body || typeof body !== 'object' || Array.isArray(body)) {
       return jsonResponse({ error: 'El cuerpo JSON no es válido.' }, 400, origin);
     }
@@ -129,7 +139,7 @@ runtime.serve(async (request: Request) => {
     const imagePart: ImageInlinePart = { inline_data: { mime_type: image.mimeType, data: image.base64 } };
     const parts: Array<TextPart | ImageInlinePart> = [{ text: systemPrompt }, imagePart];
     const primaryModel = runtime.env.get('GEMINI_MODEL') || 'gemini-2.5-flash';
-    const models = [primaryModel, 'gemini-2.5-flash-lite', 'gemini-2.0-flash'];
+    const models = [...new Set([primaryModel, 'gemini-2.5-flash-lite', 'gemini-2.0-flash'])];
     // thinkingBudget 0 evita el razonamiento interno, que es lo que más tarda.
     const buildBody = (model: string) => JSON.stringify({
       contents: [{ role: 'user', parts }],
@@ -141,7 +151,7 @@ runtime.serve(async (request: Request) => {
       },
     });
     let geminiResponse!: Response;
-    // Cambia de modelo rápido si uno está saturado o tarda más de 12 s.
+    // Cambia de modelo si uno está saturado, no existe o tarda más de 12 s.
     for (let attempt = 0; attempt < models.length; attempt++) {
       try {
         geminiResponse = await fetch(
@@ -152,7 +162,7 @@ runtime.serve(async (request: Request) => {
         if (attempt === models.length - 1) throw error;
         continue;
       }
-      if (![429, 500, 503, 504].includes(geminiResponse.status)) break;
+      if (![404, 429, 500, 503, 504].includes(geminiResponse.status)) break;
     }
 
     const geminiData = await geminiResponse.json().catch(() => ({})) as GeminiResponse;
@@ -160,7 +170,7 @@ runtime.serve(async (request: Request) => {
       if ([429, 503].includes(geminiResponse.status)) {
         return jsonResponse({ error: 'El servicio de análisis está saturado. Espera un minuto e inténtalo de nuevo.' }, 503, origin);
       }
-      return jsonResponse({ error: geminiData.error?.message || 'Error al comunicarse con Gemini.' }, 502, origin);
+      return jsonResponse({ error: 'No se pudo completar el análisis con el servicio de IA. Inténtalo de nuevo.' }, 502, origin);
     }
     const resultText = geminiData.candidates?.[0]?.content?.parts?.map(part => part.text || '').join('') || '';
     if (!resultText) return jsonResponse({ error: 'Gemini no devolvió una respuesta JSON legible.' }, 502, origin);
@@ -168,7 +178,12 @@ runtime.serve(async (request: Request) => {
     if (!result) return jsonResponse({ error: 'Gemini devolvió un JSON incompleto o inválido.' }, 502, origin);
     return jsonResponse({ result }, 200, origin);
   } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : 'Error desconocido.';
-    return jsonResponse({ error: message }, 500, origin);
+    const timedOut = error instanceof DOMException && (error.name === 'TimeoutError' || error.name === 'AbortError');
+    console.error('veterinario-virtual:', error);
+    return jsonResponse(
+      { error: timedOut ? 'El análisis tardó demasiado. Inténtalo de nuevo.' : 'Error interno al analizar la imagen.' },
+      timedOut ? 504 : 500,
+      origin,
+    );
   }
 });

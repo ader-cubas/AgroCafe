@@ -1518,14 +1518,14 @@
                     body: JSON.stringify({ image: base64, mime_type: mimeType })
                 });
                 payload = await response.json().catch(() => ({}));
-                const saturado = [429, 502, 503, 504].includes(response.status) || /high demand|overloaded|unavailable/i.test(payload.error || '');
+                const saturado = [429, 503, 504].includes(response.status) || /high demand|overloaded|unavailable/i.test(payload.error || '');
                 if (response.ok || !saturado || intento === 2) break;
                 if (versionCaptura !== bajaFotoVersion) return;
                 document.getElementById('baja-analysis-detail').textContent = `Servicio saturado, reintentando (${intento + 2}/3)...`;
                 await new Promise(resolve => setTimeout(resolve, 2500));
             }
             if (!response.ok) {
-                const saturado = [429, 502, 503, 504].includes(response.status) || /high demand|overloaded|unavailable/i.test(payload.error || '');
+                const saturado = [429, 503, 504].includes(response.status) || /high demand|overloaded|unavailable/i.test(payload.error || '');
                 throw new Error(saturado ? 'El servicio de análisis está saturado. Espera un minuto e inténtalo de nuevo.' : (payload.error || 'El servicio veterinario no está disponible.'));
             }
             if (versionCaptura !== bajaFotoVersion) return;
