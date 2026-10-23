@@ -1,22 +1,31 @@
-const CACHE_NAME = 'sisgranja-v2.5-cache';
-const urlsToCache = [
-  './SisGranja_v2.5.html',
-  'https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css',
-  'https://unpkg.com/@phosphor-icons/web',
-  'https://cdn.jsdelivr.net/npm/chart.js'
-];
+const CACHE_NAME = 'sisgranja-v2.5.1-20261023';
+const OFFLINE_URL = './SisGranja_v2.5.html';
 
 self.addEventListener('install', event => {
+  self.skipWaiting();
+  event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.add(OFFLINE_URL)).catch(() => {}));
+});
+
+self.addEventListener('activate', event => {
   event.waitUntil(
-    caches.open(CACHE_NAME)
-      .then(cache => cache.addAll(urlsToCache))
+    caches.keys()
+      .then(keys => Promise.all(keys.filter(key => key !== CACHE_NAME).map(key => caches.delete(key))))
+      .then(() => self.clients.claim())
   );
 });
 
+// Red primero para que HTML/JS nuevos lleguen siempre; la caché solo sirve sin conexión.
 self.addEventListener('fetch', event => {
+  if (event.request.method !== 'GET') return;
   event.respondWith(
-    caches.match(event.request)
-      .then(response => response || fetch(event.request))
-      .catch(() => caches.match('./SisGranja_v2.5.html'))
+    fetch(event.request)
+      .then(response => {
+        if (response.ok && new URL(event.request.url).origin === self.location.origin) {
+          const copia = response.clone();
+          caches.open(CACHE_NAME).then(cache => cache.put(event.request, copia));
+        }
+        return response;
+      })
+      .catch(() => caches.match(event.request).then(r => r || caches.match(OFFLINE_URL)))
   );
 });
