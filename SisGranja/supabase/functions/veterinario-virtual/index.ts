@@ -13,8 +13,7 @@ type GeminiResponse = {
 
 const RESULT_FIELDS = ['diagnostico_situacion', 'causa_principal', 'accion_inmediata', 'prevencion_diaria'] as const;
 const DEFAULT_MODEL = 'gemini-2.0-flash';
-const FALLBACK_MODELS = ['gemini-2.5-flash-lite'];
-const RETRYABLE_STATUS = [404, 429, 500, 503, 504];
+const FALLBACK_MODELS = ['gemini-2.5-flash-lite', 'gemini-2.5-flash'];
 const ATTEMPT_TIMEOUT_MS = 12_000;
 const MAX_REQUESTS_PER_MINUTE = 8;
 const MAX_REQUEST_BYTES = 128 * 1024;
@@ -27,7 +26,6 @@ const responseSchema = {
   type: 'OBJECT',
   properties: Object.fromEntries(RESULT_FIELDS.map(field => [field, { type: 'STRING' }])),
   required: [...RESULT_FIELDS],
-  propertyOrdering: [...RESULT_FIELDS],
 };
 
 const systemPrompt = `Actúa como un asistente virtual especializado en bioseguridad, manejo y sanidad de cuyes; no afirmes ser el veterinario tratante. Analiza solo lo visible y responde exclusivamente con JSON válido, sin Markdown, con exactamente estos cuatro campos de texto: {"diagnostico_situacion":"...","causa_principal":"...","accion_inmediata":"...","prevencion_diaria":"..."}.
@@ -145,7 +143,8 @@ async function callGemini(apiKey: string, models: string[], parts: GeminiPart[])
       if (attempt === models.length - 1) throw error;
       continue;
     }
-    if (!RETRYABLE_STATUS.includes(response.status)) break;
+    if (response.ok) break;
+    console.error('veterinario-virtual: modelo', model, 'respondió', response.status, await response.clone().text().catch(() => ''));
   }
   return response;
 }
@@ -200,7 +199,7 @@ runtime.serve(async (request: Request) => {
       if ([429, 503].includes(geminiResponse.status)) {
         return jsonResponse({ error: 'El servicio de análisis está saturado. Espera un minuto e inténtalo de nuevo.' }, 503, origin);
       }
-      return jsonResponse({ error: 'No se pudo completar el análisis con el servicio de IA. Inténtalo de nuevo.' }, 502, origin);
+      return jsonResponse({ error: `No se pudo completar el análisis con el servicio de IA (código ${geminiResponse.status}). Inténtalo de nuevo.` }, 502, origin);
     }
 
     const geminiData = await geminiResponse.json().catch(() => ({})) as GeminiResponse;
