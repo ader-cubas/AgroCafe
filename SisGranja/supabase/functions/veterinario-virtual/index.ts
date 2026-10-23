@@ -195,11 +195,13 @@ runtime.serve(async (request: Request) => {
 
     const geminiResponse = await callGemini(apiKey, models, parts);
     if (!geminiResponse.ok) {
-      console.error('veterinario-virtual: Gemini respondió', geminiResponse.status);
+      const upstream = await geminiResponse.clone().json().catch(() => ({})) as { error?: { message?: string } };
+      const detail = String(upstream.error?.message || '').slice(0, 160);
+      console.error('veterinario-virtual: Gemini respondió', geminiResponse.status, detail);
       if ([429, 503].includes(geminiResponse.status)) {
         return jsonResponse({ error: 'El servicio de análisis está saturado. Espera un minuto e inténtalo de nuevo.' }, 503, origin);
       }
-      return jsonResponse({ error: `No se pudo completar el análisis con el servicio de IA (código ${geminiResponse.status}). Inténtalo de nuevo.` }, 502, origin);
+      return jsonResponse({ error: `No se pudo completar el análisis con el servicio de IA (código ${geminiResponse.status}${detail ? `: ${detail}` : ''}).` }, 502, origin);
     }
 
     const geminiData = await geminiResponse.json().catch(() => ({})) as GeminiResponse;
