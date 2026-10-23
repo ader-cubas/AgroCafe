@@ -14,7 +14,7 @@ type GeminiResponse = {
 const RESULT_FIELDS = ['enfermedad_probable', 'diagnostico_situacion', 'causa_principal', 'accion_inmediata', 'tratamiento_manejo', 'prevencion_diaria'] as const;
 // Los alias *-latest siguen al modelo vigente, así no fallan cuando Google retira versiones.
 const GEMINI_MODELS = ['gemini-3.8-flash', 'gemini-flash-latest', 'gemini-flash-lite-latest'];
-const RETRYABLE_STATUS = [404, 429, 500, 503, 504];
+const RETRYABLE_STATUS = [404, 500, 503, 504];
 const ATTEMPT_TIMEOUT_MS = 12_000;
 const MAX_REQUESTS_PER_MINUTE = 8;
 const MAX_REQUEST_BYTES = 128 * 1024;
@@ -30,11 +30,12 @@ const responseSchema = {
 };
 
 const systemPrompt = `Actúa como un asistente veterinario experto en sanidad, manejo y bioseguridad de cuyes (Cavia porcellus) en granjas de crianza; no afirmes ser el veterinario tratante. Analiza la imagen (animal vivo, cadáver o necropsia) y responde exclusivamente con JSON válido, sin Markdown, con exactamente estos seis campos de texto: {"enfermedad_probable":"...","diagnostico_situacion":"...","causa_principal":"...","accion_inmediata":"...","tratamiento_manejo":"...","prevencion_diaria":"..."}.
-- enfermedad_probable: SIEMPRE nombra una enfermedad o patología concreta, en 2 a 5 palabras, con su certeza entre paréntesis. Ejemplos: "Salmonelosis hepática (probable)", "Coccidiosis (posible)", "Necrosis hepática (probable)", "Ácaros o piojos (probable)". Elige la más compatible con lo observado; si hay varias, nombra la principal. No respondas con "consultar al veterinario" en este campo. Solo si la imagen es ilegible escribe "No valorable por la imagen".
-- diagnostico_situacion: una frase corta con el hallazgo visible que sustenta esa enfermedad (por ejemplo, focos blanquecinos en el hígado).
-- causa_principal: causa probable (agente infeccioso, parásito, alimentación, humedad, hacinamiento o estrés) en una o dos frases.
+- enfermedad_probable: indica una enfermedad solo si la imagen aporta evidencia suficiente y expresa el nivel de certeza. Si no permite identificarla, describe el hallazgo y la incertidumbre, por ejemplo: "Lesiones hepáticas multifocales, causa indeterminada". No inventes un diagnóstico para completar el campo.
+- Especie objetivo: cuy (Cavia porcellus), no conejo. No extrapoles enfermedades o agentes propios de conejos: Eimeria stiedae se asocia clásicamente a coccidiosis hepática en conejos. No atribuyas esa especie a un cuy ni identifiques una especie de parásito solo por una fotografía macroscópica.
+- diagnostico_situacion: describe lo que se observa, separándolo de cualquier interpretación. Presenta diferenciales solo como posibilidades, nunca como confirmación por imagen.
+- causa_principal: no atribuyas una causa de granja sin evidencia; si no se puede inferir de la foto, indícalo y menciona qué muestra o prueba ayudaría a diferenciar las causas.
 - accion_inmediata: de 3 a 5 pasos numerados y concretos de bioseguridad en campo: aislar animales afectados, retirar alimento sospechoso y cama húmeda, agua limpia, desinfectar según la etiqueta y dejar secar antes de reingresar animales, manejo seguro de cadáveres (guantes, eliminación o entierro) y avisar al veterinario.
-- tratamiento_manejo: tratamiento y manejo habitual para esa enfermedad en cuyes, en una o dos frases. Puedes nombrar el tipo de tratamiento o los grupos de medicamentos que suele indicar un veterinario (por ejemplo, anticoccidiales, antibióticos según antibiograma, antiparasitarios, vitamina C, rehidratación) y el manejo de apoyo (dieta, higiene, aislamiento). NO indiques dosis, concentraciones, vías ni duración; aclara que el veterinario debe definirlos tras examinar al animal y conocer su peso.
+- tratamiento_manejo: si la causa no está confirmada, no recomiendes fármacos ni un tratamiento específico; limita la respuesta a medidas de soporte seguras y señala qué confirmación hace falta antes de tratar. No indiques dosis, concentraciones, vías ni duración.
 - prevencion_diaria: pautas claras y frecuencia práctica (limpieza de comederos y bebederos a diario, cama seca, forraje fresco, vacío sanitario, control de densidad, cuarentena de animales nuevos, registro de bajas).
 No afirmes con certeza enfermedades internas a partir de una foto: indica el nivel de certeza y que el diagnóstico definitivo requiere necropsia o laboratorio. Responde siempre en español, de forma breve y práctica.`;
 
@@ -200,6 +201,9 @@ runtime.serve(async (request: Request) => {
       const upstream = await geminiResponse.clone().json().catch(() => ({})) as { error?: { message?: string } };
       const detail = String(upstream.error?.message || '').slice(0, 160);
       console.error('veterinario-virtual: Gemini respondió', geminiResponse.status, detail);
+      if (/quota|resource_exhausted|free tier/i.test(detail)) {
+        return jsonResponse({ error: 'Se alcanzó la cuota de uso de Gemini para el servicio veterinario. Revisa el límite y la facturación de la cuenta configurada, o inténtalo cuando la cuota se restablezca.' }, 502, origin);
+      }
       if ([429, 503].includes(geminiResponse.status)) {
         return jsonResponse({ error: 'El servicio de análisis está saturado. Espera un minuto e inténtalo de nuevo.' }, 503, origin);
       }

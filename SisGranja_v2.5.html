@@ -619,7 +619,7 @@
                                 <div class="space-y-3">
                                     <article class="rounded-xl border border-rose-200 bg-rose-50 p-4"><span class="inline-flex rounded-full bg-rose-700 px-3 py-1 text-sm font-bold text-white">🟥 Diagnóstico principal</span><p id="baja-result-diagnostico" class="mt-2 text-lg font-extrabold text-stone-900"></p></article>
                                     <article class="rounded-xl border border-emerald-200 bg-emerald-50 p-4"><span class="inline-flex rounded-full bg-emerald-700 px-3 py-1 text-sm font-bold text-white">🟩 Acción inmediata</span><ol id="baja-result-accion" class="mt-2 list-decimal space-y-1 pl-5 text-base text-stone-900"></ol></article>
-                                    <article class="rounded-xl border border-sky-200 bg-sky-50 p-4"><span class="inline-flex rounded-full bg-sky-700 px-3 py-1 text-sm font-bold text-white">🟦 Tratamiento / manejo</span><p id="baja-result-tratamiento" class="mt-2 text-base text-stone-900"></p></article>
+                                    <article class="rounded-xl border border-sky-200 bg-sky-50 p-4"><span class="inline-flex rounded-full bg-sky-700 px-3 py-1 text-sm font-bold text-white">🟦 Tratamiento / manejo</span><p id="baja-result-tratamiento" class="mt-2 whitespace-pre-wrap break-words text-base text-stone-900"></p></article>
                                 </div>
                                 <p class="text-xs font-medium text-amber-900">Orientación por foto: confirma fármaco, dosis y vía con un veterinario.</p>
                             </div>
@@ -1452,19 +1452,48 @@
             previewCard.classList.remove('hidden');
             spinner.classList.remove('hidden');
             status.textContent = '⏳ Analizando síntoma con el Veterinario Virtual...';
-            document.getElementById('baja-analysis-detail').textContent = 'Comprimiendo la imagen antes de enviarla.';
+            document.getElementById('baja-analysis-detail').textContent = 'Mostrando la foto y preparando el análisis.';
+            const results = document.getElementById('baja-results');
+            const diagnosis = document.getElementById('baja-result-diagnostico');
+            const actionList = document.getElementById('baja-result-accion');
+            const treatment = document.getElementById('baja-result-tratamiento');
+            results.classList.remove('hidden');
+            diagnosis.textContent = 'Lesión visible; la causa no puede confirmarse solo con esta imagen.';
+            actionList.replaceChildren(...[
+                'Aísla inmediatamente la poza afectada.',
+                'Suspende el forraje húmedo y retira el material deteriorado.',
+                'Limpia y desinfecta según la etiqueta del producto; deja secar antes de reingresar animales.'
+            ].map(texto => {
+                const item = document.createElement('li');
+                item.textContent = texto;
+                return item;
+            }));
+            treatment.textContent = 'No se indican medicamentos ni dosis sin confirmar la causa. Esta orientación inicial no sustituye el análisis.';
             try {
+                if (preview.dataset.previewUrl) URL.revokeObjectURL(preview.dataset.previewUrl);
+                const vistaPrevia = URL.createObjectURL(archivo);
+                preview.dataset.previewUrl = vistaPrevia;
+                preview.onload = () => {
+                    if (preview.dataset.previewUrl === vistaPrevia) {
+                        URL.revokeObjectURL(vistaPrevia);
+                        delete preview.dataset.previewUrl;
+                        preview.onload = null;
+                    }
+                };
+                preview.src = vistaPrevia;
+                preview.classList.remove('hidden');
+
+                await new Promise(resolve => requestAnimationFrame(resolve));
+                if (versionCaptura !== bajaFotoVersion || event.target.files[0] !== archivo) return;
                 const comprimida = await comprimirFotoClinica(archivo);
-                if (event.target.files[0] !== archivo) return;
+                if (versionCaptura !== bajaFotoVersion || event.target.files[0] !== archivo) return;
                 fotoClinicaAnalizadaBase64 = comprimida;
                 preview.src = comprimida;
-                preview.classList.remove('hidden');
                 await analizarFotoBaja(comprimida, versionCaptura);
             } catch (error) {
                 if (versionCaptura === bajaFotoVersion && event.target.files[0] === archivo) {
-                    status.textContent = 'No se pudo completar el análisis.';
-                    document.getElementById('baja-analysis-detail').textContent = `${error.message} Comprueba la conexión y vuelve a intentarlo.`;
-                    mostrarToast(error.message || 'No se pudo analizar la foto', 'error');
+                    status.textContent = 'Orientación inicial disponible';
+                    document.getElementById('baja-analysis-detail').textContent = 'El análisis en línea no se completó. La orientación inicial sigue visible; la foto no confirma la causa.';
                 }
             } finally {
                 if (versionCaptura === bajaFotoVersion) spinner.classList.add('hidden');
@@ -1483,10 +1512,13 @@
             const acortar = (texto, max) => texto.length > max ? `${texto.slice(0, max - 1).trimEnd()}…` : texto;
             const patronTratamiento = /dosis|\bmg\b|\bml\b|administr|antibi|vitamina|ivermectina|enrofloxacina|\bv[ií]a\b|tratamiento|medic/i;
             let pasos = frases(resultado.accion_inmediata);
-            let tratamiento = frases(resultado.tratamiento_manejo);
-            if (!tratamiento.length) {
-                tratamiento = pasos.filter(paso => patronTratamiento.test(paso));
+            let tratamiento = [resultado.tratamiento, resultado.tratamiento_manejo, resultado.prevencion_diaria]
+                .map(valor => typeof valor === 'string' ? valor.trim() : '')
+                .find(valor => valor && !/^sin tratamiento(?: específico)? indicado\b/i.test(valor)) || '';
+            if (!tratamiento) {
+                const tratamientoEnPasos = pasos.filter(paso => patronTratamiento.test(paso));
                 const sinTratamiento = pasos.filter(paso => !patronTratamiento.test(paso));
+                if (tratamientoEnPasos.length) tratamiento = tratamientoEnPasos.join('\n');
                 if (sinTratamiento.length) pasos = sinTratamiento;
             }
             const enfermedad = String(resultado.enfermedad_probable || '').trim();
@@ -1494,7 +1526,7 @@
             return {
                 diagnostico: acortar(enfermedad ? (hallazgo ? `${enfermedad}. ${hallazgo}` : enfermedad) : (hallazgo || 'Sin diagnóstico claro'), 200),
                 pasos: pasos.slice(0, 5).map(paso => acortar(paso, 140)),
-                tratamiento: tratamiento.length ? acortar(tratamiento.slice(0, 3).join('. '), 320) : 'Sin tratamiento específico indicado; consulta al veterinario.'
+                tratamiento: tratamiento || 'El servidor no incluyó información de tratamiento en esta respuesta.'
             };
         }
 
@@ -1510,30 +1542,22 @@
             if (!base64 || !base64Valido || !['image/jpeg', 'image/png', 'image/webp'].includes(mimeType) || base64.length > 120000) {
                 throw new Error('La foto supera el tamaño permitido. Toma otra imagen e inténtalo de nuevo.');
             }
-            let response;
-            let payload;
-            // Reintenta si el servicio de IA está saturado (503/429 o "high demand").
-            for (let intento = 0; intento < 3; intento++) {
-                response = await fetch(endpoint, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', apikey: publicKey },
-                    body: JSON.stringify({ image: base64, mime_type: mimeType })
-                });
-                payload = await response.json().catch(() => ({}));
-                const saturado = [429, 503, 504].includes(response.status) || /high demand|overloaded|unavailable/i.test(payload.error || '');
-                if (response.ok || !saturado || intento === 2) break;
-                if (versionCaptura !== bajaFotoVersion) return;
-                document.getElementById('baja-analysis-detail').textContent = `Servicio saturado, reintentando (${intento + 2}/3)...`;
-                await new Promise(resolve => setTimeout(resolve, 2500));
-            }
+            document.getElementById('baja-analysis-detail').textContent = 'Foto lista; esperando respuesta del servicio veterinario.';
+            const response = await fetch(endpoint, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', apikey: publicKey },
+                body: JSON.stringify({ image: base64, mime_type: mimeType })
+            });
+            const payload = await response.json().catch(() => ({}));
             if (!response.ok) {
-                const saturado = [429, 503, 504].includes(response.status) || /high demand|overloaded|unavailable/i.test(payload.error || '');
-                throw new Error(saturado ? 'El servicio de análisis está saturado. Espera un minuto e inténtalo de nuevo.' : (payload.error || 'El servicio veterinario no está disponible.'));
+                throw new Error(payload.error || 'El servicio veterinario no está disponible.');
             }
             if (versionCaptura !== bajaFotoVersion) return;
             const resultado = payload.result || payload;
-            const campos = ['diagnostico_situacion', 'causa_principal', 'accion_inmediata', 'prevencion_diaria'];
-            if (campos.some(campo => typeof resultado[campo] !== 'string' || !resultado[campo].trim())) {
+            const campos = ['diagnostico_situacion', 'causa_principal', 'accion_inmediata'];
+            const tieneTratamiento = [resultado.tratamiento, resultado.tratamiento_manejo, resultado.prevencion_diaria]
+                .some(valor => typeof valor === 'string' && valor.trim());
+            if (campos.some(campo => typeof resultado[campo] !== 'string' || !resultado[campo].trim()) || !tieneTratamiento) {
                 throw new Error('El servicio devolvió una respuesta incompleta. Toma otra foto e inténtalo de nuevo.');
             }
             bajaAnalisisActual = resultado;
@@ -2073,7 +2097,7 @@
     <script>
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('./sw.js?v=2.5.1', { updateViaCache: 'none' })
+                navigator.serviceWorker.register('./sw.js?v=2.5.3', { updateViaCache: 'none' })
                     .then(reg => { reg.update(); console.log('Service Worker registrado con éxito:', reg.scope); })
                     .catch(err => console.log('Error al registrar Service Worker:', err));
             });
