@@ -12,9 +12,9 @@ type GeminiResponse = {
 };
 
 const RESULT_FIELDS = ['diagnostico_situacion', 'causa_principal', 'accion_inmediata', 'prevencion_diaria'] as const;
-const GEMINI_MODEL = 'gemini-2.0-flash';
-const MAX_ATTEMPTS = 3;
-const RETRYABLE_STATUS = [429, 500, 503, 504];
+// Los alias *-latest siguen al modelo vigente, así no fallan cuando Google retira versiones.
+const GEMINI_MODELS = ['gemini-flash-latest', 'gemini-flash-lite-latest', 'gemini-2.5-flash'];
+const RETRYABLE_STATUS = [404, 429, 500, 503, 504];
 const ATTEMPT_TIMEOUT_MS = 12_000;
 const MAX_REQUESTS_PER_MINUTE = 8;
 const MAX_REQUEST_BYTES = 128 * 1024;
@@ -118,10 +118,11 @@ function parseGeminiResult(text: string): Record<string, string> | null {
 
 async function callGemini(apiKey: string, parts: GeminiPart[]): Promise<Response> {
   let response!: Response;
-  for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
+  for (let attempt = 0; attempt < GEMINI_MODELS.length; attempt++) {
+    const model = GEMINI_MODELS[attempt];
     try {
       response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`,
+        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
@@ -138,12 +139,11 @@ async function callGemini(apiKey: string, parts: GeminiPart[]): Promise<Response
         },
       );
     } catch (error) {
-      if (attempt === MAX_ATTEMPTS - 1) throw error;
+      if (attempt === GEMINI_MODELS.length - 1) throw error;
       continue;
     }
     if (!RETRYABLE_STATUS.includes(response.status)) break;
-    console.error('veterinario-virtual: Gemini respondió', response.status, 'intento', attempt + 1);
-    if (attempt < MAX_ATTEMPTS - 1) await new Promise(resolve => setTimeout(resolve, 600 * (attempt + 1)));
+    console.error('veterinario-virtual: modelo', model, 'respondió', response.status);
   }
   return response;
 }
