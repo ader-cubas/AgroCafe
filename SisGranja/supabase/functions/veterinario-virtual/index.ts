@@ -12,8 +12,9 @@ type GeminiResponse = {
 };
 
 const RESULT_FIELDS = ['diagnostico_situacion', 'causa_principal', 'accion_inmediata', 'prevencion_diaria'] as const;
-const DEFAULT_MODEL = 'gemini-2.0-flash';
-const FALLBACK_MODELS = ['gemini-2.5-flash-lite', 'gemini-2.5-flash'];
+const GEMINI_MODEL = 'gemini-2.0-flash';
+const MAX_ATTEMPTS = 3;
+const RETRYABLE_STATUS = [429, 500, 503, 504];
 const ATTEMPT_TIMEOUT_MS = 12_000;
 const MAX_REQUESTS_PER_MINUTE = 8;
 const MAX_REQUEST_BYTES = 128 * 1024;
@@ -115,13 +116,12 @@ function parseGeminiResult(text: string): Record<string, string> | null {
   return Object.fromEntries(RESULT_FIELDS.map(field => [field, (record[field] as string).trim().slice(0, 1600)]));
 }
 
-async function callGemini(apiKey: string, models: string[], parts: GeminiPart[]): Promise<Response> {
+async function callGemini(apiKey: string, parts: GeminiPart[]): Promise<Response> {
   let response!: Response;
-  for (let attempt = 0; attempt < models.length; attempt++) {
-    const model = models[attempt];
+  for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
     try {
       response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`,
+        `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
@@ -132,19 +132,18 @@ async function callGemini(apiKey: string, models: string[], parts: GeminiPart[])
               responseSchema,
               temperature: 0.3,
               maxOutputTokens: 900,
-              // Solo los modelos 2.5 admiten desactivar el razonamiento interno.
-              ...(model.startsWith('gemini-2.5') ? { thinkingConfig: { thinkingBudget: 0 } } : {}),
             },
           }),
           signal: AbortSignal.timeout(ATTEMPT_TIMEOUT_MS),
         },
       );
     } catch (error) {
-      if (attempt === models.length - 1) throw error;
+      if (attempt === MAX_ATTEMPTS - 1) throw error;
       continue;
     }
-    if (response.ok) break;
-    console.error('veterinario-virtual: modelo', model, 'respondió', response.status, await response.clone().text().catch(() => ''));
+    if (!RETRYABLE_STATUS.includes(response.status)) break;
+    console.error('veterinario-virtual: Gemini respondió', response.status, 'intento', attempt + 1);
+    if (attempt < MAX_ATTEMPTS - 1) await new Promise(resolve => setTimeout(resolve, 600 * (attempt + 1)));
   }
   return response;
 }
@@ -186,14 +185,12 @@ runtime.serve(async (request: Request) => {
     const image = cleanImageInput(body as Record<string, unknown>);
     if (!image) return jsonResponse({ error: 'Envía una imagen JPEG, PNG o WebP válida en Base64.' }, 400, origin);
 
-    const primaryModel = runtime.env.get('GEMINI_MODEL') || DEFAULT_MODEL;
-    const models = [...new Set([primaryModel, ...FALLBACK_MODELS])];
     const parts: GeminiPart[] = [
       { text: systemPrompt },
       { inline_data: { mime_type: image.mimeType, data: image.base64 } },
     ];
 
-    const geminiResponse = await callGemini(apiKey, models, parts);
+    const geminiResponse = await callGemini(apiKey, parts);
     if (!geminiResponse.ok) {
       const upstream = await geminiResponse.clone().json().catch(() => ({})) as { error?: { message?: string } };
       const detail = String(upstream.error?.message || '').slice(0, 160);
