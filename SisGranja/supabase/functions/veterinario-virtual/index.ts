@@ -13,7 +13,7 @@ type GeminiResponse = {
 
 const RESULT_FIELDS = ['diagnostico_situacion', 'causa_principal', 'accion_inmediata', 'prevencion_diaria'] as const;
 // Los alias *-latest siguen al modelo vigente, así no fallan cuando Google retira versiones.
-const GEMINI_MODELS = ['gemini-flash-latest', 'gemini-flash-lite-latest', 'gemini-2.5-flash'];
+const GEMINI_MODELS = ['gemini-3.8-flash', 'gemini-flash-latest', 'gemini-flash-lite-latest'];
 const RETRYABLE_STATUS = [404, 429, 500, 503, 504];
 const ATTEMPT_TIMEOUT_MS = 12_000;
 const MAX_REQUESTS_PER_MINUTE = 8;
