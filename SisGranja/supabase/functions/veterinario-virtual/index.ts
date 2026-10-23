@@ -12,7 +12,9 @@ serve(async (req) => {
   }
 
   try {
-    const { imageBase64 } = await req.json();
+    const body = await req.json();
+    const imageBase64 = body.imageBase64 ?? body.image;
+    const mimeType = ['image/jpeg', 'image/png', 'image/webp'].includes(body.mime_type) ? body.mime_type : 'image/jpeg';
 
     if (!imageBase64) {
       return new Response(
@@ -32,14 +34,15 @@ serve(async (req) => {
     // URL usando el endpoint estable v1 y el modelo gemini-1.5-flash
     const url = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
 
-    const promptText = `Eres un veterinario experto en cuyes (cavia porcellus) y producción cuyícola.
-Analiza la imagen adjunta de la lesión o animal afectado y devuelve EXCLUSIVAMENTE un objeto JSON válido con los siguientes campos estrictos:
-- "diagnostico_situacion": Descripción clínica detallada de lo observado.
-- "causa_principal": Causa más probable de la afección.
-- "accion_inmediata": Tratamiento o medida urgente a tomar en la granja.
-- "prevencion_diaria": Recomendaciones preventivas de bioseguridad y manejo.
+    const promptText = `Eres un veterinario experto en cuyes (cavia porcellus). Estilo guía rápida de campo: directo, sin explicaciones.
+Analiza la imagen y devuelve EXCLUSIVAMENTE un JSON válido con estos campos:
+- "diagnostico_situacion": diagnóstico principal en UNA línea (máx. 15 palabras).
+- "causa_principal": causa probable en una frase corta.
+- "accion_inmediata": hasta 4 pasos cortos numerados ("1. ... 2. ..."), máx. 12 palabras cada uno.
+- "tratamiento_manejo": tratamiento o manejo sugerido en 1-2 frases directas, indicando días y vía si aplica.
+- "prevencion_diaria": una frase corta de prevención.
 
-Responde únicamente con el JSON sin bloques de código ni texto adicional.`;
+Sin bloques de código ni texto adicional.`;
 
     const response = await fetch(url, {
       method: 'POST',
@@ -53,7 +56,7 @@ Responde únicamente con el JSON sin bloques de código ni texto adicional.`;
               { text: promptText },
               {
                 inline_data: {
-                  mime_type: 'image/jpeg',
+                  mime_type: mimeType,
                   data: cleanBase64,
                 },
               },
