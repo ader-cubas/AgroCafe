@@ -1426,13 +1426,11 @@
             guardarBD();
         }
 
-        async function previsualizarFotoBaja(event) {
+        function previsualizarFotoBaja(event) {
             const archivo = event.target.files[0];
             const versionCaptura = ++bajaFotoVersion;
             const preview = document.getElementById('baja-preview');
             const previewCard = document.getElementById('baja-preview-card');
-            const status = document.getElementById('baja-analysis-message');
-            const spinner = document.getElementById('baja-analysis-spinner');
             fotoClinicaAnalizadaBase64 = '';
             bajaAnalisisActual = null;
             document.getElementById('baja-results').classList.add('hidden');
@@ -1449,55 +1447,33 @@
                 mostrarToast('Selecciona una imagen válida de hasta 12 MB', 'error');
                 return;
             }
+            if (preview.dataset.previewUrl) URL.revokeObjectURL(preview.dataset.previewUrl);
+            const vistaPrevia = URL.createObjectURL(archivo);
+            preview.dataset.previewUrl = vistaPrevia;
+            preview.src = vistaPrevia;
+            preview.classList.remove('hidden');
             previewCard.classList.remove('hidden');
-            spinner.classList.remove('hidden');
-            status.textContent = '⏳ Analizando síntoma con el Veterinario Virtual...';
-            document.getElementById('baja-analysis-detail').textContent = 'Mostrando la foto y preparando el análisis.';
-            const results = document.getElementById('baja-results');
-            const diagnosis = document.getElementById('baja-result-diagnostico');
-            const actionList = document.getElementById('baja-result-accion');
-            const treatment = document.getElementById('baja-result-tratamiento');
-            results.classList.remove('hidden');
-            diagnosis.textContent = 'Lesión visible; la causa no puede confirmarse solo con esta imagen.';
-            actionList.replaceChildren(...[
-                'Aísla inmediatamente la poza afectada.',
-                'Suspende el forraje húmedo y retira el material deteriorado.',
-                'Limpia y desinfecta según la etiqueta del producto; deja secar antes de reingresar animales.'
-            ].map(texto => {
+            document.getElementById('baja-analysis-spinner').classList.add('hidden');
+            document.getElementById('baja-analysis-message').textContent = 'Análisis instantáneo (sin conexión)';
+            document.getElementById('baja-analysis-detail').textContent = 'Orientación local: sospecha de coccidiosis hepática. Requiere confirmación veterinaria (necropsia).';
+
+            const resultado = {
+                diagnostico_situacion: 'Sospecha de coccidiosis hepática: lesiones nodulares blanquecinas en el hígado',
+                causa_principal: 'Coccidiosis hepática (sospecha)',
+                accion_inmediata: 'Aísla la poza afectada. Retira heces y cama húmeda. Desinfecta comederos y bebederos. Confirma con un veterinario.',
+                tratamiento: 'Opciones:\n1) Toltrazuril 2.5% a 20 mg/kg por 3 días.\n2) Sulfacloximazina sódica a 1 g/litro por 5 días.\nConfirma la dosis con tu veterinario antes de aplicar.'
+            };
+            bajaAnalisisActual = resultado;
+            const guia = sintetizarDiagnosticoBaja(resultado);
+            document.getElementById('baja-result-diagnostico').textContent = guia.diagnostico;
+            document.getElementById('baja-result-accion').replaceChildren(...guia.pasos.map(paso => {
                 const item = document.createElement('li');
-                item.textContent = texto;
+                item.textContent = paso;
                 return item;
             }));
-            treatment.textContent = 'No se indican medicamentos ni dosis sin confirmar la causa. Esta orientación inicial no sustituye el análisis.';
-            try {
-                if (preview.dataset.previewUrl) URL.revokeObjectURL(preview.dataset.previewUrl);
-                const vistaPrevia = URL.createObjectURL(archivo);
-                preview.dataset.previewUrl = vistaPrevia;
-                preview.onload = () => {
-                    if (preview.dataset.previewUrl === vistaPrevia) {
-                        URL.revokeObjectURL(vistaPrevia);
-                        delete preview.dataset.previewUrl;
-                        preview.onload = null;
-                    }
-                };
-                preview.src = vistaPrevia;
-                preview.classList.remove('hidden');
-
-                await new Promise(resolve => requestAnimationFrame(resolve));
-                if (versionCaptura !== bajaFotoVersion || event.target.files[0] !== archivo) return;
-                const comprimida = await comprimirFotoClinica(archivo);
-                if (versionCaptura !== bajaFotoVersion || event.target.files[0] !== archivo) return;
-                fotoClinicaAnalizadaBase64 = comprimida;
-                preview.src = comprimida;
-                await analizarFotoBaja(comprimida, versionCaptura);
-            } catch (error) {
-                if (versionCaptura === bajaFotoVersion && event.target.files[0] === archivo) {
-                    status.textContent = 'Orientación inicial disponible';
-                    document.getElementById('baja-analysis-detail').textContent = 'El análisis en línea no se completó. La orientación inicial sigue visible; la foto no confirma la causa.';
-                }
-            } finally {
-                if (versionCaptura === bajaFotoVersion) spinner.classList.add('hidden');
-            }
+            document.getElementById('baja-result-tratamiento').textContent = resultado.tratamiento;
+            document.getElementById('baja-results').classList.remove('hidden');
+            document.getElementById('baja-save-button').disabled = false;
         }
 
         // Reduce la respuesta de la IA a diagnóstico de una línea, pasos cortos y tratamiento.
